@@ -6,13 +6,16 @@ export default async function DashboardPage() {
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
-  const [{ count: contactCount }, { count: propertyCount }] =
+  const [{ count: contactCount }, { count: propertyCount }, { count: dealCount }] =
     await Promise.all([
       supabase
         .from("contacts")
         .select("id", { count: "exact", head: true }),
       supabase
         .from("properties")
+        .select("id", { count: "exact", head: true }),
+      supabase
+        .from("deals")
         .select("id", { count: "exact", head: true }),
     ]);
 
@@ -23,7 +26,7 @@ export default async function DashboardPage() {
         {profile.agencies.plan_tier}
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-3 gap-4">
         <Link
           href="/dashboard/contacts"
           className="rounded border border-neutral-200 p-6 hover:bg-neutral-50"
@@ -38,6 +41,14 @@ export default async function DashboardPage() {
         >
           <div className="text-3xl font-semibold">{propertyCount ?? 0}</div>
           <div className="text-neutral-600">Ingatlan</div>
+        </Link>
+
+        <Link
+          href="/dashboard/pipeline"
+          className="rounded border border-neutral-200 p-6 hover:bg-neutral-50"
+        >
+          <div className="text-3xl font-semibold">{dealCount ?? 0}</div>
+          <div className="text-neutral-600">Deal</div>
         </Link>
       </div>
     </div>

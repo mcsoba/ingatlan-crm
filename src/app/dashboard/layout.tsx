@@ -10,7 +10,7 @@ export default async function DashboardLayout({
   const { profile } = await ensureCurrentUserProfile();
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex items-center justify-between border-b border-neutral-200 pb-4">
         <div className="flex items-center gap-6">
           <span className="font-semibold">{profile.agencies.name}</span>
@@ -23,6 +23,9 @@ export default async function DashboardLayout({
             </Link>
             <Link href="/dashboard/properties" className="hover:text-neutral-900">
               Ingatlanok
+            </Link>
+            <Link href="/dashboard/pipeline" className="hover:text-neutral-900">
+              Pipeline
             </Link>
           </nav>
         </div>
