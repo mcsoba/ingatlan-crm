@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +22,7 @@ const PROFILE_SELECT = "id, agency_id, role, full_name, agencies(name, plan_tier
  * on first login (agency name comes from signup metadata). Redirects to
  * /login if there is no session.
  */
-export async function ensureCurrentUserProfile() {
+export const ensureCurrentUserProfile = cache(async function ensureCurrentUserProfile() {
   const supabase = await createClient();
 
   const {
@@ -66,4 +67,4 @@ export async function ensureCurrentUserProfile() {
   }
 
   return { user, profile };
-}
+});
