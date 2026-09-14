@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { updateProperty } from "../../actions";
 import { PropertyForm } from "../../property-form";
 import { PropertyGallery } from "../../property-gallery";
 import { PageHeader } from "@/components/ui/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { sectionLabelClass } from "@/components/ui/styles";
 
 export default async function EditPropertyPage({
@@ -42,12 +44,23 @@ export default async function EditPropertyPage({
         title={property.address}
         description="Ingatlan szerkesztése"
         action={
-          <Link
-            href="/dashboard/properties"
-            className="text-sm text-muted hover:text-accent"
-          >
-            ← Ingatlanok
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/p/${property.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants("secondary", "sm")}
+            >
+              <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Nyilvános oldal
+            </a>
+            <Link
+              href="/dashboard/properties"
+              className="text-sm text-muted hover:text-accent"
+            >
+              ← Ingatlanok
+            </Link>
+          </div>
         }
       />
       <PropertyForm
