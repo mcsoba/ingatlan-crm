@@ -7,6 +7,7 @@ import { ContactForm } from "../../contact-form";
 import { ActivityPanel } from "../../../activities/activity-panel";
 import { PropertyMatchPanel } from "../../property-match-panel";
 import { LeadScorePanel } from "../../lead-score-panel";
+import { CampaignPanel } from "../../campaign-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { sectionLabelClass } from "@/components/ui/styles";
@@ -90,6 +91,10 @@ export default async function EditContactPage({
         defaultValues={contact}
         submitLabel="Mentés"
       />
+
+      <div className="max-w-md">
+        <CampaignPanel contactId={contact.id} hasEmail={Boolean(contact.email)} />
+      </div>
 
       <div className="max-w-md">
         <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>

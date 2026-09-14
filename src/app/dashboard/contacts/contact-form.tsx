@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Sparkles, Copy, Check, Loader2, TriangleAlert } from "lucide-react";
+import { Sparkles, Copy, Check, Loader2, TriangleAlert, Send } from "lucide-react";
 import {
   checkDuplicateContact,
   generateFollowUpEmail,
+  sendFollowUpEmail,
   type DuplicateMatch,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -63,11 +64,14 @@ export function ContactForm({
   const [followUp, setFollowUp] = useState("");
   const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sent, setSent] = useState(false);
   const [isGenerating, startGenerating] = useTransition();
+  const [isSending, startSending] = useTransition();
 
   function handleGenerate() {
     setFollowUpError(null);
     setCopied(false);
+    setSent(false);
     startGenerating(async () => {
       try {
         const draft = await generateFollowUpEmail({ name, status, source, notes });
@@ -85,6 +89,20 @@ export function ContactForm({
     } catch {
       setFollowUpError("A vágólapra másolás nem sikerült, jelöld ki kézzel");
     }
+  }
+
+  function handleSend() {
+    if (!contactId) return;
+    setFollowUpError(null);
+    setSent(false);
+    startSending(async () => {
+      try {
+        await sendFollowUpEmail(contactId, followUp);
+        setSent(true);
+      } catch (err) {
+        setFollowUpError(err instanceof Error ? err.message : "Hiba történt");
+      }
+    });
   }
 
   return (
@@ -213,6 +231,7 @@ export function ContactForm({
           onChange={(e) => {
             setFollowUp(e.target.value);
             setCopied(false);
+            setSent(false);
           }}
           placeholder="Kattints az „AI vázlat generálása” gombra, a kontakt neve, státusza és jegyzete alapján ír egy follow-up emailt."
           className={`${inputClass} font-mono text-xs`}
@@ -227,6 +246,24 @@ export function ContactForm({
               )}
               {copied ? "Másolva" : "Másolás vágólapra"}
             </Button>
+            {contactId && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSend}
+                disabled={isSending || !email.trim()}
+                title={!email.trim() ? "Nincs email cím megadva ehhez a kontakthoz" : undefined}
+              >
+                {isSending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : sent ? (
+                  <Check className="h-3.5 w-3.5 text-success" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                {sent ? "Elküldve" : "Elküldés emailben"}
+              </Button>
+            )}
           </div>
         )}
         {followUpError && (

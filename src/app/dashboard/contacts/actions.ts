@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
+import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -144,6 +145,53 @@ export async function generateFollowUpEmail(input: {
   }
 
   return text;
+}
+
+export async function sendFollowUpEmail(contactId: string, draft: string) {
+  const { user, profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: contact, error: contactError } = await supabase
+    .from("contacts")
+    .select("id, name, email")
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (contactError) throw contactError;
+  if (!contact) throw new Error("A kontakt nem található");
+  if (!contact.email) {
+    throw new Error("Ehhez a kontakthoz nincs megadva email cím");
+  }
+
+  const lines = draft.trim().split("\n");
+  let subject = `Kapcsolatfelvétel — ${contact.name}`;
+  let body = draft.trim();
+  if (lines[0]?.toLowerCase().startsWith("tárgy:")) {
+    subject = lines[0].slice(lines[0].indexOf(":") + 1).trim();
+    body = lines.slice(1).join("\n").trim();
+  }
+
+  const { error: sendError } = await getResend().emails.send({
+    from: EMAIL_FROM,
+    to: contact.email,
+    replyTo: user.email,
+    subject,
+    html: textToHtml(body),
+    text: body,
+  });
+
+  if (sendError) {
+    throw new Error(sendError.message || "Az email küldése nem sikerült");
+  }
+
+  await supabase.from("activities").insert({
+    agency_id: profile.agency_id,
+    contact_id: contactId,
+    type: "note",
+    content: `Email elküldve: „${subject}"`,
+  });
+
+  revalidatePath(`/dashboard/contacts/${contactId}/edit`);
 }
 
 export type PropertyMatch = {
