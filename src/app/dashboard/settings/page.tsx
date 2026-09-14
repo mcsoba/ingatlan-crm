@@ -1,7 +1,19 @@
-import { CheckCircle2, CircleAlert, Sparkles, CreditCard, Mail, MessageSquare } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleAlert,
+  Sparkles,
+  CreditCard,
+  Mail,
+  MessageSquare,
+  CalendarDays,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { ensureCurrentUserProfile } from "@/lib/agency";
+import { disconnectGoogleCalendar } from "./actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type Integration = {
   key: string;
@@ -14,7 +26,23 @@ type Integration = {
   setupLabel: string;
 };
 
-export default function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; google?: string }>;
+}) {
+  const { error, google } = await searchParams;
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: googleConnection } = await supabase
+    .from("google_calendar_connections")
+    .select("connected_at")
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
   const integrations: Integration[] = [
     {
       key: "anthropic",
@@ -73,6 +101,20 @@ export default function SettingsPage() {
         description="Külső szolgáltatások állapota — a kulcsokat a szerver .env.local fájljába kell megadni, itt csak az állapotuk látszik."
       />
 
+      {google === "connected" && (
+        <Card className="flex items-center gap-2.5 border-success/30 bg-success-soft p-4 text-sm text-success">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          Google Naptár sikeresen csatlakoztatva.
+        </Card>
+      )}
+
+      {error && (
+        <Card className="flex items-center gap-2.5 border-danger/30 bg-danger-soft p-4 text-sm text-danger">
+          <CircleAlert className="h-4 w-4 shrink-0" />
+          {error}
+        </Card>
+      )}
+
       {missingCount > 0 && (
         <Card className="flex items-center gap-2.5 border-warning/30 bg-warning-soft p-4 text-sm text-warning">
           <CircleAlert className="h-4 w-4 shrink-0" />
@@ -117,6 +159,64 @@ export default function SettingsPage() {
             </div>
           </Card>
         ))}
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Személyes integrációk</div>
+          <p className="text-xs text-muted">
+            Ezek csak a saját fiókodra vonatkoznak, minden csapattag külön csatlakoztatja a sajátját.
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <CalendarDays className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-foreground">Google Naptár</span>
+              <Badge variant={googleConnection ? "success" : "neutral"}>
+                {googleConnection ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3" /> Csatlakoztatva
+                  </>
+                ) : (
+                  "Nincs csatlakoztatva"
+                )}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted">
+              A nyitott, dátumos teendőid (hívás, megtekintés, emlékeztető) automatikusan megjelennek a saját
+              Google Naptáradban.
+            </p>
+            {googleConnection ? (
+              <form action={disconnectGoogleCalendar} className="mt-2.5">
+                <Button type="submit" variant="secondary" size="sm">
+                  Kapcsolat bontása
+                </Button>
+              </form>
+            ) : googleConfigured ? (
+              <a href="/api/google/auth" className="mt-2.5 inline-block">
+                <Button type="button" variant="secondary" size="sm">
+                  Csatlakoztatás
+                </Button>
+              </a>
+            ) : (
+              <p className="mt-1.5 text-xs text-muted-subtle">
+                Az irodának be kell állítania a GOOGLE_CLIENT_ID és GOOGLE_CLIENT_SECRET kulcsokat, mielőtt
+                bárki csatlakoztathatná a saját naptárát. Beszerzés:{" "}
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  console.cloud.google.com
+                </a>
+              </p>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );
