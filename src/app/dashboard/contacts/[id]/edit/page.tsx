@@ -6,6 +6,7 @@ import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
 import { ActivityPanel } from "../../../activities/activity-panel";
 import { PropertyMatchPanel } from "../../property-match-panel";
+import { LeadScorePanel } from "../../lead-score-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { sectionLabelClass } from "@/components/ui/styles";
@@ -32,7 +33,9 @@ export default async function EditContactPage({
   ] = await Promise.all([
     supabase
       .from("contacts")
-      .select("id, name, email, phone, source, status, notes")
+      .select(
+        "id, name, email, phone, source, status, notes, lead_score, lead_score_reason",
+      )
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -72,6 +75,14 @@ export default async function EditContactPage({
           </Link>
         }
       />
+
+      <div className="max-w-md">
+        <LeadScorePanel
+          contactId={contact.id}
+          initialScore={contact.lead_score}
+          initialReason={contact.lead_score_reason}
+        />
+      </div>
 
       <ContactForm
         action={updateWithId}

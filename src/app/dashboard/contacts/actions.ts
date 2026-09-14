@@ -239,6 +239,102 @@ export async function suggestMatchingProperties(
     }));
 }
 
+export type LeadScoreResult = {
+  score: number;
+  reason: string;
+};
+
+export async function scoreContactLead(
+  contactId: string,
+): Promise<LeadScoreResult> {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const [{ data: contact, error: contactError }, { data: activities, error: activitiesError }] =
+    await Promise.all([
+      supabase
+        .from("contacts")
+        .select("name, status, source, notes, created_at")
+        .eq("id", contactId)
+        .single(),
+      supabase
+        .from("activities")
+        .select("type, content, done, due_at, created_at")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+
+  if (contactError) throw contactError;
+  if (activitiesError) throw activitiesError;
+
+  const activitySummary = (activities ?? [])
+    .map(
+      (a) =>
+        `- [${a.type}${a.done ? ", lezárva" : ""}] ${a.content} (${new Date(a.created_at).toLocaleDateString("hu-HU")})`,
+    )
+    .join("\n");
+
+  const details = [
+    `Név: ${contact.name}`,
+    `Státusz: ${STATUS_LABELS[contact.status] ?? contact.status}`,
+    `Forrás: ${SOURCE_LABELS[contact.source] ?? contact.source}`,
+    `Kontaktba kerülés dátuma: ${new Date(contact.created_at).toLocaleDateString("hu-HU")}`,
+    contact.notes?.trim() ? `Jegyzet: ${contact.notes.trim()}` : null,
+    activitySummary ? `Aktivitás-történet (legfrissebb elöl):\n${activitySummary}` : "Nincs rögzített aktivitás.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const message = await anthropic.messages.create({
+    model: AI_MODEL,
+    max_tokens: 300,
+    system:
+      "Csak valid JSON objektumot adj vissza, semmi mást (se magyarázat, se markdown code fence). " +
+      'Formátum: {"score": <0-100 egész szám>, "reason": "<1 mondatos magyar indoklás>"}. ' +
+      "A score azt fejezze ki, mennyire valószínű, hogy ez a kontakt hamarosan vásárol/elad (komoly érdeklődés, " +
+      "aktív kommunikáció, konkrét igény = magas pontszám; régi, válasz nélküli, vagy inaktív jelzésű kontakt = alacsony).",
+    messages: [
+      {
+        role: "user",
+        content: `Pontozd ezt az ingatlanos kontaktot a rendelkezésre álló adatok alapján:\n\n${details}`,
+      },
+    ],
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+
+  const jsonStart = text.indexOf("{");
+  const jsonEnd = text.lastIndexOf("}");
+  const jsonSlice =
+    jsonStart !== -1 && jsonEnd !== -1 ? text.slice(jsonStart, jsonEnd + 1) : text;
+
+  let parsed: LeadScoreResult;
+  try {
+    parsed = JSON.parse(jsonSlice);
+  } catch {
+    throw new Error("Az AI válasza nem volt feldolgozható, próbáld újra");
+  }
+
+  const score = Math.max(0, Math.min(100, Math.round(parsed.score)));
+
+  const { error: updateError } = await supabase
+    .from("contacts")
+    .update({ lead_score: score, lead_score_reason: parsed.reason })
+    .eq("id", contactId);
+
+  if (updateError) throw updateError;
+
+  revalidatePath(`/dashboard/contacts/${contactId}/edit`);
+  revalidatePath("/dashboard/contacts");
+
+  return { score, reason: parsed.reason };
+}
+
 export async function deleteContact(formData: FormData) {
   await ensureCurrentUserProfile();
   const id = String(formData.get("id"));

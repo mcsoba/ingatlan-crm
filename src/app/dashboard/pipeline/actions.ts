@@ -77,6 +77,59 @@ export async function updateDealNotes(dealId: string, formData: FormData) {
   revalidatePath(`/dashboard/pipeline/${dealId}`);
 }
 
+export async function updateDealCommission(dealId: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const amountRaw = String(formData.get("deal_amount") ?? "").trim();
+  const rateRaw = String(formData.get("commission_rate") ?? "").trim();
+
+  const dealAmount = amountRaw ? Number(amountRaw.replace(",", ".")) : null;
+  const commissionRate = rateRaw ? Number(rateRaw.replace(",", ".")) : null;
+
+  const { error } = await supabase
+    .from("deals")
+    .update({
+      deal_amount: dealAmount,
+      commission_rate: commissionRate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+}
+
+const CHECKLIST_TEMPLATE = [
+  "Foglaló befizetve",
+  "Adásvételi szerződés ügyvédnél",
+  "Hiteligénylés / finanszírozás elrendezve",
+  "Energetikai tanúsítvány megvan",
+  "Földhivatali bejegyzés benyújtva",
+  "Közműórák leolvasva, átírás elindítva",
+  "Kulcsátadás időpontja egyeztetve",
+];
+
+export async function seedTransactionChecklist(dealId: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("activities").insert(
+    CHECKLIST_TEMPLATE.map((label) => ({
+      agency_id: profile.agency_id,
+      deal_id: dealId,
+      type: "checklist",
+      content: label,
+      done: false,
+    })),
+  );
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+}
+
 export async function deleteDeal(formData: FormData) {
   await ensureCurrentUserProfile();
   const id = String(formData.get("id"));

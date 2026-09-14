@@ -40,7 +40,7 @@ export default async function ContactsPage({
 
   let query = supabase
     .from("contacts")
-    .select("id, name, email, phone, source, status")
+    .select("id, name, email, phone, source, status, lead_score")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -105,6 +105,7 @@ export default async function ContactsPage({
                 <th className="px-4 py-3 font-medium">Elérhetőség</th>
                 <th className="px-4 py-3 font-medium">Forrás</th>
                 <th className="px-4 py-3 font-medium">Státusz</th>
+                <th className="px-4 py-3 font-medium">Pontszám</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -132,6 +133,23 @@ export default async function ContactsPage({
                     <Badge variant={STATUS_VARIANTS[contact.status] ?? "neutral"}>
                       {STATUS_LABELS[contact.status] ?? contact.status}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    {contact.lead_score != null ? (
+                      <Badge
+                        variant={
+                          contact.lead_score >= 70
+                            ? "success"
+                            : contact.lead_score >= 40
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {contact.lead_score}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-subtle">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <form action={deleteContact}>

@@ -9,6 +9,7 @@ import {
   Phone,
   Eye,
   Bell,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -27,6 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   call: "Hívás",
   viewing: "Megtekintés",
   reminder: "Emlékeztető",
+  checklist: "Checklist",
 };
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
@@ -34,6 +36,7 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   call: Phone,
   viewing: Eye,
   reminder: Bell,
+  checklist: ClipboardCheck,
 };
 
 export type Activity = {
@@ -148,6 +151,7 @@ export function ActivityPanel({
               <option value="call">Hívás</option>
               <option value="viewing">Megtekintés</option>
               <option value="reminder">Emlékeztető</option>
+              <option value="checklist">Checklist</option>
             </select>
             <input
               type="date"
