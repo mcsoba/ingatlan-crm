@@ -14,6 +14,7 @@ import {
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
 import { ActivityPanel } from "../../activities/activity-panel";
+import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -288,6 +289,11 @@ export default async function DealDetailPage({
             activities={activities ?? []}
             redirectTo={`/dashboard/pipeline/${dealRow.id}`}
           />
+        </div>
+
+        <div>
+          <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
+          <AttachmentsPanel dealId={dealRow.id} />
         </div>
 
         <form action={deleteDeal} className="border-t border-border-subtle pt-4">

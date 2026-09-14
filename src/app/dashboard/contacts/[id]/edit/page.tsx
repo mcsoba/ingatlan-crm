@@ -8,6 +8,7 @@ import { ActivityPanel } from "../../../activities/activity-panel";
 import { PropertyMatchPanel } from "../../property-match-panel";
 import { LeadScorePanel } from "../../lead-score-panel";
 import { CampaignPanel } from "../../campaign-panel";
+import { AttachmentsPanel } from "../../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { sectionLabelClass } from "@/components/ui/styles";
@@ -135,6 +136,11 @@ export default async function EditContactPage({
           activities={activities ?? []}
           redirectTo={`/dashboard/contacts/${contact.id}/edit`}
         />
+      </div>
+
+      <div className="max-w-md">
+        <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
+        <AttachmentsPanel contactId={contact.id} />
       </div>
     </div>
   );
