@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Building2 } from "lucide-react";
+import { ArrowUpRight, Building2, Clock } from "lucide-react";
 import { moveDeal } from "./actions";
 import { Card } from "@/components/ui/card";
 
@@ -11,6 +11,8 @@ export type DealCard = {
   stageId: string;
   contactName: string;
   propertyAddress: string | null;
+  isStale: boolean;
+  daysSinceUpdate: number;
 };
 
 export type Stage = {
@@ -58,7 +60,11 @@ export function PipelineBoard({
       if (!dealId || !stageId) return;
 
       setCards((prev) =>
-        prev.map((card) => (card.id === dealId ? { ...card, stageId } : card)),
+        prev.map((card) =>
+          card.id === dealId
+            ? { ...card, stageId, isStale: false, daysSinceUpdate: 0 }
+            : card,
+        ),
       );
 
       moveDeal(dealId, stageId).catch(() => {
@@ -102,9 +108,10 @@ export function PipelineBoard({
                 <Card
                   key={card.id}
                   onPointerDown={() => setDraggingId(card.id)}
+                  title={card.isStale ? `${card.daysSinceUpdate} napja nincs mozgás ezen a dealen` : undefined}
                   className={`cursor-grab p-3 text-sm shadow-sm select-none active:cursor-grabbing ${
                     draggingId === card.id ? "opacity-50" : ""
-                  }`}
+                  } ${card.isStale ? "border-warning/40" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-foreground">
@@ -122,6 +129,12 @@ export function PipelineBoard({
                     <div className="mt-1.5 flex items-center gap-1.5 text-muted">
                       <Building2 className="h-3 w-3 shrink-0" strokeWidth={1.75} />
                       <span className="truncate">{card.propertyAddress}</span>
+                    </div>
+                  )}
+                  {card.isStale && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-warning">
+                      <Clock className="h-3 w-3 shrink-0" strokeWidth={1.75} />
+                      <span>{card.daysSinceUpdate} napja mozdulatlan</span>
                     </div>
                   )}
                 </Card>

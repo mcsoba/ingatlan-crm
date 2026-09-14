@@ -6,14 +6,16 @@ import {
   Mail,
   MessageSquare,
   CalendarDays,
+  UserRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { disconnectGoogleCalendar } from "./actions";
+import { disconnectGoogleCalendar, updateMyName } from "./actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 
 type Integration = {
   key: string;
@@ -32,7 +34,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ error?: string; google?: string }>;
 }) {
   const { error, google } = await searchParams;
-  const { profile } = await ensureCurrentUserProfile();
+  const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
   const { data: googleConnection } = await supabase
@@ -123,6 +125,33 @@ export default async function SettingsPage({
         </Card>
       )}
 
+      <div>
+        <div className="mb-2 text-sm font-medium text-foreground">Saját profil</div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <UserRound className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <form action={updateMyName} className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className={fieldGroupClass}>
+              <span className={labelClass}>Megjelenített név</span>
+              <input
+                name="full_name"
+                defaultValue={profile.full_name ?? ""}
+                placeholder={user.email ?? "Név"}
+                className={`${inputClass} max-w-xs`}
+              />
+              <span className="text-xs text-muted-subtle">
+                Ez jelenik meg a köszöntésben és a csapat-listában {user.email} helyett.
+              </span>
+            </div>
+            <Button type="submit" variant="secondary" size="sm" className="self-start">
+              Mentés
+            </Button>
+          </form>
+        </Card>
+      </div>
+
+      <div className="mb-2 text-sm font-medium text-foreground">Külső szolgáltatások</div>
       <div className="flex flex-col gap-3">
         {integrations.map((integration) => (
           <Card key={integration.key} className="flex items-start gap-3.5 p-4">

@@ -72,7 +72,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title={`Üdv, ${user.email?.split("@")[0]}!`}
+        title={`Üdv, ${profile.full_name?.split(" ")[0] || user.email?.split("@")[0]}!`}
         description={`${profile.agencies.name} · ${profile.agencies.plan_tier === "pro" ? "Pro csomag" : "Ingyenes csomag"}`}
       />
 

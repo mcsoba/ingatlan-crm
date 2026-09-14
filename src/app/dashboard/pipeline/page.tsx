@@ -11,9 +11,12 @@ import { buttonVariants } from "@/components/ui/button";
 type DealRow = {
   id: string;
   stage_id: string;
+  updated_at: string;
   contacts: { name: string } | null;
   properties: { address: string } | null;
 };
+
+const STALE_AFTER_DAYS = 14;
 
 export default async function PipelinePage() {
   const supabase = await createClient();
@@ -26,19 +29,32 @@ export default async function PipelinePage() {
         .order("position"),
       supabase
         .from("deals")
-        .select("id, stage_id, contacts(name), properties(address)")
+        .select("id, stage_id, updated_at, contacts(name), properties(address)")
         .order("created_at", { ascending: false }),
     ]);
 
   if (stagesError) throw stagesError;
   if (dealsError) throw dealsError;
 
-  const dealCards: DealCard[] = (deals as unknown as DealRow[]).map((deal) => ({
-    id: deal.id,
-    stageId: deal.stage_id,
-    contactName: deal.contacts?.name ?? "Ismeretlen kontakt",
-    propertyAddress: deal.properties?.address ?? null,
-  }));
+  const lastStagePosition = Math.max(...(stages ?? []).map((s) => s.position), 0);
+  const stagePositionById = new Map((stages ?? []).map((s) => [s.id, s.position]));
+  const now = new Date().getTime();
+
+  const dealCards: DealCard[] = (deals as unknown as DealRow[]).map((deal) => {
+    const daysSinceUpdate = Math.floor(
+      (now - new Date(deal.updated_at).getTime()) / (24 * 60 * 60 * 1000),
+    );
+    const isClosed = stagePositionById.get(deal.stage_id) === lastStagePosition;
+
+    return {
+      id: deal.id,
+      stageId: deal.stage_id,
+      contactName: deal.contacts?.name ?? "Ismeretlen kontakt",
+      propertyAddress: deal.properties?.address ?? null,
+      isStale: !isClosed && daysSinceUpdate >= STALE_AFTER_DAYS,
+      daysSinceUpdate,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
