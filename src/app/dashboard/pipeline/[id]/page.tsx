@@ -57,7 +57,7 @@ export default async function DealDetailPage({
       supabase.from("profiles").select("id, full_name").order("created_at"),
       supabase
         .from("activities")
-        .select("id, type, content, due_at, done")
+        .select("id, type, content, due_at, done, email_body, sequence_id")
         .eq("deal_id", id)
         .order("done")
         .order("due_at", { ascending: true, nullsFirst: false })

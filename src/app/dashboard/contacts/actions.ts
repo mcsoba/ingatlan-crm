@@ -190,6 +190,7 @@ export async function sendFollowUpEmail(contactId: string, draft: string) {
     contact_id: contactId,
     type: "note",
     content: `Email elküldve: „${subject}"`,
+    email_body: body,
   });
 
   revalidatePath(`/dashboard/contacts/${contactId}/edit`);

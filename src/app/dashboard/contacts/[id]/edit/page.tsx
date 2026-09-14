@@ -48,7 +48,7 @@ export default async function EditContactPage({
     supabase.from("pipeline_stages").select("id, name"),
     supabase
       .from("activities")
-      .select("id, type, content, due_at, done")
+      .select("id, type, content, due_at, done, email_body, sequence_id")
       .eq("contact_id", id)
       .order("done")
       .order("due_at", { ascending: true, nullsFirst: false })

@@ -115,6 +115,8 @@ export async function GET(request: Request) {
       contact_id: enrollment.contact_id,
       type: "note",
       content: `Kampány email elküldve: „${subject}"`,
+      email_body: body,
+      sequence_id: enrollment.sequence_id,
     });
 
     if (!nextSendAt) completed++;

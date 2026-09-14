@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import {
   Sparkles,
   Loader2,
@@ -10,6 +11,9 @@ import {
   Eye,
   Bell,
   ClipboardCheck,
+  Mail,
+  ChevronDown,
+  ChevronUp,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -45,6 +49,8 @@ export type Activity = {
   content: string;
   due_at: string | null;
   done: boolean;
+  email_body?: string | null;
+  sequence_id?: string | null;
 };
 
 export function ActivityPanel({
@@ -59,6 +65,16 @@ export function ActivityPanel({
   redirectTo: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const [type, setType] = useState("note");
   const [content, setContent] = useState("");
@@ -91,6 +107,7 @@ export function ActivityPanel({
         <div className="flex flex-col gap-2">
           {activities.map((activity) => {
             const Icon = TYPE_ICONS[activity.type] ?? StickyNote;
+            const isExpanded = expandedIds.has(activity.id);
             return (
               <Card
                 key={activity.id}
@@ -115,6 +132,38 @@ export function ActivityPanel({
                   <div className="break-words text-foreground">
                     {activity.content}
                   </div>
+                  {(activity.email_body || activity.sequence_id) && (
+                    <div className="mt-1.5 flex items-center gap-3">
+                      {activity.email_body && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(activity.id)}
+                          className="flex items-center gap-1 text-xs text-accent hover:underline"
+                        >
+                          <Mail className="h-3 w-3" />
+                          {isExpanded ? "Elrejtés" : "Email megtekintése"}
+                          {isExpanded ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                      {activity.sequence_id && (
+                        <Link
+                          href={`/dashboard/campaigns/${activity.sequence_id}`}
+                          className="text-xs text-muted hover:text-accent"
+                        >
+                          Kampány megtekintése →
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                  {isExpanded && activity.email_body && (
+                    <div className="mt-2 whitespace-pre-line rounded-lg border border-border bg-background p-2.5 text-xs text-muted">
+                      {activity.email_body}
+                    </div>
+                  )}
                 </div>
                 <form action={deleteActivity}>
                   <input type="hidden" name="id" value={activity.id} />
