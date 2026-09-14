@@ -41,6 +41,7 @@ export default async function DashboardPage() {
       .from("activities")
       .select("id, type, content, due_at, contacts(id, name), deals(id)")
       .eq("done", false)
+      .neq("type", "checklist")
       .order("due_at", { ascending: true, nullsFirst: false })
       .limit(5),
   ]);

@@ -2,6 +2,8 @@ import { Building2 } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { SidebarNav } from "./sidebar-nav";
 import { SignOutButton } from "./sign-out-button";
+import { SearchTrigger } from "./search-trigger";
+import { CommandPalette } from "./command-palette";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -17,6 +19,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
+      <CommandPalette />
       <aside className="flex w-60 shrink-0 flex-col justify-between bg-sidebar px-3 py-4">
         <div>
           <div className="flex items-center gap-2 px-2 pt-1 pb-6">
@@ -27,6 +30,7 @@ export default async function DashboardLayout({
               {profile.agencies.name}
             </span>
           </div>
+          <SearchTrigger />
           <SidebarNav />
         </div>
 
