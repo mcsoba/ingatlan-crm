@@ -7,6 +7,7 @@ import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
+import { sendSms } from "@/lib/twilio";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -189,6 +190,87 @@ export async function sendFollowUpEmail(contactId: string, draft: string) {
     contact_id: contactId,
     type: "note",
     content: `Email elküldve: „${subject}"`,
+  });
+
+  revalidatePath(`/dashboard/contacts/${contactId}/edit`);
+}
+
+export async function generateSmsDraft(input: {
+  name: string;
+  status: string;
+  source: string;
+  notes: string;
+}): Promise<string> {
+  await ensureCurrentUserProfile();
+
+  const name = input.name.trim();
+  if (!name) {
+    throw new Error("Adj meg legalább egy nevet a vázlat generálásához");
+  }
+
+  const details = [
+    `Név: ${name}`,
+    `Státusz: ${STATUS_LABELS[input.status] ?? input.status}`,
+    `Forrás: ${SOURCE_LABELS[input.source] ?? input.source}`,
+    input.notes.trim() ? `Jegyzet a kontaktról: ${input.notes.trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const message = await anthropic.messages.create({
+    model: AI_MODEL,
+    max_tokens: 150,
+    messages: [
+      {
+        role: "user",
+        content:
+          "Írj egy rövid, barátságos, magyar nyelvű SMS-t (max 300 karakter, aláírás nélkül) egy ingatlanos " +
+          "ügynök nevében az alábbi kontaktnak, a jegyzet és a státusz alapján igazítva a tartalmat. " +
+          "Ne találj ki konkrét ingatlant vagy adatot, ami nem szerepel az adatok között. Csak az SMS szövegét add vissza, " +
+          "semmi mást.\n\n" + details,
+      },
+    ],
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  if (!text) {
+    throw new Error("Az AI nem adott vissza SMS-vázlatot, próbáld újra");
+  }
+
+  return text;
+}
+
+export async function sendSmsToContact(contactId: string, body: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const text = body.trim();
+  if (!text) throw new Error("Az SMS szövege nem lehet üres");
+
+  const { data: contact, error: contactError } = await supabase
+    .from("contacts")
+    .select("id, phone")
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (contactError) throw contactError;
+  if (!contact) throw new Error("A kontakt nem található");
+  if (!contact.phone) {
+    throw new Error("Ehhez a kontakthoz nincs megadva telefonszám");
+  }
+
+  await sendSms(contact.phone, text);
+
+  await supabase.from("activities").insert({
+    agency_id: profile.agency_id,
+    contact_id: contactId,
+    type: "note",
+    content: `SMS elküldve: „${text}"`,
   });
 
   revalidatePath(`/dashboard/contacts/${contactId}/edit`);

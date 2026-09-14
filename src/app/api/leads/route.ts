@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
+import { sendSms } from "@/lib/twilio";
 
 async function autoEnroll(
   admin: ReturnType<typeof createAdminClient>,
@@ -95,6 +96,33 @@ async function notifyAgency(
   }
 }
 
+async function notifyAgencySms(
+  admin: ReturnType<typeof createAdminClient>,
+  agencyId: string,
+  leadName: string,
+) {
+  try {
+    const { data: members } = await admin
+      .from("profiles")
+      .select("phone")
+      .eq("agency_id", agencyId)
+      .not("phone", "is", null);
+
+    const phones = (members ?? [])
+      .map((m) => m.phone)
+      .filter((p): p is string => Boolean(p));
+
+    await Promise.all(
+      phones.map((phone) =>
+        sendSms(phone, `Új érdeklődő: ${leadName}. Nézd meg a CRM-ben.`),
+      ),
+    );
+  } catch {
+    // Az SMS-értesítés nem kritikus — a lead a CRM-ben már mentve van,
+    // egy sikertelen küldés miatt nem szabad hibát dobni a beküldőnek.
+  }
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
@@ -166,6 +194,7 @@ export async function POST(request: Request) {
       phone: leadPhone,
       notes,
     }),
+    notifyAgencySms(admin, agencyId, name.trim()),
     autoEnroll(admin, agencyId, insertedContact.id, Boolean(leadEmail)),
   ]);
 

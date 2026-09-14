@@ -1,8 +1,8 @@
-import { UserRound, Crown } from "lucide-react";
+import { UserRound, Crown, Phone } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inviteTeamMember, removeTeamMember } from "./actions";
+import { inviteTeamMember, removeTeamMember, updateMyPhone } from "./actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ export default async function TeamPage() {
 
   const { data: members, error } = await supabase
     .from("profiles")
-    .select("id, role, full_name")
+    .select("id, role, full_name, phone")
     .order("created_at");
 
   if (error) throw error;
@@ -62,7 +62,27 @@ export default async function TeamPage() {
                 {emailById.get(member.id) && (
                   <span className="truncate">{emailById.get(member.id)}</span>
                 )}
+                {member.id !== profile.id && member.phone && (
+                  <span className="truncate">· {member.phone}</span>
+                )}
               </div>
+              {member.id === profile.id && (
+                <form action={updateMyPhone} className="mt-1.5 flex items-center gap-1.5">
+                  <Phone className="h-3 w-3 shrink-0 text-muted-subtle" />
+                  <input
+                    name="phone"
+                    defaultValue={member.phone ?? ""}
+                    placeholder="+36301234567 (SMS-értesítésekhez)"
+                    className={`${inputClass} flex-1 py-1 text-xs`}
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 text-xs text-muted hover:text-accent"
+                  >
+                    Mentés
+                  </button>
+                </form>
+              )}
             </div>
             {profile.role === "owner" && member.id !== profile.id && (
               <form action={removeTeamMember}>

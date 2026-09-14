@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 async function requireOwner() {
   const { profile } = await ensureCurrentUserProfile();
@@ -49,6 +50,21 @@ export async function removeTeamMember(formData: FormData) {
 
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/team");
+}
+
+export async function updateMyPhone(formData: FormData) {
+  const { profile } = await ensureCurrentUserProfile();
+  const phone = String(formData.get("phone") ?? "").trim();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ phone: phone || null })
+    .eq("id", profile.id);
+
   if (error) throw error;
 
   revalidatePath("/dashboard/team");

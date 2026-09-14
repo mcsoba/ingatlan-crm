@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Sparkles, Copy, Check, Loader2, TriangleAlert, Send } from "lucide-react";
+import { Sparkles, Copy, Check, Loader2, TriangleAlert, Send, MessageSquare } from "lucide-react";
 import {
   checkDuplicateContact,
   generateFollowUpEmail,
   sendFollowUpEmail,
+  generateSmsDraft,
+  sendSmsToContact,
   type DuplicateMatch,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -101,6 +103,39 @@ export function ContactForm({
         setSent(true);
       } catch (err) {
         setFollowUpError(err instanceof Error ? err.message : "Hiba történt");
+      }
+    });
+  }
+
+  const [sms, setSms] = useState("");
+  const [smsError, setSmsError] = useState<string | null>(null);
+  const [smsSent, setSmsSent] = useState(false);
+  const [isGeneratingSms, startGeneratingSms] = useTransition();
+  const [isSendingSms, startSendingSms] = useTransition();
+
+  function handleGenerateSms() {
+    setSmsError(null);
+    setSmsSent(false);
+    startGeneratingSms(async () => {
+      try {
+        const draft = await generateSmsDraft({ name, status, source, notes });
+        setSms(draft);
+      } catch (err) {
+        setSmsError(err instanceof Error ? err.message : "Hiba történt");
+      }
+    });
+  }
+
+  function handleSendSms() {
+    if (!contactId) return;
+    setSmsError(null);
+    setSmsSent(false);
+    startSendingSms(async () => {
+      try {
+        await sendSmsToContact(contactId, sms);
+        setSmsSent(true);
+      } catch (err) {
+        setSmsError(err instanceof Error ? err.message : "Hiba történt");
       }
     });
   }
@@ -269,6 +304,63 @@ export function ContactForm({
         {followUpError && (
           <span className="text-xs text-danger">{followUpError}</span>
         )}
+      </Card>
+
+      <Card className="flex flex-col gap-2 p-5">
+        <div className="flex items-center justify-between">
+          <span className={labelClass}>SMS vázlat</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleGenerateSms}
+            disabled={isGeneratingSms || !name.trim()}
+          >
+            {isGeneratingSms ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 text-accent" />
+            )}
+            AI vázlat generálása
+          </Button>
+        </div>
+        <textarea
+          rows={3}
+          value={sms}
+          onChange={(e) => {
+            setSms(e.target.value);
+            setSmsSent(false);
+          }}
+          placeholder="Kattints az „AI vázlat generálása” gombra egy rövid SMS-vázlatért, vagy írj sajátot."
+          className={`${inputClass} font-mono text-xs`}
+        />
+        {sms && (
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`text-xs ${sms.length > 300 ? "text-danger" : "text-muted-subtle"}`}
+            >
+              {sms.length} / 300 karakter
+            </span>
+            {contactId && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSendSms}
+                disabled={isSendingSms || !phone.trim()}
+                title={!phone.trim() ? "Nincs telefonszám megadva ehhez a kontakthoz" : undefined}
+              >
+                {isSendingSms ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : smsSent ? (
+                  <Check className="h-3.5 w-3.5 text-success" />
+                ) : (
+                  <MessageSquare className="h-3.5 w-3.5" />
+                )}
+                {smsSent ? "Elküldve" : "Elküldés SMS-ben"}
+              </Button>
+            )}
+          </div>
+        )}
+        {smsError && <span className="text-xs text-danger">{smsError}</span>}
       </Card>
     </div>
   );
