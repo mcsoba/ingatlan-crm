@@ -10,6 +10,7 @@ import {
   updateDealStage,
 } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
+import { AskAssistantPanel } from "./ask-assistant-panel";
 import { ActivityPanel } from "../../activities/activity-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -136,6 +137,10 @@ export default async function DealDetailPage({
             )}
           </Card>
         </div>
+
+        <Card className="border-accent/20 bg-accent-soft/40 p-4">
+          <AskAssistantPanel dealId={dealRow.id} />
+        </Card>
 
         <Card className="flex flex-col gap-2 p-4">
           <form action={updateStageWithId} className="flex flex-col gap-1.5">

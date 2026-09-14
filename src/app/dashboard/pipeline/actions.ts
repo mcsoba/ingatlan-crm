@@ -296,3 +296,114 @@ export async function generateDealFollowUp(input: {
 
   return text;
 }
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export async function askDealAssistant(
+  dealId: string,
+  messages: ChatMessage[],
+): Promise<string> {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const [{ data: deal }, { data: stages }, { data: activities }] = await Promise.all([
+    supabase
+      .from("deals")
+      .select(
+        "notes, deal_amount, commission_rate, stage_id, contacts(name, email, phone, status, notes), properties(address, price, size_sqm, features)",
+      )
+      .eq("id", dealId)
+      .maybeSingle(),
+    supabase.from("pipeline_stages").select("id, name").order("position"),
+    supabase
+      .from("activities")
+      .select("type, content, due_at, done, created_at")
+      .eq("deal_id", dealId)
+      .order("created_at", { ascending: false })
+      .limit(30),
+  ]);
+
+  if (!deal) throw new Error("A deal nem található");
+
+  const contact = deal.contacts as unknown as {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    status: string;
+    notes: string | null;
+  } | null;
+  const property = deal.properties as unknown as {
+    address: string;
+    price: number | null;
+    size_sqm: number | null;
+    features: { notes?: string } | null;
+  } | null;
+  const stageName = stages?.find((s) => s.id === deal.stage_id)?.name ?? "—";
+
+  const activityLines = (activities ?? [])
+    .map(
+      (a) =>
+        `- [${a.type}${a.done ? ", lezárva" : ""}] ${a.content}${a.due_at ? ` (határidő: ${new Date(a.due_at).toLocaleDateString("hu-HU")})` : ""}`,
+    )
+    .join("\n");
+
+  const context = [
+    `Mai dátum: ${new Date().toLocaleDateString("hu-HU")}`,
+    `Pipeline szakasz: ${stageName}`,
+    `Deal jegyzet: ${deal.notes?.trim() || "nincs"}`,
+    deal.deal_amount ? `Végleges ár: ${deal.deal_amount.toLocaleString("hu-HU")} Ft` : null,
+    deal.commission_rate ? `Jutalék: ${deal.commission_rate}%` : null,
+    "",
+    "Kontakt:",
+    contact
+      ? [
+          `- Név: ${contact.name}`,
+          `- Státusz: ${contact.status}`,
+          contact.email ? `- Email: ${contact.email}` : null,
+          contact.phone ? `- Telefon: ${contact.phone}` : null,
+          contact.notes ? `- Jegyzet: ${contact.notes}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "nincs kontakt",
+    "",
+    "Ingatlan:",
+    property
+      ? [
+          `- Cím: ${property.address}`,
+          property.price ? `- Ár: ${property.price.toLocaleString("hu-HU")} Ft` : null,
+          property.size_sqm ? `- Méret: ${property.size_sqm} m²` : null,
+          property.features?.notes ? `- Jellemzők: ${property.features.notes}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "nincs kapcsolódó ingatlan",
+    "",
+    "Aktivitás-történet (legfrissebb elöl):",
+    activityLines || "nincs rögzített aktivitás",
+  ].join("\n");
+
+  const message = await anthropic.messages.create({
+    model: AI_MODEL,
+    max_tokens: 500,
+    system:
+      "Egy ingatlanos CRM beépített asszisztense vagy, egy konkrét ügylet (deal) oldalán. " +
+      "Az alábbi adatok az egész kontextusod erről az ügyletről — csak ezekre támaszkodj, ne találj ki adatot, " +
+      "ami nem szerepel bennük. Válaszolj magyarul, tömören (max 3-4 mondat, hacsak nem kérnek listát), " +
+      "és ha kérdezik mi legyen a következő lépés, adj konkrét, az adatokból következő javaslatot.\n\n" +
+      context,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  if (!text) {
+    throw new Error("Az AI nem adott választ, próbáld újra");
+  }
+
+  return text;
+}
