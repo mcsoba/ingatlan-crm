@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { User, Building2, Trash2, ClipboardCheck, Percent } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   deleteDeal,
   seedTransactionChecklist,
   updateDealCommission,
   updateDealNotes,
+  updateDealOwner,
   updateDealStage,
 } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
@@ -25,6 +27,7 @@ import {
 type DealDetailRow = {
   id: string;
   stage_id: string;
+  owner_id: string | null;
   notes: string | null;
   deal_amount: number | null;
   commission_rate: number | null;
@@ -40,16 +43,17 @@ export default async function DealDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: deal }, { data: stages }, { data: activities, error: activitiesError }] =
+  const [{ data: deal }, { data: stages }, { data: members }, { data: activities, error: activitiesError }] =
     await Promise.all([
       supabase
         .from("deals")
         .select(
-          "id, stage_id, notes, deal_amount, commission_rate, contacts(id, name, email, phone), properties(id, address, price)",
+          "id, stage_id, owner_id, notes, deal_amount, commission_rate, contacts(id, name, email, phone), properties(id, address, price)",
         )
         .eq("id", id)
         .maybeSingle(),
       supabase.from("pipeline_stages").select("id, name").order("position"),
+      supabase.from("profiles").select("id, full_name").order("created_at"),
       supabase
         .from("activities")
         .select("id, type, content, due_at, done")
@@ -67,9 +71,20 @@ export default async function DealDetailPage({
   const property = dealRow.properties;
   const stageName = stages?.find((s) => s.id === dealRow.stage_id)?.name ?? "—";
   const updateStageWithId = updateDealStage.bind(null, dealRow.id);
+  const updateOwnerWithId = updateDealOwner.bind(null, dealRow.id);
   const updateNotesWithId = updateDealNotes.bind(null, dealRow.id);
   const updateCommissionWithId = updateDealCommission.bind(null, dealRow.id);
   const seedChecklistWithId = seedTransactionChecklist.bind(null, dealRow.id);
+
+  const memberEmailById = new Map<string, string>();
+  if (members && members.length > 0) {
+    const admin = createAdminClient();
+    const { data: usersPage } = await admin.auth.admin.listUsers({ perPage: 200 });
+    const memberIds = new Set(members.map((m) => m.id));
+    for (const user of usersPage?.users ?? []) {
+      if (memberIds.has(user.id)) memberEmailById.set(user.id, user.email ?? "");
+    }
+  }
 
   const hasChecklist = (activities ?? []).some((a) => a.type === "checklist");
   const commissionAmount =
@@ -142,7 +157,7 @@ export default async function DealDetailPage({
           <AskAssistantPanel dealId={dealRow.id} />
         </Card>
 
-        <Card className="flex flex-col gap-2 p-4">
+        <Card className="flex flex-col gap-4 p-4">
           <form action={updateStageWithId} className="flex flex-col gap-1.5">
             <span className={labelClass}>Szakasz</span>
             <div className="flex gap-2">
@@ -154,6 +169,27 @@ export default async function DealDetailPage({
                 {stages?.map((stage) => (
                   <option key={stage.id} value={stage.id}>
                     {stage.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="secondary">
+                Mentés
+              </Button>
+            </div>
+          </form>
+
+          <form action={updateOwnerWithId} className="flex flex-col gap-1.5">
+            <span className={labelClass}>Felelős ügynök</span>
+            <div className="flex gap-2">
+              <select
+                name="owner_id"
+                defaultValue={dealRow.owner_id ?? ""}
+                className={`${inputClass} flex-1`}
+              >
+                <option value="">Nincs hozzárendelve</option>
+                {(members ?? []).map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.full_name || memberEmailById.get(member.id) || "Ismeretlen"}
                   </option>
                 ))}
               </select>

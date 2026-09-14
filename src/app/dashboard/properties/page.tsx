@@ -17,7 +17,7 @@ export default async function PropertiesPage({
 
   let query = supabase
     .from("properties")
-    .select("id, address, price, size_sqm, photo_path")
+    .select("id, address, price, size_sqm")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("address", `%${q}%`);
@@ -25,6 +25,22 @@ export default async function PropertiesPage({
   const { data: properties, error } = await query;
 
   if (error) throw error;
+
+  const propertyIds = properties.map((p) => p.id);
+  const coverPhotoByProperty = new Map<string, string>();
+  if (propertyIds.length > 0) {
+    const { data: photos } = await supabase
+      .from("property_photos")
+      .select("property_id, path")
+      .in("property_id", propertyIds)
+      .order("position", { ascending: true });
+
+    for (const photo of photos ?? []) {
+      if (!coverPhotoByProperty.has(photo.property_id)) {
+        coverPhotoByProperty.set(photo.property_id, photo.path);
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -77,10 +93,10 @@ export default async function PropertiesPage({
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {properties.map((property) => {
-            const photoUrl = property.photo_path
-              ? supabase.storage
-                  .from("property-photos")
-                  .getPublicUrl(property.photo_path).data.publicUrl
+            const coverPath = coverPhotoByProperty.get(property.id);
+            const photoUrl = coverPath
+              ? supabase.storage.from("property-photos").getPublicUrl(coverPath)
+                  .data.publicUrl
               : null;
 
             return (

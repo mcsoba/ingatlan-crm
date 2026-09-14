@@ -105,7 +105,7 @@ export function PropertyForm({
         </div>
 
         <div className={fieldGroupClass}>
-          <span className={labelClass}>Fotó</span>
+          <span className={labelClass}>Fotó hozzáadása</span>
           <input
             name="photo"
             type="file"

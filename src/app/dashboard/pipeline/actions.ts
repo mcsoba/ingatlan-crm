@@ -12,6 +12,7 @@ export async function createDeal(formData: FormData) {
 
   const contactId = String(formData.get("contact_id") ?? "");
   const propertyId = String(formData.get("property_id") ?? "");
+  const ownerId = String(formData.get("owner_id") ?? "") || profile.id;
 
   if (!contactId) {
     throw new Error("A kontakt kiválasztása kötelező");
@@ -31,6 +32,7 @@ export async function createDeal(formData: FormData) {
     contact_id: contactId,
     property_id: propertyId || null,
     stage_id: firstStage.id,
+    owner_id: ownerId,
   });
 
   if (error) throw error;
@@ -58,6 +60,22 @@ export async function updateDealStage(dealId: string, formData: FormData) {
   if (!stageId) throw new Error("A szakasz kiválasztása kötelező");
 
   await moveDeal(dealId, stageId);
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+}
+
+export async function updateDealOwner(dealId: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const ownerId = String(formData.get("owner_id") ?? "") || null;
+
+  const { error } = await supabase
+    .from("deals")
+    .update({ owner_id: ownerId, updated_at: new Date().toISOString() })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
   revalidatePath(`/dashboard/pipeline/${dealId}`);
 }
 

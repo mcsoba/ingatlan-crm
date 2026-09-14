@@ -20,20 +20,32 @@ async function uploadPhotoIfPresent(
   agencyId: string,
   propertyId: string,
   formData: FormData,
-): Promise<string | null> {
+): Promise<void> {
   const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) return null;
+  if (!(file instanceof File) || file.size === 0) return;
 
   const ext = file.name.split(".").pop() || "jpg";
   const path = `${agencyId}/${propertyId}/${randomUUID()}.${ext}`;
 
-  const { error } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from("property-photos")
     .upload(path, file, { contentType: file.type });
 
-  if (error) throw error;
+  if (uploadError) throw uploadError;
 
-  return path;
+  const { count } = await supabase
+    .from("property_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("property_id", propertyId);
+
+  const { error: insertError } = await supabase.from("property_photos").insert({
+    agency_id: agencyId,
+    property_id: propertyId,
+    path,
+    position: count ?? 0,
+  });
+
+  if (insertError) throw insertError;
 }
 
 export async function createProperty(formData: FormData) {
@@ -63,20 +75,7 @@ export async function createProperty(formData: FormData) {
 
   if (error) throw error;
 
-  const photoPath = await uploadPhotoIfPresent(
-    supabase,
-    profile.agency_id,
-    property.id,
-    formData,
-  );
-
-  if (photoPath) {
-    const { error: photoError } = await supabase
-      .from("properties")
-      .update({ photo_path: photoPath })
-      .eq("id", property.id);
-    if (photoError) throw photoError;
-  }
+  await uploadPhotoIfPresent(supabase, profile.agency_id, property.id, formData);
 
   revalidatePath("/dashboard/properties");
   redirect("/dashboard/properties");
@@ -107,23 +106,38 @@ export async function updateProperty(id: string, formData: FormData) {
 
   if (error) throw error;
 
-  const photoPath = await uploadPhotoIfPresent(
-    supabase,
-    profile.agency_id,
-    id,
-    formData,
-  );
-
-  if (photoPath) {
-    const { error: photoError } = await supabase
-      .from("properties")
-      .update({ photo_path: photoPath })
-      .eq("id", id);
-    if (photoError) throw photoError;
-  }
+  await uploadPhotoIfPresent(supabase, profile.agency_id, id, formData);
 
   revalidatePath("/dashboard/properties");
   redirect("/dashboard/properties");
+}
+
+export async function deletePropertyPhoto(formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const photoId = String(formData.get("photo_id"));
+  const propertyId = String(formData.get("property_id"));
+
+  const { data: photo, error: fetchError } = await supabase
+    .from("property_photos")
+    .select("path")
+    .eq("id", photoId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const { error: deleteRowError } = await supabase
+    .from("property_photos")
+    .delete()
+    .eq("id", photoId);
+
+  if (deleteRowError) throw deleteRowError;
+
+  await supabase.storage.from("property-photos").remove([photo.path]);
+
+  revalidatePath(`/dashboard/properties/${propertyId}/edit`);
+  revalidatePath("/dashboard/properties");
 }
 
 export async function generateDescription(input: {
