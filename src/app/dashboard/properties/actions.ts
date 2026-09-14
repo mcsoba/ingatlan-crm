@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { anthropic, DESCRIPTION_MODEL } from "@/lib/claude";
+import { anthropic, AI_MODEL } from "@/lib/claude";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -149,7 +149,7 @@ export async function generateDescription(input: {
     .join("\n");
 
   const message = await anthropic.messages.create({
-    model: DESCRIPTION_MODEL,
+    model: AI_MODEL,
     max_tokens: 400,
     messages: [
       {
