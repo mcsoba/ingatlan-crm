@@ -12,6 +12,7 @@ import {
   CreditCard,
   Mail,
   Settings,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/dashboard/campaigns", label: "Kampányok", icon: Mail },
+  { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
   { href: "/dashboard/reports", label: "Riportok", icon: BarChart3 },
   { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
   { href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard },
