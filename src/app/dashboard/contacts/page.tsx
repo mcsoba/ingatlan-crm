@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteContact } from "./actions";
+import { ImportContactsButton } from "./import-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
+import { inputClass } from "@/components/ui/styles";
 
 const SOURCE_LABELS: Record<string, string> = {
   website: "Weboldal",
@@ -33,9 +35,9 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; source?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, status, source } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -44,10 +46,14 @@ export default async function ContactsPage({
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("name", `%${q}%`);
+  if (status) query = query.eq("status", status);
+  if (source) query = query.eq("source", source);
 
   const { data: contacts, error } = await query;
 
   if (error) throw error;
+
+  const hasFilters = Boolean(q || status || source);
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,17 +61,24 @@ export default async function ContactsPage({
         title="Kontaktok"
         description="Érdeklődők és ügyfelek egy helyen."
         action={
-          <Link
-            href="/dashboard/contacts/new"
-            className={buttonVariants("primary")}
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Új kontakt
-          </Link>
+          <div className="flex items-center gap-2">
+            <a href="/dashboard/contacts/export" className={buttonVariants("secondary")}>
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              Export CSV
+            </a>
+            <ImportContactsButton />
+            <Link
+              href="/dashboard/contacts/new"
+              className={buttonVariants("primary")}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Új kontakt
+            </Link>
+          </div>
         }
       />
 
-      <form className="flex gap-2">
+      <form className="flex flex-wrap gap-2">
         <div className="relative max-w-xs flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-subtle" />
           <input
@@ -76,10 +89,25 @@ export default async function ContactsPage({
             className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm placeholder:text-muted-subtle"
           />
         </div>
+        <select name="status" defaultValue={status ?? ""} className={inputClass}>
+          <option value="">Minden státusz</option>
+          <option value="new">Új</option>
+          <option value="contacted">Felvéve</option>
+          <option value="qualified">Minősített</option>
+          <option value="inactive">Inaktív</option>
+        </select>
+        <select name="source" defaultValue={source ?? ""} className={inputClass}>
+          <option value="">Minden forrás</option>
+          <option value="website">Weboldal</option>
+          <option value="referral">Ajánlás</option>
+          <option value="phone">Telefon</option>
+          <option value="walk_in">Betérő</option>
+          <option value="other">Egyéb</option>
+        </select>
         <button type="submit" className={buttonVariants("secondary")}>
-          Keresés
+          Szűrés
         </button>
-        {q && (
+        {hasFilters && (
           <Link href="/dashboard/contacts" className={buttonVariants("ghost")}>
             Törlés
           </Link>
@@ -89,10 +117,10 @@ export default async function ContactsPage({
       {contacts.length === 0 ? (
         <EmptyState
           icon={Users}
-          title={q ? "Nincs a keresésnek megfelelő kontakt" : "Még nincs kontakt"}
+          title={hasFilters ? "Nincs a szűrésnek megfelelő kontakt" : "Még nincs kontakt"}
           description={
-            q
-              ? "Próbálj más keresőszót."
+            hasFilters
+              ? "Próbálj más keresőszót vagy szűrőt."
               : "Vegyél fel egy kontaktot, hogy elkezdhesd a pipeline-t építeni."
           }
         />

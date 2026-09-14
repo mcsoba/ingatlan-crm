@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { Plus, Search, Building2, ImageOff } from "lucide-react";
+import { Plus, Search, Building2, ImageOff, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteProperty } from "./actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
+import { inputClass } from "@/components/ui/styles";
 
 export default async function PropertiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; priceMin?: string; priceMax?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, priceMin, priceMax } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -21,10 +22,14 @@ export default async function PropertiesPage({
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("address", `%${q}%`);
+  if (priceMin) query = query.gte("price", Number(priceMin));
+  if (priceMax) query = query.lte("price", Number(priceMax));
 
   const { data: properties, error } = await query;
 
   if (error) throw error;
+
+  const hasFilters = Boolean(q || priceMin || priceMax);
 
   const propertyIds = properties.map((p) => p.id);
   const coverPhotoByProperty = new Map<string, string>();
@@ -48,17 +53,26 @@ export default async function PropertiesPage({
         title="Ingatlanok"
         description="Az iroda aktuális kínálata."
         action={
-          <Link
-            href="/dashboard/properties/new"
-            className={buttonVariants("primary")}
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Új ingatlan
-          </Link>
+          <div className="flex items-center gap-2">
+            <a
+              href="/dashboard/properties/export"
+              className={buttonVariants("secondary")}
+            >
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              Export CSV
+            </a>
+            <Link
+              href="/dashboard/properties/new"
+              className={buttonVariants("primary")}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Új ingatlan
+            </Link>
+          </div>
         }
       />
 
-      <form className="flex gap-2">
+      <form className="flex flex-wrap items-center gap-2">
         <div className="relative max-w-xs flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-subtle" />
           <input
@@ -69,10 +83,24 @@ export default async function PropertiesPage({
             className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm placeholder:text-muted-subtle"
           />
         </div>
+        <input
+          type="number"
+          name="priceMin"
+          defaultValue={priceMin ?? ""}
+          placeholder="Ártól (Ft)"
+          className={`${inputClass} w-32`}
+        />
+        <input
+          type="number"
+          name="priceMax"
+          defaultValue={priceMax ?? ""}
+          placeholder="Árig (Ft)"
+          className={`${inputClass} w-32`}
+        />
         <button type="submit" className={buttonVariants("secondary")}>
-          Keresés
+          Szűrés
         </button>
-        {q && (
+        {hasFilters && (
           <Link
             href="/dashboard/properties"
             className={buttonVariants("ghost")}
@@ -85,9 +113,11 @@ export default async function PropertiesPage({
       {properties.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title={q ? "Nincs a keresésnek megfelelő ingatlan" : "Még nincs ingatlan"}
+          title={hasFilters ? "Nincs a szűrésnek megfelelő ingatlan" : "Még nincs ingatlan"}
           description={
-            q ? "Próbálj más keresőszót." : "Vegyél fel egy ingatlant a kínálatba."
+            hasFilters
+              ? "Próbálj más keresőszót vagy tartományt."
+              : "Vegyél fel egy ingatlant a kínálatba."
           }
         />
       ) : (

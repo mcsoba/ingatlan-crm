@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
+import { parseCsv } from "@/lib/csv";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -333,6 +334,129 @@ export async function scoreContactLead(
   revalidatePath("/dashboard/contacts");
 
   return { score, reason: parsed.reason };
+}
+
+export type DuplicateMatch = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  matchedOn: "email" | "phone" | "name";
+};
+
+export async function checkDuplicateContact(input: {
+  name: string;
+  email: string;
+  phone: string;
+  excludeId?: string;
+}): Promise<DuplicateMatch[]> {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const name = input.name.trim();
+  const email = input.email.trim();
+  const phone = input.phone.trim();
+
+  if (!email && !phone && !name) return [];
+
+  const orClauses: string[] = [];
+  if (email) orClauses.push(`email.eq.${email}`);
+  if (phone) orClauses.push(`phone.eq.${phone}`);
+  if (name) orClauses.push(`name.ilike.${name}`);
+  if (orClauses.length === 0) return [];
+
+  let query = supabase
+    .from("contacts")
+    .select("id, name, email, phone")
+    .eq("agency_id", profile.agency_id)
+    .or(orClauses.join(","))
+    .limit(5);
+
+  if (input.excludeId) query = query.neq("id", input.excludeId);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).map((c) => ({
+    ...c,
+    matchedOn: (c.email && c.email === email
+      ? "email"
+      : c.phone && c.phone === phone
+        ? "phone"
+        : "name") as DuplicateMatch["matchedOn"],
+  }));
+}
+
+const VALID_SOURCES = ["website", "referral", "phone", "walk_in", "other"];
+const VALID_STATUSES = ["new", "contacted", "qualified", "inactive"];
+
+export type ImportResult = { imported: number; skipped: number };
+
+export async function importContactsCsv(formData: FormData): Promise<ImportResult> {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Válassz ki egy CSV fájlt");
+  }
+
+  const text = await file.text();
+  const rows = parseCsv(text);
+  if (rows.length === 0) return { imported: 0, skipped: 0 };
+
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const nameIdx = header.indexOf("name");
+  if (nameIdx === -1) {
+    throw new Error(
+      "A CSV első sorában (fejléc) kötelező a 'name' oszlop. Elvárt formátum: name,email,phone,source,status,notes",
+    );
+  }
+  const emailIdx = header.indexOf("email");
+  const phoneIdx = header.indexOf("phone");
+  const sourceIdx = header.indexOf("source");
+  const statusIdx = header.indexOf("status");
+  const notesIdx = header.indexOf("notes");
+
+  let imported = 0;
+  let skipped = 0;
+  const toInsert: {
+    agency_id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    source: string;
+    status: string;
+    notes: string | null;
+  }[] = [];
+
+  for (const row of rows.slice(1)) {
+    const name = row[nameIdx]?.trim();
+    if (!name) {
+      skipped++;
+      continue;
+    }
+    const source = row[sourceIdx]?.trim().toLowerCase();
+    const status = row[statusIdx]?.trim().toLowerCase();
+    toInsert.push({
+      agency_id: profile.agency_id,
+      name,
+      email: row[emailIdx]?.trim() || null,
+      phone: row[phoneIdx]?.trim() || null,
+      source: VALID_SOURCES.includes(source) ? source : "other",
+      status: VALID_STATUSES.includes(status) ? status : "new",
+      notes: row[notesIdx]?.trim() || null,
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from("contacts").insert(toInsert);
+    if (error) throw error;
+    imported = toInsert.length;
+  }
+
+  revalidatePath("/dashboard/contacts");
+  return { imported, skipped };
 }
 
 export async function deleteContact(formData: FormData) {

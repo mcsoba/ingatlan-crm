@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Sparkles, Copy, Check, Loader2 } from "lucide-react";
-import { generateFollowUpEmail } from "./actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { Sparkles, Copy, Check, Loader2, TriangleAlert } from "lucide-react";
+import {
+  checkDuplicateContact,
+  generateFollowUpEmail,
+  type DuplicateMatch,
+} from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 
 type ContactFormProps = {
   action: (formData: FormData) => void;
+  contactId?: string;
   defaultValues?: {
     name?: string;
     email?: string | null;
@@ -22,13 +28,37 @@ type ContactFormProps = {
 
 export function ContactForm({
   action,
+  contactId,
   defaultValues,
   submitLabel,
 }: ContactFormProps) {
   const [name, setName] = useState(defaultValues?.name ?? "");
+  const [email, setEmail] = useState(defaultValues?.email ?? "");
+  const [phone, setPhone] = useState(defaultValues?.phone ?? "");
   const [source, setSource] = useState(defaultValues?.source ?? "other");
   const [status, setStatus] = useState(defaultValues?.status ?? "new");
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
+
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!name.trim() && !email.trim() && !phone.trim()) return;
+
+    debounceRef.current = setTimeout(() => {
+      checkDuplicateContact({ name, email, phone, excludeId: contactId })
+        .then(setDuplicates)
+        .catch(() => {
+          // Non-critical — silently skip the duplicate hint on failure.
+        });
+    }, 400);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, email, phone]);
 
   const [followUp, setFollowUp] = useState("");
   const [followUpError, setFollowUpError] = useState<string | null>(null);
@@ -77,7 +107,8 @@ export function ContactForm({
             <input
               type="email"
               name="email"
-              defaultValue={defaultValues?.email ?? ""}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
             />
           </div>
@@ -86,10 +117,30 @@ export function ContactForm({
             <span className={labelClass}>Telefon</span>
             <input
               name="phone"
-              defaultValue={defaultValues?.phone ?? ""}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className={inputClass}
             />
           </div>
+
+          {duplicates.length > 0 && (
+            <div className="flex flex-col gap-1.5 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+              <div className="flex items-center gap-1.5 font-medium">
+                <TriangleAlert className="h-3.5 w-3.5" />
+                Lehet, hogy már létezik ilyen kontakt
+              </div>
+              {duplicates.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/dashboard/contacts/${d.id}/edit`}
+                  target="_blank"
+                  className="underline hover:no-underline"
+                >
+                  {d.name} {d.email ? `· ${d.email}` : d.phone ? `· ${d.phone}` : ""}
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className={fieldGroupClass}>
             <span className={labelClass}>Forrás</span>

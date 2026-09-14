@@ -86,6 +86,7 @@ export default async function EditContactPage({
 
       <ContactForm
         action={updateWithId}
+        contactId={contact.id}
         defaultValues={contact}
         submitLabel="Mentés"
       />
