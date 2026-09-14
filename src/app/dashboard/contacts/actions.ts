@@ -145,6 +145,100 @@ export async function generateFollowUpEmail(input: {
   return text;
 }
 
+export type PropertyMatch = {
+  id: string;
+  address: string;
+  reason: string;
+};
+
+export async function suggestMatchingProperties(
+  contactId: string,
+): Promise<PropertyMatch[]> {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: contact, error: contactError } = await supabase
+    .from("contacts")
+    .select("name, status, notes")
+    .eq("id", contactId)
+    .single();
+
+  if (contactError) throw contactError;
+
+  const { data: properties, error: propertiesError } = await supabase
+    .from("properties")
+    .select("id, address, price, size_sqm, features")
+    .eq("agency_id", profile.agency_id)
+    .limit(50);
+
+  if (propertiesError) throw propertiesError;
+  if (!properties || properties.length === 0) return [];
+
+  const propertyList = properties
+    .map((p) => {
+      const notes = (p.features as { notes?: string } | null)?.notes;
+      return [
+        `id: ${p.id}`,
+        `cím: ${p.address}`,
+        p.price ? `ár: ${p.price.toLocaleString("hu-HU")} Ft` : null,
+        p.size_sqm ? `méret: ${p.size_sqm} m²` : null,
+        notes ? `jellemzők: ${notes}` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+    })
+    .join("\n");
+
+  const message = await anthropic.messages.create({
+    model: AI_MODEL,
+    max_tokens: 600,
+    system:
+      "Csak valid JSON tömböt adj vissza, semmi mást (se magyarázat, se markdown code fence). " +
+      'Formátum: [{"id": "...", "reason": "..."}]. Legfeljebb 3 elem, ' +
+      "csak a megadott listában szereplő id-kat használd, a reason magyar nyelvű, 1 mondatos legyen.",
+    messages: [
+      {
+        role: "user",
+        content:
+          `Kontakt: ${contact.name}, státusz: ${STATUS_LABELS[contact.status] ?? contact.status}, ` +
+          `jegyzet: ${contact.notes?.trim() || "nincs jegyzet"}\n\n` +
+          `Elérhető ingatlanok:\n${propertyList}\n\n` +
+          "Melyik ingatlanok illenek legjobban ehhez a kontakthoz a jegyzete alapján? " +
+          "Ha semmi nem illik egyértelműen, adj vissza üres tömböt.",
+      },
+    ],
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+
+  const jsonStart = text.indexOf("[");
+  const jsonEnd = text.lastIndexOf("]");
+  const jsonSlice =
+    jsonStart !== -1 && jsonEnd !== -1
+      ? text.slice(jsonStart, jsonEnd + 1)
+      : text;
+
+  let parsed: { id: string; reason: string }[];
+  try {
+    parsed = JSON.parse(jsonSlice);
+  } catch {
+    throw new Error("Az AI válasza nem volt feldolgozható, próbáld újra");
+  }
+
+  const byId = new Map(properties.map((p) => [p.id, p]));
+  return parsed
+    .filter((m) => byId.has(m.id))
+    .map((m) => ({
+      id: m.id,
+      address: byId.get(m.id)!.address,
+      reason: m.reason,
+    }));
+}
+
 export async function deleteContact(formData: FormData) {
   await ensureCurrentUserProfile();
   const id = String(formData.get("id"));

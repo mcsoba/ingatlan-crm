@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
 import { ActivityPanel } from "../../../activities/activity-panel";
+import { PropertyMatchPanel } from "../../property-match-panel";
 
 type ContactDealRow = {
   id: string;
@@ -62,6 +63,15 @@ export default async function EditContactPage({
           defaultValues={contact}
           submitLabel="Mentés"
         />
+      </div>
+
+      <div className="mt-8 max-w-md">
+        <h2 className="text-sm font-medium text-neutral-700">
+          Illő ingatlanok
+        </h2>
+        <div className="mt-2">
+          <PropertyMatchPanel contactId={contact.id} />
+        </div>
       </div>
 
       <div className="mt-8 max-w-md">

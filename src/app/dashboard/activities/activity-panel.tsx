@@ -1,7 +1,12 @@
 "use client";
 
-import { useTransition } from "react";
-import { createActivity, deleteActivity, toggleActivityDone } from "./actions";
+import { useState, useTransition } from "react";
+import {
+  createActivity,
+  deleteActivity,
+  summarizeActivityNote,
+  toggleActivityDone,
+} from "./actions";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "Jegyzet",
@@ -31,9 +36,26 @@ export function ActivityPanel({
 }) {
   const [isPending, startTransition] = useTransition();
 
+  const [type, setType] = useState("note");
+  const [content, setContent] = useState("");
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [isSummarizing, startSummarizing] = useTransition();
+
   function handleToggle(id: string, done: boolean) {
     startTransition(() => {
       toggleActivityDone(id, done, redirectTo);
+    });
+  }
+
+  function handleSummarize() {
+    setSummaryError(null);
+    startSummarizing(async () => {
+      try {
+        const summary = await summarizeActivityNote({ type, rawText: content });
+        setContent(summary);
+      } catch (err) {
+        setSummaryError(err instanceof Error ? err.message : "Hiba történt");
+      }
     });
   }
 
@@ -92,7 +114,8 @@ export function ActivityPanel({
         <div className="flex gap-2">
           <select
             name="type"
-            defaultValue="note"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
             className="rounded border border-neutral-300 px-2 py-1 text-sm"
           >
             <option value="note">Jegyzet</option>
@@ -109,16 +132,31 @@ export function ActivityPanel({
         <textarea
           name="content"
           required
-          rows={2}
-          placeholder="Mi történt / mit kell tenni?"
+          rows={3}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Mi történt / mit kell tenni? (nyers jegyzet is jó, az AI átszerkesztheti)"
           className="rounded border border-neutral-300 px-3 py-2 text-sm"
         />
-        <button
-          type="submit"
-          className="self-start rounded bg-neutral-900 px-3 py-1.5 text-sm text-white"
-        >
-          Hozzáadás
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="submit"
+            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white"
+          >
+            Hozzáadás
+          </button>
+          <button
+            type="button"
+            onClick={handleSummarize}
+            disabled={isSummarizing || !content.trim()}
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSummarizing ? "Összefoglalás…" : "AI összefoglalás"}
+          </button>
+        </div>
+        {summaryError && (
+          <span className="text-xs text-red-600">{summaryError}</span>
+        )}
       </form>
     </div>
   );
