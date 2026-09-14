@@ -27,6 +27,9 @@ export default async function DashboardLayout({
             <Link href="/dashboard/pipeline" className="hover:text-neutral-900">
               Pipeline
             </Link>
+            <Link href="/dashboard/team" className="hover:text-neutral-900">
+              Csapat
+            </Link>
           </nav>
         </div>
         <SignOutButton />
