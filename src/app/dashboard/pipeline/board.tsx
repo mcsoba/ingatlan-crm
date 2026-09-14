@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { moveDeal } from "./actions";
 
@@ -103,7 +104,16 @@ export function PipelineBoard({
                     draggingId === card.id ? "opacity-50" : ""
                   }`}
                 >
-                  <div className="font-medium">{card.contactName}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-medium">{card.contactName}</div>
+                    <Link
+                      href={`/dashboard/pipeline/${card.id}`}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="shrink-0 text-xs text-neutral-400 hover:text-neutral-900 hover:underline"
+                    >
+                      Részletek
+                    </Link>
+                  </div>
                   {card.propertyAddress && (
                     <div className="mt-1 text-neutral-500">
                       {card.propertyAddress}
