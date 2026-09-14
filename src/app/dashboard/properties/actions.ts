@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
+import { anthropic, DESCRIPTION_MODEL } from "@/lib/claude";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -45,6 +46,7 @@ export async function createProperty(formData: FormData) {
   }
 
   const notes = String(formData.get("notes") ?? "").trim();
+  const aiDescription = String(formData.get("ai_description") ?? "").trim();
 
   const { data: property, error } = await supabase
     .from("properties")
@@ -54,6 +56,7 @@ export async function createProperty(formData: FormData) {
       price: parseNumber(formData.get("price")),
       size_sqm: parseNumber(formData.get("size_sqm")),
       features: notes ? { notes } : {},
+      ai_description: aiDescription || null,
     })
     .select("id")
     .single();
@@ -89,6 +92,7 @@ export async function updateProperty(id: string, formData: FormData) {
   }
 
   const notes = String(formData.get("notes") ?? "").trim();
+  const aiDescription = String(formData.get("ai_description") ?? "").trim();
 
   const { error } = await supabase
     .from("properties")
@@ -97,6 +101,7 @@ export async function updateProperty(id: string, formData: FormData) {
       price: parseNumber(formData.get("price")),
       size_sqm: parseNumber(formData.get("size_sqm")),
       features: notes ? { notes } : {},
+      ai_description: aiDescription || null,
     })
     .eq("id", id);
 
@@ -119,6 +124,55 @@ export async function updateProperty(id: string, formData: FormData) {
 
   revalidatePath("/dashboard/properties");
   redirect("/dashboard/properties");
+}
+
+export async function generateDescription(input: {
+  address: string;
+  price: number | null;
+  size_sqm: number | null;
+  notes: string;
+}): Promise<string> {
+  await ensureCurrentUserProfile();
+
+  const address = input.address.trim();
+  if (!address) {
+    throw new Error("Adj meg legalább egy címet a leírás generálásához");
+  }
+
+  const details = [
+    `Cím: ${address}`,
+    input.price ? `Ár: ${input.price.toLocaleString("hu-HU")} Ft` : null,
+    input.size_sqm ? `Alapterület: ${input.size_sqm} m²` : null,
+    input.notes.trim() ? `Jellemzők: ${input.notes.trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const message = await anthropic.messages.create({
+    model: DESCRIPTION_MODEL,
+    max_tokens: 400,
+    messages: [
+      {
+        role: "user",
+        content:
+          "Írj egy vonzó, magyar nyelvű ingatlanhirdetés-leírást (3-5 mondat) az alábbi adatok alapján. " +
+          "Ne találj ki olyan adatot, ami nem szerepel az adatok között. Csak a leírás szövegét add vissza, cím vagy egyéb formázás nélkül.\n\n" +
+          details,
+      },
+    ],
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
+
+  if (!text) {
+    throw new Error("Az AI nem adott vissza leírást, próbáld újra");
+  }
+
+  return text;
 }
 
 export async function deleteProperty(formData: FormData) {

@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { generateDescription } from "./actions";
+
 type PropertyFormProps = {
   action: (formData: FormData) => void;
   defaultValues?: {
@@ -7,6 +10,7 @@ type PropertyFormProps = {
     price?: number | null;
     size_sqm?: number | null;
     features?: { notes?: string } | null;
+    ai_description?: string | null;
   };
   submitLabel: string;
 };
@@ -16,6 +20,37 @@ export function PropertyForm({
   defaultValues,
   submitLabel,
 }: PropertyFormProps) {
+  const [address, setAddress] = useState(defaultValues?.address ?? "");
+  const [price, setPrice] = useState(
+    defaultValues?.price != null ? String(defaultValues.price) : "",
+  );
+  const [sizeSqm, setSizeSqm] = useState(
+    defaultValues?.size_sqm != null ? String(defaultValues.size_sqm) : "",
+  );
+  const [notes, setNotes] = useState(defaultValues?.features?.notes ?? "");
+  const [aiDescription, setAiDescription] = useState(
+    defaultValues?.ai_description ?? "",
+  );
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [isGenerating, startGenerating] = useTransition();
+
+  function handleGenerate() {
+    setAiError(null);
+    startGenerating(async () => {
+      try {
+        const description = await generateDescription({
+          address,
+          price: price ? Number(price.replace(",", ".")) : null,
+          size_sqm: sizeSqm ? Number(sizeSqm.replace(",", ".")) : null,
+          notes,
+        });
+        setAiDescription(description);
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : "Hiba történt");
+      }
+    });
+  }
+
   return (
     <form action={action} className="flex max-w-md flex-col gap-4">
       <label className="flex flex-col gap-1">
@@ -23,7 +58,8 @@ export function PropertyForm({
         <input
           name="address"
           required
-          defaultValue={defaultValues?.address}
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
           className="rounded border border-neutral-300 px-3 py-2"
         />
       </label>
@@ -34,7 +70,8 @@ export function PropertyForm({
           name="price"
           type="number"
           step="1"
-          defaultValue={defaultValues?.price ?? ""}
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
           className="rounded border border-neutral-300 px-3 py-2"
         />
       </label>
@@ -45,7 +82,8 @@ export function PropertyForm({
           name="size_sqm"
           type="number"
           step="1"
-          defaultValue={defaultValues?.size_sqm ?? ""}
+          value={sizeSqm}
+          onChange={(e) => setSizeSqm(e.target.value)}
           className="rounded border border-neutral-300 px-3 py-2"
         />
       </label>
@@ -55,7 +93,8 @@ export function PropertyForm({
         <textarea
           name="notes"
           rows={3}
-          defaultValue={defaultValues?.features?.notes ?? ""}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           className="rounded border border-neutral-300 px-3 py-2"
         />
       </label>
@@ -69,6 +108,29 @@ export function PropertyForm({
           className="rounded border border-neutral-300 px-3 py-2"
         />
       </label>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-neutral-600">Hirdetési leírás</span>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating || !address.trim()}
+            className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isGenerating ? "Generálás…" : "AI leírás generálása"}
+          </button>
+        </div>
+        <textarea
+          name="ai_description"
+          rows={5}
+          value={aiDescription}
+          onChange={(e) => setAiDescription(e.target.value)}
+          placeholder="Kattints az „AI leírás generálása” gombra, vagy írd meg kézzel."
+          className="rounded border border-neutral-300 px-3 py-2"
+        />
+        {aiError && <span className="text-xs text-red-600">{aiError}</span>}
+      </div>
 
       <button
         type="submit"
