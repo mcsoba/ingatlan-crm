@@ -89,6 +89,109 @@ export async function deleteDeal(formData: FormData) {
   redirect("/dashboard/pipeline");
 }
 
+export async function createStage(formData: FormData) {
+  const { profile } = await ensureCurrentUserProfile();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("A név megadása kötelező");
+
+  const supabase = await createClient();
+
+  const { data: maxRow } = await supabase
+    .from("pipeline_stages")
+    .select("position")
+    .eq("agency_id", profile.agency_id)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { error } = await supabase.from("pipeline_stages").insert({
+    agency_id: profile.agency_id,
+    name,
+    position: (maxRow?.position ?? 0) + 1,
+  });
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/pipeline/stages");
+  revalidatePath("/dashboard/pipeline");
+}
+
+export async function renameStage(id: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("A név megadása kötelező");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pipeline_stages")
+    .update({ name })
+    .eq("id", id);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/pipeline/stages");
+  revalidatePath("/dashboard/pipeline");
+}
+
+export async function deleteStage(formData: FormData) {
+  await ensureCurrentUserProfile();
+  const id = String(formData.get("id"));
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pipeline_stages")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error(
+        "Ez a szakasz nem törölhető, mert vannak hozzá tartozó dealek — mozgasd át őket egy másik szakaszba előbb.",
+      );
+    }
+    throw error;
+  }
+
+  revalidatePath("/dashboard/pipeline/stages");
+  revalidatePath("/dashboard/pipeline");
+}
+
+export async function moveStage(id: string, direction: "up" | "down") {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: stages, error } = await supabase
+    .from("pipeline_stages")
+    .select("id, position")
+    .order("position");
+
+  if (error) throw error;
+
+  const idx = stages.findIndex((s) => s.id === id);
+  if (idx === -1) return;
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= stages.length) return;
+
+  const a = stages[idx];
+  const b = stages[swapIdx];
+
+  const { error: errorA } = await supabase
+    .from("pipeline_stages")
+    .update({ position: b.position })
+    .eq("id", a.id);
+  if (errorA) throw errorA;
+
+  const { error: errorB } = await supabase
+    .from("pipeline_stages")
+    .update({ position: a.position })
+    .eq("id", b.id);
+  if (errorB) throw errorB;
+
+  revalidatePath("/dashboard/pipeline/stages");
+  revalidatePath("/dashboard/pipeline");
+}
+
 export async function generateDealFollowUp(input: {
   contactName: string;
   stageName: string;

@@ -2,12 +2,22 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { deleteProperty } from "./actions";
 
-export default async function PropertiesPage() {
+export default async function PropertiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const supabase = await createClient();
-  const { data: properties, error } = await supabase
+
+  let query = supabase
     .from("properties")
     .select("id, address, price, size_sqm, photo_path")
     .order("created_at", { ascending: false });
+
+  if (q) query = query.ilike("address", `%${q}%`);
+
+  const { data: properties, error } = await query;
 
   if (error) throw error;
 
@@ -23,8 +33,34 @@ export default async function PropertiesPage() {
         </Link>
       </div>
 
+      <form className="mt-4 flex gap-2">
+        <input
+          type="search"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Keresés cím szerint…"
+          className="max-w-xs flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+        >
+          Keresés
+        </button>
+        {q && (
+          <Link
+            href="/dashboard/properties"
+            className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+          >
+            Törlés
+          </Link>
+        )}
+      </form>
+
       {properties.length === 0 ? (
-        <p className="mt-6 text-neutral-500">Még nincs ingatlan.</p>
+        <p className="mt-6 text-neutral-500">
+          {q ? "Nincs a keresésnek megfelelő ingatlan." : "Még nincs ingatlan."}
+        </p>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {properties.map((property) => {

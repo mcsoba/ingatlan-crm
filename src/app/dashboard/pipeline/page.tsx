@@ -41,12 +41,20 @@ export default async function PipelinePage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Pipeline</h1>
-        <Link
-          href="/dashboard/pipeline/new"
-          className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-        >
-          Új deal
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/pipeline/stages"
+            className="text-sm text-neutral-500 hover:underline"
+          >
+            Szakaszok szerkesztése
+          </Link>
+          <Link
+            href="/dashboard/pipeline/new"
+            className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
+          >
+            Új deal
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6">

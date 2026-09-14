@@ -17,12 +17,22 @@ const STATUS_LABELS: Record<string, string> = {
   inactive: "Inaktív",
 };
 
-export default async function ContactsPage() {
+export default async function ContactsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
   const supabase = await createClient();
-  const { data: contacts, error } = await supabase
+
+  let query = supabase
     .from("contacts")
     .select("id, name, email, phone, source, status")
     .order("created_at", { ascending: false });
+
+  if (q) query = query.ilike("name", `%${q}%`);
+
+  const { data: contacts, error } = await query;
 
   if (error) throw error;
 
@@ -38,8 +48,34 @@ export default async function ContactsPage() {
         </Link>
       </div>
 
+      <form className="mt-4 flex gap-2">
+        <input
+          type="search"
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Keresés név szerint…"
+          className="max-w-xs flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+        >
+          Keresés
+        </button>
+        {q && (
+          <Link
+            href="/dashboard/contacts"
+            className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+          >
+            Törlés
+          </Link>
+        )}
+      </form>
+
       {contacts.length === 0 ? (
-        <p className="mt-6 text-neutral-500">Még nincs kontakt.</p>
+        <p className="mt-6 text-neutral-500">
+          {q ? "Nincs a keresésnek megfelelő kontakt." : "Még nincs kontakt."}
+        </p>
       ) : (
         <table className="mt-6 w-full text-sm">
           <thead>
