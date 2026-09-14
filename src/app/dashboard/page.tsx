@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Kanban, ListChecks } from "lucide-react";
+import { Users, Building2, Kanban, ListChecks, Circle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,6 +7,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+
+type ChecklistItem = { label: string; done: boolean; href: string };
 
 type UpcomingActivity = {
   id: string;
@@ -32,11 +34,13 @@ export default async function DashboardPage() {
     { count: contactCount },
     { count: propertyCount },
     { count: dealCount },
+    { count: memberCount },
     { data: upcoming, error: upcomingError },
   ] = await Promise.all([
     supabase.from("contacts").select("id", { count: "exact", head: true }),
     supabase.from("properties").select("id", { count: "exact", head: true }),
     supabase.from("deals").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase
       .from("activities")
       .select("id, type, content, due_at, contacts(id, name), deals(id)")
@@ -49,12 +53,55 @@ export default async function DashboardPage() {
   if (upcomingError) throw upcomingError;
   const upcomingActivities = (upcoming ?? []) as unknown as UpcomingActivity[];
 
+  const hasIntegration = Boolean(
+    process.env.STRIPE_SECRET_KEY || process.env.RESEND_API_KEY || process.env.TWILIO_ACCOUNT_SID,
+  );
+  const checklist: ChecklistItem[] = [
+    { label: "Adj hozzá egy kontaktot", done: (contactCount ?? 0) > 0, href: "/dashboard/contacts/new" },
+    { label: "Adj hozzá egy ingatlant", done: (propertyCount ?? 0) > 0, href: "/dashboard/properties/new" },
+    { label: "Hozz létre egy dealt a pipeline-on", done: (dealCount ?? 0) > 0, href: "/dashboard/pipeline/new" },
+    { label: "Hívj meg egy csapattagot", done: (memberCount ?? 0) > 1, href: "/dashboard/team" },
+    {
+      label: "Kapcsolj be legalább egy integrációt (email, SMS vagy fizetés)",
+      done: hasIntegration,
+      href: "/dashboard/settings",
+    },
+  ];
+  const checklistDone = checklist.every((item) => item.done);
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title={`Üdv, ${user.email?.split("@")[0]}!`}
         description={`${profile.agencies.name} · ${profile.agencies.plan_tier === "pro" ? "Pro csomag" : "Ingyenes csomag"}`}
       />
+
+      {!checklistDone && (
+        <Card className="flex flex-col gap-3 p-5">
+          <div>
+            <div className="text-sm font-medium text-foreground">Első lépések</div>
+            <p className="mt-0.5 text-xs text-muted">
+              Ennyi maradt, hogy az iroda teljesen fel legyen véve a rendszerbe.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {checklist.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-2 text-sm ${item.done ? "text-muted-subtle line-through" : "text-foreground hover:text-accent"}`}
+              >
+                {item.done ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                ) : (
+                  <Circle className="h-4 w-4 shrink-0 text-muted-subtle" />
+                )}
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <StatCard
