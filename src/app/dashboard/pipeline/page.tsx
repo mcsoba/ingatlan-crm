@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Plus, Settings2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PipelineBoard, type DealCard } from "./board";
+import { PageHeader } from "@/components/ui/page-header";
+import { buttonVariants } from "@/components/ui/button";
 
 // The Supabase client infers embedded-resource joins as arrays without
 // generated Database types; contact_id/property_id are single foreign
@@ -38,28 +41,31 @@ export default async function PipelinePage() {
   }));
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Pipeline</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/pipeline/stages"
-            className="text-sm text-neutral-500 hover:underline"
-          >
-            Szakaszok szerkesztése
-          </Link>
-          <Link
-            href="/dashboard/pipeline/new"
-            className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-          >
-            Új deal
-          </Link>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Pipeline"
+        description="Húzd a kártyákat a szakaszok között."
+        action={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/pipeline/stages"
+              className={buttonVariants("secondary")}
+            >
+              <Settings2 className="h-4 w-4" strokeWidth={1.75} />
+              Szakaszok
+            </Link>
+            <Link
+              href="/dashboard/pipeline/new"
+              className={buttonVariants("primary")}
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Új deal
+            </Link>
+          </div>
+        }
+      />
 
-      <div className="mt-6">
-        <PipelineBoard stages={stages} deals={dealCards} />
-      </div>
+      <PipelineBoard stages={stages} deals={dealCards} />
     </div>
   );
 }

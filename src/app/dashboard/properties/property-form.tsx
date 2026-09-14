@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { generateDescription } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 
 type PropertyFormProps = {
   action: (formData: FormData) => void;
@@ -52,92 +56,97 @@ export function PropertyForm({
   }
 
   return (
-    <form action={action} className="flex max-w-md flex-col gap-4">
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-neutral-600">Cím</span>
-        <input
-          name="address"
-          required
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-neutral-600">Ár (Ft)</span>
-        <input
-          name="price"
-          type="number"
-          step="1"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-neutral-600">Alapterület (m²)</span>
-        <input
-          name="size_sqm"
-          type="number"
-          step="1"
-          value={sizeSqm}
-          onChange={(e) => setSizeSqm(e.target.value)}
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-neutral-600">Jellemzők / jegyzet</span>
-        <textarea
-          name="notes"
-          rows={3}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm text-neutral-600">Fotó</span>
-        <input
-          name="photo"
-          type="file"
-          accept="image/*"
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-      </label>
-
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-neutral-600">Hirdetési leírás</span>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isGenerating || !address.trim()}
-            className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isGenerating ? "Generálás…" : "AI leírás generálása"}
-          </button>
+    <Card className="max-w-md p-5">
+      <form action={action} className="flex flex-col gap-4">
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Cím</span>
+          <input
+            name="address"
+            required
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className={inputClass}
+          />
         </div>
-        <textarea
-          name="ai_description"
-          rows={5}
-          value={aiDescription}
-          onChange={(e) => setAiDescription(e.target.value)}
-          placeholder="Kattints az „AI leírás generálása” gombra, vagy írd meg kézzel."
-          className="rounded border border-neutral-300 px-3 py-2"
-        />
-        {aiError && <span className="text-xs text-red-600">{aiError}</span>}
-      </div>
 
-      <button
-        type="submit"
-        className="rounded bg-neutral-900 px-4 py-2 text-white"
-      >
-        {submitLabel}
-      </button>
-    </form>
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Ár (Ft)</span>
+          <input
+            name="price"
+            type="number"
+            step="1"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Alapterület (m²)</span>
+          <input
+            name="size_sqm"
+            type="number"
+            step="1"
+            value={sizeSqm}
+            onChange={(e) => setSizeSqm(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Jellemzők / jegyzet</span>
+          <textarea
+            name="notes"
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Fotó</span>
+          <input
+            name="photo"
+            type="file"
+            accept="image/*"
+            className={`${inputClass} file:mr-3 file:rounded-md file:border-0 file:bg-background file:px-2.5 file:py-1 file:text-xs file:font-medium`}
+          />
+        </div>
+
+        <div className={fieldGroupClass}>
+          <div className="flex items-center justify-between">
+            <span className={labelClass}>Hirdetési leírás</span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={isGenerating || !address.trim()}
+            >
+              {isGenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-accent" />
+              )}
+              AI leírás generálása
+            </Button>
+          </div>
+          <textarea
+            name="ai_description"
+            rows={5}
+            value={aiDescription}
+            onChange={(e) => setAiDescription(e.target.value)}
+            placeholder="Kattints az „AI leírás generálása” gombra, vagy írd meg kézzel."
+            className={inputClass}
+          />
+          {aiError && <span className="text-xs text-danger">{aiError}</span>}
+        </div>
+
+        <Button type="submit" className="mt-1">
+          {submitLabel}
+        </Button>
+      </form>
+    </Card>
   );
 }

@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProperty } from "../../actions";
 import { PropertyForm } from "../../property-form";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function EditPropertyPage({
   params,
@@ -21,15 +23,24 @@ export default async function EditPropertyPage({
   const updateWithId = updateProperty.bind(null, property.id);
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold">Ingatlan szerkesztése</h1>
-      <div className="mt-6">
-        <PropertyForm
-          action={updateWithId}
-          defaultValues={property}
-          submitLabel="Mentés"
-        />
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={property.address}
+        description="Ingatlan szerkesztése"
+        action={
+          <Link
+            href="/dashboard/properties"
+            className="text-sm text-muted hover:text-accent"
+          >
+            ← Ingatlanok
+          </Link>
+        }
+      />
+      <PropertyForm
+        action={updateWithId}
+        defaultValues={property}
+        submitLabel="Mentés"
+      />
     </div>
   );
 }

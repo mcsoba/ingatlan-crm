@@ -2,7 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Sparkles, Loader2, Building2 } from "lucide-react";
 import { suggestMatchingProperties, type PropertyMatch } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function PropertyMatchPanel({ contactId }: { contactId: string }) {
   const [matches, setMatches] = useState<PropertyMatch[] | null>(null);
@@ -23,17 +26,23 @@ export function PropertyMatchPanel({ contactId }: { contactId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={handleGenerate}
         disabled={isGenerating}
-        className="self-start rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="self-start"
       >
-        {isGenerating ? "Keresés…" : "AI ingatlan-javaslat"}
-      </button>
+        {isGenerating ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 text-accent" />
+        )}
+        AI ingatlan-javaslat
+      </Button>
 
       {matches && matches.length === 0 && (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-muted">
           Nincs egyértelműen illő ingatlan a jegyzet alapján.
         </p>
       )}
@@ -41,19 +50,22 @@ export function PropertyMatchPanel({ contactId }: { contactId: string }) {
       {matches && matches.length > 0 && (
         <div className="flex flex-col gap-2">
           {matches.map((match) => (
-            <Link
-              key={match.id}
-              href={`/dashboard/properties/${match.id}/edit`}
-              className="rounded border border-neutral-200 p-2 text-sm hover:bg-neutral-50"
-            >
-              <div className="font-medium">{match.address}</div>
-              <div className="text-neutral-500">{match.reason}</div>
+            <Link key={match.id} href={`/dashboard/properties/${match.id}/edit`}>
+              <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
+                <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
+                <div>
+                  <div className="font-medium text-foreground">
+                    {match.address}
+                  </div>
+                  <div className="text-muted">{match.reason}</div>
+                </div>
+              </Card>
             </Link>
           ))}
         </div>
       )}
 
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

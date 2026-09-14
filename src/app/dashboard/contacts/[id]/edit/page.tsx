@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Kanban } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
 import { ActivityPanel } from "../../../activities/activity-panel";
 import { PropertyMatchPanel } from "../../property-match-panel";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { sectionLabelClass } from "@/components/ui/styles";
 
 type ContactDealRow = {
   id: string;
@@ -55,60 +59,65 @@ export default async function EditContactPage({
   const contactDeals = (deals ?? []) as unknown as ContactDealRow[];
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold">Kontakt szerkesztése</h1>
-      <div className="mt-6">
-        <ContactForm
-          action={updateWithId}
-          defaultValues={contact}
-          submitLabel="Mentés"
-        />
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={contact.name}
+        description="Kontakt szerkesztése"
+        action={
+          <Link
+            href="/dashboard/contacts"
+            className="text-sm text-muted hover:text-accent"
+          >
+            ← Kontaktok
+          </Link>
+        }
+      />
+
+      <ContactForm
+        action={updateWithId}
+        defaultValues={contact}
+        submitLabel="Mentés"
+      />
+
+      <div className="max-w-md">
+        <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>
+        <PropertyMatchPanel contactId={contact.id} />
       </div>
 
-      <div className="mt-8 max-w-md">
-        <h2 className="text-sm font-medium text-neutral-700">
-          Illő ingatlanok
-        </h2>
-        <div className="mt-2">
-          <PropertyMatchPanel contactId={contact.id} />
-        </div>
-      </div>
-
-      <div className="mt-8 max-w-md">
-        <h2 className="text-sm font-medium text-neutral-700">Dealek</h2>
+      <div className="max-w-md">
+        <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
         {contactDeals.length === 0 ? (
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="text-sm text-muted">
             Ehhez a kontakthoz még nincs deal.
           </p>
         ) : (
-          <div className="mt-2 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {contactDeals.map((deal) => (
-              <Link
-                key={deal.id}
-                href={`/dashboard/pipeline/${deal.id}`}
-                className="rounded border border-neutral-200 p-2 text-sm hover:bg-neutral-50"
-              >
-                <div>{stageNames.get(deal.stage_id) ?? "—"}</div>
-                {deal.properties && (
-                  <div className="text-neutral-500">
-                    {deal.properties.address}
+              <Link key={deal.id} href={`/dashboard/pipeline/${deal.id}`}>
+                <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
+                  <Kanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
+                  <div>
+                    <div className="font-medium text-foreground">
+                      {stageNames.get(deal.stage_id) ?? "—"}
+                    </div>
+                    {deal.properties && (
+                      <div className="text-muted">{deal.properties.address}</div>
+                    )}
                   </div>
-                )}
+                </Card>
               </Link>
             ))}
           </div>
         )}
       </div>
 
-      <div className="mt-8 max-w-md">
-        <h2 className="text-sm font-medium text-neutral-700">Aktivitások</h2>
-        <div className="mt-2">
-          <ActivityPanel
-            contactId={contact.id}
-            activities={activities ?? []}
-            redirectTo={`/dashboard/contacts/${contact.id}/edit`}
-          />
-        </div>
+      <div className="max-w-md">
+        <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
+        <ActivityPanel
+          contactId={contact.id}
+          activities={activities ?? []}
+          redirectTo={`/dashboard/contacts/${contact.id}/edit`}
+        />
       </div>
     </div>
   );

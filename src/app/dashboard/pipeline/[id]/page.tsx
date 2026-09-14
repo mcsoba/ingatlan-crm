@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { User, Building2, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteDeal, updateDealNotes, updateDealStage } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { ActivityPanel } from "../../activities/activity-panel";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  inputClass,
+  labelClass,
+  fieldGroupClass,
+  sectionLabelClass,
+} from "@/components/ui/styles";
 
 type DealDetailRow = {
   id: string;
@@ -52,105 +62,113 @@ export default async function DealDetailPage({
 
   return (
     <div className="max-w-md">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          {contact?.name ?? "Ismeretlen kontakt"}
-        </h1>
-        <Link
-          href="/dashboard/pipeline"
-          className="text-sm text-neutral-500 hover:underline"
-        >
-          ← Pipeline
-        </Link>
-      </div>
+      <PageHeader
+        title={contact?.name ?? "Ismeretlen kontakt"}
+        action={
+          <Link
+            href="/dashboard/pipeline"
+            className="text-sm text-muted hover:text-accent"
+          >
+            ← Pipeline
+          </Link>
+        }
+      />
 
-      <div className="mt-4 flex flex-col gap-4">
-        <div className="rounded border border-neutral-200 p-3 text-sm">
-          <div className="font-medium">Kontakt</div>
-          {contact ? (
-            <>
-              <div>
+      <div className="mt-6 flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-3 text-sm">
+            <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
+              <User className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Kontakt
+            </div>
+            {contact ? (
+              <>
                 <Link
                   href={`/dashboard/contacts/${contact.id}/edit`}
-                  className="hover:underline"
+                  className="font-medium text-foreground hover:text-accent"
                 >
                   {contact.name}
                 </Link>
-              </div>
-              <div className="text-neutral-600">
-                {contact.email || contact.phone || "—"}
-              </div>
-            </>
-          ) : (
-            <div className="text-neutral-500">Nincs kontakt</div>
-          )}
+                <div className="mt-0.5 truncate text-muted">
+                  {contact.email || contact.phone || "—"}
+                </div>
+              </>
+            ) : (
+              <div className="text-muted">Nincs kontakt</div>
+            )}
+          </Card>
+
+          <Card className="p-3 text-sm">
+            <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
+              <Building2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Ingatlan
+            </div>
+            {property ? (
+              <Link
+                href={`/dashboard/properties/${property.id}/edit`}
+                className="font-medium text-foreground hover:text-accent"
+              >
+                {property.address}
+                {property.price && (
+                  <span className="block font-normal text-muted">
+                    {property.price.toLocaleString("hu-HU")} Ft
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <div className="text-muted">Nincs kapcsolódó ingatlan</div>
+            )}
+          </Card>
         </div>
 
-        <div className="rounded border border-neutral-200 p-3 text-sm">
-          <div className="font-medium">Ingatlan</div>
-          {property ? (
-            <Link
-              href={`/dashboard/properties/${property.id}/edit`}
-              className="hover:underline"
-            >
-              {property.address}
-              {property.price
-                ? ` · ${property.price.toLocaleString("hu-HU")} Ft`
-                : ""}
-            </Link>
-          ) : (
-            <div className="text-neutral-500">Nincs kapcsolódó ingatlan</div>
-          )}
-        </div>
+        <Card className="flex flex-col gap-2 p-4">
+          <form action={updateStageWithId} className="flex flex-col gap-1.5">
+            <span className={labelClass}>Szakasz</span>
+            <div className="flex gap-2">
+              <select
+                name="stage_id"
+                defaultValue={dealRow.stage_id}
+                className={`${inputClass} flex-1`}
+              >
+                {stages?.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="secondary">
+                Mentés
+              </Button>
+            </div>
+          </form>
+        </Card>
 
-        <form action={updateStageWithId} className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Szakasz</span>
-          <div className="flex gap-2">
-            <select
-              name="stage_id"
-              defaultValue={dealRow.stage_id}
-              className="flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
-            >
-              {stages?.map((stage) => (
-                <option key={stage.id} value={stage.id}>
-                  {stage.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded bg-neutral-900 px-3 py-2 text-sm text-white"
-            >
-              Mentés
-            </button>
-          </div>
-        </form>
+        <Card className="p-4">
+          <form action={updateNotesWithId} className={fieldGroupClass}>
+            <span className={labelClass}>Jegyzet</span>
+            <textarea
+              name="notes"
+              rows={3}
+              defaultValue={dealRow.notes ?? ""}
+              className={inputClass}
+            />
+            <Button type="submit" variant="secondary" size="sm" className="self-start">
+              Jegyzet mentése
+            </Button>
+          </form>
+        </Card>
 
-        <form action={updateNotesWithId} className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Jegyzet</span>
-          <textarea
-            name="notes"
-            rows={3}
-            defaultValue={dealRow.notes ?? ""}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm"
+        <Card className="p-4">
+          <DealFollowUpPanel
+            contactName={contact?.name ?? ""}
+            stageName={stageName}
+            propertyAddress={property?.address ?? null}
+            notes={dealRow.notes ?? ""}
           />
-          <button
-            type="submit"
-            className="self-start rounded bg-neutral-900 px-3 py-2 text-sm text-white"
-          >
-            Jegyzet mentése
-          </button>
-        </form>
+        </Card>
 
-        <DealFollowUpPanel
-          contactName={contact?.name ?? ""}
-          stageName={stageName}
-          propertyAddress={property?.address ?? null}
-          notes={dealRow.notes ?? ""}
-        />
-
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Aktivitások</span>
+        <div>
+          <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
           <ActivityPanel
             dealId={dealRow.id}
             activities={activities ?? []}
@@ -158,9 +176,13 @@ export default async function DealDetailPage({
           />
         </div>
 
-        <form action={deleteDeal} className="border-t border-neutral-200 pt-4">
+        <form action={deleteDeal} className="border-t border-border-subtle pt-4">
           <input type="hidden" name="id" value={dealRow.id} />
-          <button type="submit" className="text-sm text-red-600 hover:underline">
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 text-sm text-muted hover:text-danger"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
             Deal törlése
           </button>
         </form>

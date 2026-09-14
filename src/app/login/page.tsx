@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,45 +40,49 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <h1 className="text-2xl font-semibold">Bejelentkezés</h1>
+      <Link href="/" className="flex items-center justify-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
+          <Building2 className="h-4 w-4" strokeWidth={2.25} />
+        </div>
+      </Link>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-2"
-          />
-        </label>
+      <Card className="p-6">
+        <h1 className="text-lg font-semibold text-foreground">Bejelentkezés</h1>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Jelszó</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-2"
-          />
-        </label>
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Email</span>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Jelszó</span>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-neutral-900 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Belépés…" : "Belépés"}
-        </button>
-      </form>
+          {error && <p className="text-sm text-danger">{error}</p>}
 
-      <p className="text-sm text-neutral-600">
+          <Button type="submit" disabled={loading} className="mt-1">
+            {loading ? "Belépés…" : "Belépés"}
+          </Button>
+        </form>
+      </Card>
+
+      <p className="text-center text-sm text-muted">
         Nincs még fiókod?{" "}
-        <Link href="/signup" className="underline">
+        <Link href="/signup" className={linkClass}>
           Regisztráció
         </Link>
       </p>

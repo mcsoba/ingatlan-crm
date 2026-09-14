@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Building2, MailCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -50,11 +54,16 @@ export default function SignupPage() {
 
   if (confirmationSent) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-4 text-center">
-        <h1 className="text-2xl font-semibold">Erősítsd meg az email címed</h1>
-        <p className="text-neutral-600">
-          Küldtünk egy megerősítő linket a(z) {email} címre. A linkre
-          kattintva jön létre az irodád.
+      <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-4 px-4 text-center">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+          <MailCheck className="h-5 w-5" strokeWidth={1.75} />
+        </div>
+        <h1 className="text-lg font-semibold text-foreground">
+          Erősítsd meg az email címed
+        </h1>
+        <p className="text-sm text-muted">
+          Küldtünk egy megerősítő linket a(z) {email} címre. A linkre kattintva
+          jön létre az irodád.
         </p>
       </main>
     );
@@ -62,57 +71,61 @@ export default function SignupPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <h1 className="text-2xl font-semibold">Regisztráció</h1>
+      <Link href="/" className="flex items-center justify-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
+          <Building2 className="h-4 w-4" strokeWidth={2.25} />
+        </div>
+      </Link>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Iroda / ügynök neve</span>
-          <input
-            type="text"
-            required
-            value={agencyName}
-            onChange={(e) => setAgencyName(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-2"
-          />
-        </label>
+      <Card className="p-6">
+        <h1 className="text-lg font-semibold text-foreground">Regisztráció</h1>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-2"
-          />
-        </label>
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Iroda / ügynök neve</span>
+            <input
+              type="text"
+              required
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Jelszó</span>
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-2"
-          />
-        </label>
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Email</span>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Jelszó</span>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-neutral-900 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Regisztráció…" : "Regisztráció"}
-        </button>
-      </form>
+          {error && <p className="text-sm text-danger">{error}</p>}
 
-      <p className="text-sm text-neutral-600">
+          <Button type="submit" disabled={loading} className="mt-1">
+            {loading ? "Regisztráció…" : "Regisztráció"}
+          </Button>
+        </form>
+      </Card>
+
+      <p className="text-center text-sm text-muted">
         Van már fiókod?{" "}
-        <Link href="/login" className="underline">
+        <Link href="/login" className={linkClass}>
           Bejelentkezés
         </Link>
       </p>

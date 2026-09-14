@@ -1,13 +1,23 @@
+import Link from "next/link";
 import { createContact } from "../actions";
 import { ContactForm } from "../contact-form";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function NewContactPage() {
   return (
-    <div>
-      <h1 className="text-xl font-semibold">Új kontakt</h1>
-      <div className="mt-6">
-        <ContactForm action={createContact} submitLabel="Létrehozás" />
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Új kontakt"
+        action={
+          <Link
+            href="/dashboard/contacts"
+            className="text-sm text-muted hover:text-accent"
+          >
+            ← Kontaktok
+          </Link>
+        }
+      />
+      <ContactForm action={createContact} submitLabel="Létrehozás" />
     </div>
   );
 }

@@ -2,17 +2,38 @@
 
 import { useState, useTransition } from "react";
 import {
+  Sparkles,
+  Loader2,
+  Trash2,
+  StickyNote,
+  Phone,
+  Eye,
+  Bell,
+  type LucideIcon,
+} from "lucide-react";
+import {
   createActivity,
   deleteActivity,
   summarizeActivityNote,
   toggleActivityDone,
 } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { inputClass } from "@/components/ui/styles";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "Jegyzet",
   call: "Hívás",
   viewing: "Megtekintés",
   reminder: "Emlékeztető",
+};
+
+const TYPE_ICONS: Record<string, LucideIcon> = {
+  note: StickyNote,
+  call: Phone,
+  viewing: Eye,
+  reminder: Bell,
 };
 
 export type Activity = {
@@ -61,103 +82,112 @@ export function ActivityPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        {activities.length === 0 && (
-          <p className="text-sm text-neutral-500">Még nincs aktivitás.</p>
-        )}
-        {activities.map((activity) => (
-          <div
-            key={activity.id}
-            className={`flex items-start gap-2 rounded border border-neutral-200 p-2 text-sm ${
-              activity.done ? "opacity-50" : ""
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={activity.done}
-              disabled={isPending}
-              onChange={(e) => handleToggle(activity.id, e.target.checked)}
-              className="mt-1"
-            />
-            <div className="flex-1">
-              <div className="text-xs text-neutral-500">
-                {TYPE_LABELS[activity.type] ?? activity.type}
-                {activity.due_at &&
-                  ` · határidő: ${new Date(activity.due_at).toLocaleDateString("hu-HU")}`}
-              </div>
-              <div>{activity.content}</div>
-            </div>
-            <form action={deleteActivity}>
-              <input type="hidden" name="id" value={activity.id} />
-              <input type="hidden" name="redirect_to" value={redirectTo} />
-              <button
-                type="submit"
-                className="text-xs text-red-600 hover:underline"
+      {activities.length === 0 ? (
+        <EmptyState icon={StickyNote} title="Még nincs aktivitás" />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {activities.map((activity) => {
+            const Icon = TYPE_ICONS[activity.type] ?? StickyNote;
+            return (
+              <Card
+                key={activity.id}
+                className={`flex items-start gap-2.5 p-3 text-sm ${
+                  activity.done ? "opacity-50" : ""
+                }`}
               >
-                Törlés
-              </button>
-            </form>
+                <input
+                  type="checkbox"
+                  checked={activity.done}
+                  disabled={isPending}
+                  onChange={(e) => handleToggle(activity.id, e.target.checked)}
+                  className="mt-1 h-3.5 w-3.5 accent-accent"
+                />
+                <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-muted">
+                    {TYPE_LABELS[activity.type] ?? activity.type}
+                    {activity.due_at &&
+                      ` · határidő: ${new Date(activity.due_at).toLocaleDateString("hu-HU")}`}
+                  </div>
+                  <div className="break-words text-foreground">
+                    {activity.content}
+                  </div>
+                </div>
+                <form action={deleteActivity}>
+                  <input type="hidden" name="id" value={activity.id} />
+                  <input type="hidden" name="redirect_to" value={redirectTo} />
+                  <button
+                    type="submit"
+                    className="text-muted-subtle hover:text-danger"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </form>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Card className="flex flex-col gap-2 p-3">
+        <form action={createActivity} className="flex flex-col gap-2">
+          {contactId && (
+            <input type="hidden" name="contact_id" value={contactId} />
+          )}
+          {dealId && <input type="hidden" name="deal_id" value={dealId} />}
+          <input type="hidden" name="redirect_to" value={redirectTo} />
+
+          <div className="flex gap-2">
+            <select
+              name="type"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className={`${inputClass} py-1.5`}
+            >
+              <option value="note">Jegyzet</option>
+              <option value="call">Hívás</option>
+              <option value="viewing">Megtekintés</option>
+              <option value="reminder">Emlékeztető</option>
+            </select>
+            <input
+              type="date"
+              name="due_at"
+              className={`${inputClass} py-1.5`}
+            />
           </div>
-        ))}
-      </div>
-
-      <form
-        action={createActivity}
-        className="flex flex-col gap-2 rounded border border-neutral-200 p-3"
-      >
-        {contactId && (
-          <input type="hidden" name="contact_id" value={contactId} />
-        )}
-        {dealId && <input type="hidden" name="deal_id" value={dealId} />}
-        <input type="hidden" name="redirect_to" value={redirectTo} />
-
-        <div className="flex gap-2">
-          <select
-            name="type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1 text-sm"
-          >
-            <option value="note">Jegyzet</option>
-            <option value="call">Hívás</option>
-            <option value="viewing">Megtekintés</option>
-            <option value="reminder">Emlékeztető</option>
-          </select>
-          <input
-            type="date"
-            name="due_at"
-            className="rounded border border-neutral-300 px-2 py-1 text-sm"
+          <textarea
+            name="content"
+            required
+            rows={3}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Mi történt / mit kell tenni? (nyers jegyzet is jó, az AI átszerkesztheti)"
+            className={inputClass}
           />
-        </div>
-        <textarea
-          name="content"
-          required
-          rows={3}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Mi történt / mit kell tenni? (nyers jegyzet is jó, az AI átszerkesztheti)"
-          className="rounded border border-neutral-300 px-3 py-2 text-sm"
-        />
-        <div className="flex items-center gap-2">
-          <button
-            type="submit"
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white"
-          >
-            Hozzáadás
-          </button>
-          <button
-            type="button"
-            onClick={handleSummarize}
-            disabled={isSummarizing || !content.trim()}
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSummarizing ? "Összefoglalás…" : "AI összefoglalás"}
-          </button>
-        </div>
-        {summaryError && (
-          <span className="text-xs text-red-600">{summaryError}</span>
-        )}
-      </form>
+          <div className="flex items-center gap-2">
+            <Button type="submit" size="sm">
+              Hozzáadás
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleSummarize}
+              disabled={isSummarizing || !content.trim()}
+            >
+              {isSummarizing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-accent" />
+              )}
+              AI összefoglalás
+            </Button>
+          </div>
+          {summaryError && (
+            <span className="text-xs text-danger">{summaryError}</span>
+          )}
+        </form>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createDeal } from "../actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
 
 export default async function NewDealPage() {
   const supabase = await createClient();
@@ -13,13 +17,10 @@ export default async function NewDealPage() {
   if (!contacts || contacts.length === 0) {
     return (
       <div>
-        <h1 className="text-xl font-semibold">Új deal</h1>
-        <p className="mt-4 text-neutral-600">
+        <PageHeader title="Új deal" />
+        <p className="mt-4 text-sm text-muted">
           Deal létrehozásához előbb kell legalább egy kontakt.{" "}
-          <Link
-            href="/dashboard/contacts/new"
-            className="underline hover:text-neutral-900"
-          >
+          <Link href="/dashboard/contacts/new" className={linkClass}>
             Új kontakt létrehozása
           </Link>
         </p>
@@ -28,54 +29,57 @@ export default async function NewDealPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold">Új deal</h1>
-
-      <form action={createDeal} className="mt-6 flex max-w-md flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">Kontakt</span>
-          <select
-            name="contact_id"
-            required
-            defaultValue=""
-            className="rounded border border-neutral-300 px-3 py-2"
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Új deal"
+        action={
+          <Link
+            href="/dashboard/pipeline"
+            className="text-sm text-muted hover:text-accent"
           >
-            <option value="" disabled>
-              Válassz kontaktot
-            </option>
-            {contacts.map((contact) => (
-              <option key={contact.id} value={contact.id}>
-                {contact.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            ← Pipeline
+          </Link>
+        }
+      />
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-600">
-            Ingatlan (opcionális)
-          </span>
-          <select
-            name="property_id"
-            defaultValue=""
-            className="rounded border border-neutral-300 px-3 py-2"
-          >
-            <option value="">Nincs kiválasztva</option>
-            {properties?.map((property) => (
-              <option key={property.id} value={property.id}>
-                {property.address}
+      <Card className="max-w-md p-5">
+        <form action={createDeal} className="flex flex-col gap-4">
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Kontakt</span>
+            <select
+              name="contact_id"
+              required
+              defaultValue=""
+              className={inputClass}
+            >
+              <option value="" disabled>
+                Válassz kontaktot
               </option>
-            ))}
-          </select>
-        </label>
+              {contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <button
-          type="submit"
-          className="rounded bg-neutral-900 px-4 py-2 text-white"
-        >
-          Létrehozás
-        </button>
-      </form>
+          <div className={fieldGroupClass}>
+            <span className={labelClass}>Ingatlan (opcionális)</span>
+            <select name="property_id" defaultValue="" className={inputClass}>
+              <option value="">Nincs kiválasztva</option>
+              {properties?.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.address}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Button type="submit" className="mt-1">
+            Létrehozás
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

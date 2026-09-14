@@ -1,7 +1,13 @@
+import { UserRound, Crown } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteTeamMember, removeTeamMember } from "./actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { inputClass } from "@/components/ui/styles";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -33,21 +39,29 @@ export default async function TeamPage() {
 
   return (
     <div className="max-w-md">
-      <h1 className="text-xl font-semibold">Csapat</h1>
+      <PageHeader title="Csapat" description="Az iroda tagjai és szerepkörük." />
 
       <div className="mt-6 flex flex-col gap-2">
         {(members ?? []).map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between rounded border border-neutral-200 p-2 text-sm"
-          >
-            <div>
-              <div className="font-medium">
+          <Card key={member.id} className="flex items-center gap-3 p-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+              {member.role === "owner" ? (
+                <Crown className="h-4 w-4" strokeWidth={1.75} />
+              ) : (
+                <UserRound className="h-4 w-4" strokeWidth={1.75} />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-foreground">
                 {member.full_name || emailById.get(member.id) || "—"}
               </div>
-              <div className="text-neutral-500">
-                {ROLE_LABELS[member.role] ?? member.role}
-                {emailById.get(member.id) && ` · ${emailById.get(member.id)}`}
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <Badge variant={member.role === "owner" ? "accent" : "neutral"}>
+                  {ROLE_LABELS[member.role] ?? member.role}
+                </Badge>
+                {emailById.get(member.id) && (
+                  <span className="truncate">{emailById.get(member.id)}</span>
+                )}
               </div>
             </div>
             {profile.role === "owner" && member.id !== profile.id && (
@@ -55,37 +69,32 @@ export default async function TeamPage() {
                 <input type="hidden" name="id" value={member.id} />
                 <button
                   type="submit"
-                  className="text-xs text-red-600 hover:underline"
+                  className="text-xs text-muted hover:text-danger"
                 >
                   Eltávolítás
                 </button>
               </form>
             )}
-          </div>
+          </Card>
         ))}
       </div>
 
       {profile.role === "owner" ? (
         <form
           action={inviteTeamMember}
-          className="mt-6 flex gap-2 border-t border-neutral-200 pt-4"
+          className="mt-6 flex gap-2 border-t border-border-subtle pt-4"
         >
           <input
             type="email"
             name="email"
             required
             placeholder="kollega@email.hu"
-            className="flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+            className={`${inputClass} flex-1`}
           />
-          <button
-            type="submit"
-            className="rounded bg-neutral-900 px-3 py-2 text-sm text-white"
-          >
-            Meghívás
-          </button>
+          <Button type="submit">Meghívás</Button>
         </form>
       ) : (
-        <p className="mt-6 text-sm text-neutral-500">
+        <p className="mt-6 text-sm text-muted">
           Csak az iroda tulajdonosa hívhat meg új csapattagot.
         </p>
       )}

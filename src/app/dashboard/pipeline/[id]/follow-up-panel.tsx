@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Sparkles, Copy, Check, Loader2 } from "lucide-react";
 import { generateDealFollowUp } from "../actions";
+import { Button } from "@/components/ui/button";
+import { inputClass, labelClass } from "@/components/ui/styles";
 
 export function DealFollowUpPanel({
   contactName,
@@ -47,17 +50,22 @@ export function DealFollowUpPanel({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-neutral-600">Follow-up email vázlat</span>
-        <button
-          type="button"
+        <span className={labelClass}>Follow-up email vázlat</span>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isGenerating ? "Generálás…" : "AI vázlat generálása"}
-        </button>
+          {isGenerating ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
+          )}
+          AI vázlat generálása
+        </Button>
       </div>
       <textarea
         rows={8}
@@ -67,21 +75,19 @@ export function DealFollowUpPanel({
           setCopied(false);
         }}
         placeholder="Kattints az „AI vázlat generálása” gombra."
-        className="rounded border border-neutral-300 px-3 py-2 font-mono text-xs"
+        className={`${inputClass} font-mono text-xs`}
       />
       {draft && (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-50"
-          >
-            Másolás vágólapra
-          </button>
-          {copied && <span className="text-xs text-neutral-500">Másolva!</span>}
-        </div>
+        <Button variant="secondary" size="sm" onClick={handleCopy} className="self-start">
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-success" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          {copied ? "Másolva" : "Másolás vágólapra"}
+        </Button>
       )}
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   );
 }

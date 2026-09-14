@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { Plus, Search, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteContact } from "./actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { buttonVariants } from "@/components/ui/button";
 
 const SOURCE_LABELS: Record<string, string> = {
   website: "Weboldal",
@@ -15,6 +21,13 @@ const STATUS_LABELS: Record<string, string> = {
   contacted: "Felvéve",
   qualified: "Minősített",
   inactive: "Inaktív",
+};
+
+const STATUS_VARIANTS: Record<string, BadgeVariant> = {
+  new: "neutral",
+  contacted: "accent",
+  qualified: "success",
+  inactive: "neutral",
 };
 
 export default async function ContactsPage({
@@ -37,91 +50,105 @@ export default async function ContactsPage({
   if (error) throw error;
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Kontaktok</h1>
-        <Link
-          href="/dashboard/contacts/new"
-          className="rounded bg-neutral-900 px-4 py-2 text-sm text-white"
-        >
-          Új kontakt
-        </Link>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Kontaktok"
+        description="Érdeklődők és ügyfelek egy helyen."
+        action={
+          <Link
+            href="/dashboard/contacts/new"
+            className={buttonVariants("primary")}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Új kontakt
+          </Link>
+        }
+      />
 
-      <form className="mt-4 flex gap-2">
-        <input
-          type="search"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Keresés név szerint…"
-          className="max-w-xs flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
-        />
-        <button
-          type="submit"
-          className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
-        >
+      <form className="flex gap-2">
+        <div className="relative max-w-xs flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-subtle" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Keresés név szerint…"
+            className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm placeholder:text-muted-subtle"
+          />
+        </div>
+        <button type="submit" className={buttonVariants("secondary")}>
           Keresés
         </button>
         {q && (
-          <Link
-            href="/dashboard/contacts"
-            className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
-          >
+          <Link href="/dashboard/contacts" className={buttonVariants("ghost")}>
             Törlés
           </Link>
         )}
       </form>
 
       {contacts.length === 0 ? (
-        <p className="mt-6 text-neutral-500">
-          {q ? "Nincs a keresésnek megfelelő kontakt." : "Még nincs kontakt."}
-        </p>
+        <EmptyState
+          icon={Users}
+          title={q ? "Nincs a keresésnek megfelelő kontakt" : "Még nincs kontakt"}
+          description={
+            q
+              ? "Próbálj más keresőszót."
+              : "Vegyél fel egy kontaktot, hogy elkezdhesd a pipeline-t építeni."
+          }
+        />
       ) : (
-        <table className="mt-6 w-full text-sm">
-          <thead>
-            <tr className="border-b border-neutral-200 text-left text-neutral-500">
-              <th className="py-2 font-normal">Név</th>
-              <th className="font-normal">Elérhetőség</th>
-              <th className="font-normal">Forrás</th>
-              <th className="font-normal">Státusz</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {contacts.map((contact) => (
-              <tr key={contact.id} className="border-b border-neutral-100">
-                <td className="py-2">
-                  <Link
-                    href={`/dashboard/contacts/${contact.id}/edit`}
-                    className="hover:underline"
-                  >
-                    {contact.name}
-                  </Link>
-                </td>
-                <td className="text-neutral-600">
-                  {contact.email || contact.phone || "—"}
-                </td>
-                <td className="text-neutral-600">
-                  {SOURCE_LABELS[contact.source] ?? contact.source}
-                </td>
-                <td className="text-neutral-600">
-                  {STATUS_LABELS[contact.status] ?? contact.status}
-                </td>
-                <td className="text-right">
-                  <form action={deleteContact}>
-                    <input type="hidden" name="id" value={contact.id} />
-                    <button
-                      type="submit"
-                      className="text-red-600 hover:underline"
-                    >
-                      Törlés
-                    </button>
-                  </form>
-                </td>
+        <Card className="overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-left text-xs text-muted">
+                <th className="px-4 py-3 font-medium">Név</th>
+                <th className="px-4 py-3 font-medium">Elérhetőség</th>
+                <th className="px-4 py-3 font-medium">Forrás</th>
+                <th className="px-4 py-3 font-medium">Státusz</th>
+                <th className="px-4 py-3" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {contacts.map((contact) => (
+                <tr
+                  key={contact.id}
+                  className="border-b border-border-subtle last:border-0 hover:bg-background"
+                >
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/contacts/${contact.id}/edit`}
+                      className="font-medium text-foreground hover:text-accent"
+                    >
+                      {contact.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-muted">
+                    {contact.email || contact.phone || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-muted">
+                    {SOURCE_LABELS[contact.source] ?? contact.source}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_VARIANTS[contact.status] ?? "neutral"}>
+                      {STATUS_LABELS[contact.status] ?? contact.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <form action={deleteContact}>
+                      <input type="hidden" name="id" value={contact.id} />
+                      <button
+                        type="submit"
+                        className="text-xs text-muted hover:text-danger"
+                      >
+                        Törlés
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
       )}
     </div>
   );
