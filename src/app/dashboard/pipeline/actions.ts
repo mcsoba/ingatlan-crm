@@ -148,6 +148,48 @@ export async function seedTransactionChecklist(dealId: string) {
   revalidatePath(`/dashboard/pipeline/${dealId}`);
 }
 
+export async function markDealLost(dealId: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const reason = String(formData.get("lost_reason") ?? "").trim();
+
+  const { error } = await supabase
+    .from("deals")
+    .update({
+      status: "lost",
+      lost_reason: reason || null,
+      lost_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+  revalidatePath("/dashboard/pipeline");
+}
+
+export async function reopenDeal(dealId: string) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("deals")
+    .update({
+      status: "open",
+      lost_reason: null,
+      lost_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+  revalidatePath("/dashboard/pipeline");
+}
+
 export async function deleteDeal(formData: FormData) {
   await ensureCurrentUserProfile();
   const id = String(formData.get("id"));

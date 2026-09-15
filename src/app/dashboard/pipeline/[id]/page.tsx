@@ -13,6 +13,7 @@ import {
 } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
+import { LostDealPanel } from "./lost-deal-panel";
 import { ActivityPanel } from "../../activities/activity-panel";
 import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -32,6 +33,9 @@ type DealDetailRow = {
   notes: string | null;
   deal_amount: number | null;
   commission_rate: number | null;
+  status: string;
+  lost_reason: string | null;
+  lost_at: string | null;
   contacts: { id: string; name: string; email: string | null; phone: string | null } | null;
   properties: { id: string; address: string; price: number | null } | null;
 };
@@ -49,7 +53,7 @@ export default async function DealDetailPage({
       supabase
         .from("deals")
         .select(
-          "id, stage_id, owner_id, notes, deal_amount, commission_rate, contacts(id, name, email, phone), properties(id, address, price)",
+          "id, stage_id, owner_id, notes, deal_amount, commission_rate, status, lost_reason, lost_at, contacts(id, name, email, phone), properties(id, address, price)",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -153,6 +157,15 @@ export default async function DealDetailPage({
             )}
           </Card>
         </div>
+
+        {dealRow.status === "lost" && (
+          <LostDealPanel
+            dealId={dealRow.id}
+            status={dealRow.status}
+            lostReason={dealRow.lost_reason}
+            lostAt={dealRow.lost_at}
+          />
+        )}
 
         <Card className="border-accent/20 bg-accent-soft/40 p-4">
           <AskAssistantPanel dealId={dealRow.id} />
@@ -296,16 +309,26 @@ export default async function DealDetailPage({
           <AttachmentsPanel dealId={dealRow.id} />
         </div>
 
-        <form action={deleteDeal} className="border-t border-border-subtle pt-4">
-          <input type="hidden" name="id" value={dealRow.id} />
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 text-sm text-muted hover:text-danger"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Deal törlése
-          </button>
-        </form>
+        <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
+          {dealRow.status === "open" && (
+            <LostDealPanel
+              dealId={dealRow.id}
+              status={dealRow.status}
+              lostReason={dealRow.lost_reason}
+              lostAt={dealRow.lost_at}
+            />
+          )}
+          <form action={deleteDeal}>
+            <input type="hidden" name="id" value={dealRow.id} />
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 text-sm text-muted hover:text-danger"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Deal törlése
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

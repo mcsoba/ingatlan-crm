@@ -10,6 +10,7 @@ type DealRow = {
   stage_id: string;
   deal_amount: number | null;
   commission_rate: number | null;
+  status: string;
 };
 
 export default async function ReportsPage() {
@@ -19,7 +20,7 @@ export default async function ReportsPage() {
     await Promise.all([
       supabase
         .from("deals")
-        .select("owner_id, stage_id, deal_amount, commission_rate"),
+        .select("owner_id, stage_id, deal_amount, commission_rate, status"),
       supabase.from("pipeline_stages").select("id, name, position").order("position"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
     ]);
@@ -36,19 +37,24 @@ export default async function ReportsPage() {
     }
   }
 
-  type Stats = { total: number; closed: number; commission: number };
+  type Stats = { total: number; closed: number; lost: number; commission: number };
+  const emptyStats = (): Stats => ({ total: 0, closed: 0, lost: 0, commission: 0 });
   const statsByOwner = new Map<string, Stats>();
-  const unassigned: Stats = { total: 0, closed: 0, commission: 0 };
+  const unassigned: Stats = emptyStats();
 
   for (const deal of (deals ?? []) as DealRow[]) {
     const bucket = deal.owner_id
-      ? (statsByOwner.get(deal.owner_id) ?? { total: 0, closed: 0, commission: 0 })
+      ? (statsByOwner.get(deal.owner_id) ?? emptyStats())
       : unassigned;
 
     bucket.total += 1;
-    if (lastStageId && deal.stage_id === lastStageId) bucket.closed += 1;
-    if (deal.deal_amount != null && deal.commission_rate != null) {
-      bucket.commission += (deal.deal_amount * deal.commission_rate) / 100;
+    if (deal.status === "lost") {
+      bucket.lost += 1;
+    } else {
+      if (lastStageId && deal.stage_id === lastStageId) bucket.closed += 1;
+      if (deal.deal_amount != null && deal.commission_rate != null) {
+        bucket.commission += (deal.deal_amount * deal.commission_rate) / 100;
+      }
     }
 
     if (deal.owner_id) statsByOwner.set(deal.owner_id, bucket);
@@ -57,7 +63,7 @@ export default async function ReportsPage() {
   const rows = (members ?? []).map((member) => ({
     id: member.id,
     name: member.full_name || emailById.get(member.id) || "Ismeretlen",
-    stats: statsByOwner.get(member.id) ?? { total: 0, closed: 0, commission: 0 },
+    stats: statsByOwner.get(member.id) ?? emptyStats(),
   }));
 
   if (unassigned.total > 0) {
@@ -92,6 +98,7 @@ export default async function ReportsPage() {
                 <th className="px-4 py-3 font-medium">Ügynök</th>
                 <th className="px-4 py-3 font-medium">Összes deal</th>
                 <th className="px-4 py-3 font-medium">Lezárt</th>
+                <th className="px-4 py-3 font-medium">Elveszett</th>
                 <th className="px-4 py-3 font-medium">Összes jutalék</th>
               </tr>
             </thead>
@@ -109,6 +116,7 @@ export default async function ReportsPage() {
                   </td>
                   <td className="px-4 py-3 text-muted">{row.stats.total}</td>
                   <td className="px-4 py-3 text-muted">{row.stats.closed}</td>
+                  <td className="px-4 py-3 text-muted">{row.stats.lost}</td>
                   <td className="px-4 py-3 text-muted">
                     {row.stats.commission > 0
                       ? `${row.stats.commission.toLocaleString("hu-HU", { maximumFractionDigits: 0 })} Ft`
