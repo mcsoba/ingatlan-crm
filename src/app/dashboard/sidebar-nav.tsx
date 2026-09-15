@@ -13,11 +13,13 @@ import {
   Mail,
   Settings,
   CalendarDays,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Áttekintés", icon: LayoutDashboard },
+  { href: "/dashboard/tasks", label: "Teendők", icon: ListChecks },
   { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
   { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },

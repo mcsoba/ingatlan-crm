@@ -189,9 +189,14 @@ export default async function DashboardPage() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Közelgő teendők</h2>
-          <Link href="/dashboard/calendar" className="text-xs text-muted hover:text-accent">
-            Teljes naptár →
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/tasks" className="text-xs text-muted hover:text-accent">
+              Összes teendő →
+            </Link>
+            <Link href="/dashboard/calendar" className="text-xs text-muted hover:text-accent">
+              Teljes naptár →
+            </Link>
+          </div>
         </div>
         {upcomingActivities.length === 0 ? (
           <EmptyState
