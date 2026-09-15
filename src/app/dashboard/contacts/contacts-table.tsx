@@ -116,6 +116,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
       )}
 
       <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs text-muted">
@@ -207,6 +208,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

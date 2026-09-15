@@ -142,7 +142,7 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           href="/dashboard/contacts"
           label="Kontakt"
@@ -164,7 +164,7 @@ export default async function DashboardPage() {
       </div>
 
       {funnelData.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card className="p-5">
             <div className="mb-3 flex items-center gap-1.5">
               <h2 className="text-sm font-semibold text-foreground">

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --background: #f7f7f8;
   --surface: #ffffff;
   --foreground: #18181b;
@@ -21,6 +22,54 @@
   --success-soft: #f0fdf4;
   --warning: #d97706;
   --warning-soft: #fffbeb;
+}
+
+/* Dark palette — applied when the system prefers dark (and no explicit
+   choice overrides it), or when the user explicitly picks dark via
+   ThemeToggle (data-theme="dark" set on <html>, persisted in
+   localStorage). Sidebar tokens stay the same in both themes — the
+   sidebar is intentionally always dark (Attio/Linear-style), so it is
+   not redefined here. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: #0b0b0f;
+    --surface: #16161c;
+    --foreground: #f4f4f5;
+    --muted: #a1a1aa;
+    --muted-subtle: #71717a;
+    --border: #27272e;
+    --border-subtle: #1f1f24;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --accent-soft: #23233a;
+    --danger: #f87171;
+    --danger-soft: #3a1d1d;
+    --success: #4ade80;
+    --success-soft: #142a1c;
+    --warning: #fbbf24;
+    --warning-soft: #3a2a0a;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b0b0f;
+  --surface: #16161c;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --muted-subtle: #71717a;
+  --border: #27272e;
+  --border-subtle: #1f1f24;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-soft: #23233a;
+  --danger: #f87171;
+  --danger-soft: #3a1d1d;
+  --success: #4ade80;
+  --success-soft: #142a1c;
+  --warning: #fbbf24;
+  --warning-soft: #3a2a0a;
 }
 
 @theme inline {

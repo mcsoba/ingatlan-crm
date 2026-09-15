@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { BarListChart } from "@/components/ui/charts";
 
 type DealRow = {
   owner_id: string | null;
@@ -63,6 +64,10 @@ export default async function ReportsPage() {
     rows.push({ id: "unassigned", name: "Nincs hozzárendelve", stats: unassigned });
   }
 
+  const commissionChartData = rows
+    .filter((row) => row.stats.commission > 0)
+    .map((row) => ({ label: row.name, count: Math.round(row.stats.commission) }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -70,39 +75,50 @@ export default async function ReportsPage() {
         description="Csapat-teljesítmény a pipeline dealek alapján."
       />
 
+      {commissionChartData.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 text-sm font-semibold text-foreground">
+            Jutalék ügynökönként (Ft)
+          </div>
+          <BarListChart items={commissionChartData} />
+        </Card>
+      )}
+
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs text-muted">
-              <th className="px-4 py-3 font-medium">Ügynök</th>
-              <th className="px-4 py-3 font-medium">Összes deal</th>
-              <th className="px-4 py-3 font-medium">Lezárt</th>
-              <th className="px-4 py-3 font-medium">Összes jutalék</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-border-subtle last:border-0"
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <UserRound className="h-3.5 w-3.5 text-muted-subtle" strokeWidth={1.75} />
-                    <span className="font-medium text-foreground">{row.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-muted">{row.stats.total}</td>
-                <td className="px-4 py-3 text-muted">{row.stats.closed}</td>
-                <td className="px-4 py-3 text-muted">
-                  {row.stats.commission > 0
-                    ? `${row.stats.commission.toLocaleString("hu-HU", { maximumFractionDigits: 0 })} Ft`
-                    : "—"}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-left text-xs text-muted">
+                <th className="px-4 py-3 font-medium">Ügynök</th>
+                <th className="px-4 py-3 font-medium">Összes deal</th>
+                <th className="px-4 py-3 font-medium">Lezárt</th>
+                <th className="px-4 py-3 font-medium">Összes jutalék</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-border-subtle last:border-0"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <UserRound className="h-3.5 w-3.5 text-muted-subtle" strokeWidth={1.75} />
+                      <span className="font-medium text-foreground">{row.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted">{row.stats.total}</td>
+                  <td className="px-4 py-3 text-muted">{row.stats.closed}</td>
+                  <td className="px-4 py-3 text-muted">
+                    {row.stats.commission > 0
+                      ? `${row.stats.commission.toLocaleString("hu-HU", { maximumFractionDigits: 0 })} Ft`
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

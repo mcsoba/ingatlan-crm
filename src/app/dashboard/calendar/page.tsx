@@ -114,7 +114,8 @@ export default async function CalendarPage({
 
       <div className="text-sm font-medium capitalize text-foreground">{monthLabel}</div>
 
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
+      <div className="overflow-x-auto">
+      <div className="grid min-w-[640px] grid-cols-7 gap-px overflow-hidden rounded-xl border border-border bg-border">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
@@ -176,6 +177,7 @@ export default async function CalendarPage({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

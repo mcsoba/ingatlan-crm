@@ -9,7 +9,10 @@ export function BarListChart({
     <div className="flex flex-col gap-2.5">
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-3">
-          <div className="w-24 shrink-0 truncate text-xs text-muted">
+          <div
+            className="w-24 shrink-0 truncate text-xs text-muted"
+            title={item.label}
+          >
             {item.label}
           </div>
           <div className="h-5 flex-1 overflow-hidden rounded bg-background">
