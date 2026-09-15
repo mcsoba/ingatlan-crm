@@ -12,6 +12,7 @@ type DealRow = {
   id: string;
   stage_id: string;
   updated_at: string;
+  deal_amount: number | null;
   contacts: { name: string } | null;
   properties: { address: string } | null;
 };
@@ -29,7 +30,7 @@ export default async function PipelinePage() {
         .order("position"),
       supabase
         .from("deals")
-        .select("id, stage_id, updated_at, contacts(name), properties(address)")
+        .select("id, stage_id, updated_at, deal_amount, contacts(name), properties(address)")
         .order("created_at", { ascending: false }),
     ]);
 
@@ -51,6 +52,7 @@ export default async function PipelinePage() {
       stageId: deal.stage_id,
       contactName: deal.contacts?.name ?? "Ismeretlen kontakt",
       propertyAddress: deal.properties?.address ?? null,
+      dealAmount: deal.deal_amount,
       isStale: !isClosed && daysSinceUpdate >= STALE_AFTER_DAYS,
       daysSinceUpdate,
     };

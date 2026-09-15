@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus, Search, Building2, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PropertiesGrid } from "./properties-grid";
+import { STATUS_LABELS } from "./constants";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -10,25 +11,26 @@ import { inputClass } from "@/components/ui/styles";
 export default async function PropertiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; priceMin?: string; priceMax?: string }>;
+  searchParams: Promise<{ q?: string; priceMin?: string; priceMax?: string; status?: string }>;
 }) {
-  const { q, priceMin, priceMax } = await searchParams;
+  const { q, priceMin, priceMax, status } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
     .from("properties")
-    .select("id, address, price, size_sqm")
+    .select("id, address, price, size_sqm, status")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("address", `%${q}%`);
   if (priceMin) query = query.gte("price", Number(priceMin));
   if (priceMax) query = query.lte("price", Number(priceMax));
+  if (status) query = query.eq("status", status);
 
   const { data: properties, error } = await query;
 
   if (error) throw error;
 
-  const hasFilters = Boolean(q || priceMin || priceMax);
+  const hasFilters = Boolean(q || priceMin || priceMax || status);
 
   const propertyIds = properties.map((p) => p.id);
   const coverPhotoByProperty = new Map<string, string>();
@@ -96,6 +98,14 @@ export default async function PropertiesPage({
           placeholder="Árig (Ft)"
           className={`${inputClass} w-32`}
         />
+        <select name="status" defaultValue={status ?? ""} className={inputClass}>
+          <option value="">Minden státusz</option>
+          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <button type="submit" className={buttonVariants("secondary")}>
           Szűrés
         </button>

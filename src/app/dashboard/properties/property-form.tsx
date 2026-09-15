@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { generateDescription } from "./actions";
+import { STATUS_LABELS } from "./constants";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
@@ -13,6 +14,7 @@ type PropertyFormProps = {
     address?: string;
     price?: number | null;
     size_sqm?: number | null;
+    status?: string;
     features?: { notes?: string } | null;
     ai_description?: string | null;
   };
@@ -91,6 +93,21 @@ export function PropertyForm({
             onChange={(e) => setSizeSqm(e.target.value)}
             className={inputClass}
           />
+        </div>
+
+        <div className={fieldGroupClass}>
+          <span className={labelClass}>Státusz</span>
+          <select
+            name="status"
+            defaultValue={defaultValues?.status ?? "available"}
+            className={inputClass}
+          >
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={fieldGroupClass}>

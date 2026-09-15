@@ -19,7 +19,7 @@ export default async function EditPropertyPage({
   const [{ data: property }, { data: photoRows }] = await Promise.all([
     supabase
       .from("properties")
-      .select("id, address, price, size_sqm, features, ai_description")
+      .select("id, address, price, size_sqm, status, features, ai_description")
       .eq("id", id)
       .maybeSingle(),
     supabase

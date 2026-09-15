@@ -9,10 +9,17 @@ import { anthropic, AI_MODEL } from "@/lib/claude";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
+const VALID_STATUSES = ["available", "reserved", "sold", "rented"];
+
 function parseNumber(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
   const n = Number(String(value).replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+function parseStatus(value: FormDataEntryValue | null): string {
+  const status = String(value ?? "available");
+  return VALID_STATUSES.includes(status) ? status : "available";
 }
 
 async function uploadPhotoIfPresent(
@@ -67,6 +74,7 @@ export async function createProperty(formData: FormData) {
       address,
       price: parseNumber(formData.get("price")),
       size_sqm: parseNumber(formData.get("size_sqm")),
+      status: parseStatus(formData.get("status")),
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
     })
@@ -99,6 +107,7 @@ export async function updateProperty(id: string, formData: FormData) {
       address,
       price: parseNumber(formData.get("price")),
       size_sqm: parseNumber(formData.get("size_sqm")),
+      status: parseStatus(formData.get("status")),
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
     })

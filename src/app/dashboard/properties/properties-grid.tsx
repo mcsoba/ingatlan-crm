@@ -4,14 +4,17 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ImageOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { deleteProperty, bulkDeleteProperties } from "./actions";
+import { STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 
 type PropertyRow = {
   id: string;
   address: string;
   price: number | null;
   size_sqm: number | null;
+  status: string;
   photoUrl: string | null;
 };
 
@@ -103,11 +106,18 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
                 {property.address}
               </div>
             </Link>
-            <div className="mt-1 text-sm text-muted">
-              {property.price
-                ? `${property.price.toLocaleString("hu-HU")} Ft`
-                : "—"}
-              {property.size_sqm ? ` · ${property.size_sqm} m²` : ""}
+            <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted">
+              <span>
+                {property.price
+                  ? `${property.price.toLocaleString("hu-HU")} Ft`
+                  : "—"}
+                {property.size_sqm ? ` · ${property.size_sqm} m²` : ""}
+              </span>
+              {property.status !== "available" && (
+                <Badge variant={STATUS_VARIANTS[property.status] ?? "neutral"}>
+                  {STATUS_LABELS[property.status] ?? property.status}
+                </Badge>
+              )}
             </div>
             <form action={deleteProperty} className="mt-2">
               <input type="hidden" name="id" value={property.id} />

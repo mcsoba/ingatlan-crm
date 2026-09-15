@@ -14,11 +14,18 @@ export default async function PublicPropertyPage({
 
   const { data: property } = await admin
     .from("properties")
-    .select("id, agency_id, address, price, size_sqm, ai_description, features")
+    .select("id, agency_id, address, price, size_sqm, status, ai_description, features")
     .eq("id", propertyId)
     .maybeSingle();
 
   if (!property) notFound();
+
+  const STATUS_LABELS: Record<string, string> = {
+    reserved: "Foglalt",
+    sold: "Eladva",
+    rented: "Kiadva",
+  };
+  const isUnavailable = property.status === "sold" || property.status === "rented";
 
   const [{ data: agency }, { data: photoRows }] = await Promise.all([
     admin.from("agencies").select("name").eq("id", property.agency_id).maybeSingle(),
@@ -62,9 +69,16 @@ export default async function PublicPropertyPage({
         </div>
       )}
 
-      <h1 className="mt-6 text-2xl font-semibold tracking-tight text-foreground">
-        {property.address}
-      </h1>
+      <div className="mt-6 flex flex-wrap items-center gap-2.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {property.address}
+        </h1>
+        {property.status !== "available" && (
+          <span className="rounded-full bg-background px-2.5 py-1 text-xs font-medium text-muted">
+            {STATUS_LABELS[property.status] ?? property.status}
+          </span>
+        )}
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted">
         {property.price && (
@@ -95,7 +109,14 @@ export default async function PublicPropertyPage({
       )}
 
       <div className="mt-10 print:hidden">
-        <LeadForm agencyId={property.agency_id} propertyId={property.id} />
+        {isUnavailable ? (
+          <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
+            Ez az ingatlan már nem elérhető, de örömmel segítünk hasonlót találni —
+            keresse irodánkat elérhetőségeinken.
+          </p>
+        ) : (
+          <LeadForm agencyId={property.agency_id} propertyId={property.id} />
+        )}
       </div>
     </main>
   );

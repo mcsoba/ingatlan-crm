@@ -11,9 +11,21 @@ export type DealCard = {
   stageId: string;
   contactName: string;
   propertyAddress: string | null;
+  dealAmount: number | null;
   isStale: boolean;
   daysSinceUpdate: number;
 };
+
+function formatCompactHuf(amount: number): string {
+  if (amount >= 1_000_000) {
+    const millions = amount / 1_000_000;
+    return `${millions.toLocaleString("hu-HU", { maximumFractionDigits: 1 })} M Ft`;
+  }
+  if (amount >= 1_000) {
+    return `${Math.round(amount / 1_000).toLocaleString("hu-HU")} E Ft`;
+  }
+  return `${amount.toLocaleString("hu-HU")} Ft`;
+}
 
 export type Stage = {
   id: string;
@@ -99,6 +111,16 @@ export function PipelineBoard({
             <span className="rounded-full bg-surface px-1.5 py-0.5 text-xs text-muted">
               {cards.filter((c) => c.stageId === stage.id).length}
             </span>
+            {(() => {
+              const total = cards
+                .filter((c) => c.stageId === stage.id)
+                .reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
+              return total > 0 ? (
+                <span className="ml-auto text-xs font-normal text-muted-subtle">
+                  {formatCompactHuf(total)}
+                </span>
+              ) : null;
+            })()}
           </div>
 
           <div className="flex flex-col gap-2">
