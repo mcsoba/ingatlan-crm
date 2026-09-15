@@ -600,3 +600,31 @@ export async function deleteContact(formData: FormData) {
 
   revalidatePath("/dashboard/contacts");
 }
+
+export async function bulkDeleteContacts(ids: string[]) {
+  await ensureCurrentUserProfile();
+  if (ids.length === 0) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("contacts").delete().in("id", ids);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/contacts");
+}
+
+export async function bulkUpdateContactStatus(ids: string[], status: string) {
+  await ensureCurrentUserProfile();
+  if (ids.length === 0) return;
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error("Érvénytelen státusz");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("contacts")
+    .update({ status })
+    .in("id", ids);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/contacts");
+}

@@ -61,6 +61,7 @@ export default async function PipelinePage() {
       <PageHeader
         title="Pipeline"
         description="Húzd a kártyákat a szakaszok között."
+        helpText="A pipeline minden folyamatban lévő üzletet (deal-t) mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
         action={
           <div className="flex items-center gap-2">
             <Link

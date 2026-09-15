@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { Plus, Search, Building2, ImageOff, Download } from "lucide-react";
+import { Plus, Search, Building2, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { deleteProperty } from "./actions";
+import { PropertiesGrid } from "./properties-grid";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
@@ -121,53 +120,18 @@ export default async function PropertiesPage({
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {properties.map((property) => {
+        <PropertiesGrid
+          properties={properties.map((property) => {
             const coverPath = coverPhotoByProperty.get(property.id);
-            const photoUrl = coverPath
-              ? supabase.storage.from("property-photos").getPublicUrl(coverPath)
-                  .data.publicUrl
-              : null;
-
-            return (
-              <Card key={property.id} className="overflow-hidden p-3">
-                <Link href={`/dashboard/properties/${property.id}/edit`}>
-                  {photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photoUrl}
-                      alt={property.address}
-                      className="mb-3 -mx-3 -mt-3 h-32 object-cover"
-                      style={{ width: "calc(100% + 1.5rem)" }}
-                    />
-                  ) : (
-                    <div className="mb-3 -mx-3 -mt-3 flex h-32 items-center justify-center bg-background text-muted-subtle">
-                      <ImageOff className="h-6 w-6" strokeWidth={1.5} />
-                    </div>
-                  )}
-                  <div className="font-medium text-foreground">
-                    {property.address}
-                  </div>
-                </Link>
-                <div className="mt-1 text-sm text-muted">
-                  {property.price
-                    ? `${property.price.toLocaleString("hu-HU")} Ft`
-                    : "—"}
-                  {property.size_sqm ? ` · ${property.size_sqm} m²` : ""}
-                </div>
-                <form action={deleteProperty} className="mt-2">
-                  <input type="hidden" name="id" value={property.id} />
-                  <button
-                    type="submit"
-                    className="text-xs text-muted hover:text-danger"
-                  >
-                    Törlés
-                  </button>
-                </form>
-              </Card>
-            );
+            return {
+              ...property,
+              photoUrl: coverPath
+                ? supabase.storage.from("property-photos").getPublicUrl(coverPath)
+                    .data.publicUrl
+                : null,
+            };
           })}
-        </div>
+        />
       )}
     </div>
   );

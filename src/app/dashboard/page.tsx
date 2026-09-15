@@ -7,6 +7,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
+import { BarListChart, TrendBarChart } from "@/components/ui/charts";
 
 type ChecklistItem = { label: string; done: boolean; href: string };
 
@@ -30,12 +32,19 @@ export default async function DashboardPage() {
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
+  const trendStart = new Date();
+  trendStart.setHours(0, 0, 0, 0);
+  trendStart.setDate(trendStart.getDate() - 13);
+
   const [
     { count: contactCount },
     { count: propertyCount },
     { count: dealCount },
     { count: memberCount },
     { data: upcoming, error: upcomingError },
+    { data: stages },
+    { data: dealStages },
+    { data: recentContacts },
   ] = await Promise.all([
     supabase.from("contacts").select("id", { count: "exact", head: true }),
     supabase.from("properties").select("id", { count: "exact", head: true }),
@@ -48,10 +57,40 @@ export default async function DashboardPage() {
       .neq("type", "checklist")
       .order("due_at", { ascending: true, nullsFirst: false })
       .limit(5),
+    supabase.from("pipeline_stages").select("id, name, position").order("position"),
+    supabase.from("deals").select("stage_id"),
+    supabase
+      .from("contacts")
+      .select("created_at")
+      .gte("created_at", trendStart.toISOString()),
   ]);
 
   if (upcomingError) throw upcomingError;
   const upcomingActivities = (upcoming ?? []) as unknown as UpcomingActivity[];
+
+  const dealCountByStage = new Map<string, number>();
+  for (const deal of dealStages ?? []) {
+    dealCountByStage.set(deal.stage_id, (dealCountByStage.get(deal.stage_id) ?? 0) + 1);
+  }
+  const funnelData = (stages ?? []).map((stage) => ({
+    label: stage.name,
+    count: dealCountByStage.get(stage.id) ?? 0,
+  }));
+
+  const leadsByDay = new Map<string, number>();
+  for (const contact of recentContacts ?? []) {
+    const day = contact.created_at.slice(0, 10);
+    leadsByDay.set(day, (leadsByDay.get(day) ?? 0) + 1);
+  }
+  const trendData = Array.from({ length: 14 }, (_, i) => {
+    const day = new Date(trendStart);
+    day.setDate(day.getDate() + i);
+    const key = day.toISOString().slice(0, 10);
+    return {
+      label: day.toLocaleDateString("hu-HU", { month: "2-digit", day: "2-digit" }),
+      count: leadsByDay.get(key) ?? 0,
+    };
+  });
 
   const hasIntegration = Boolean(
     process.env.STRIPE_SECRET_KEY || process.env.RESEND_API_KEY || process.env.TWILIO_ACCOUNT_SID,
@@ -123,6 +162,29 @@ export default async function DashboardPage() {
           icon={Kanban}
         />
       </div>
+
+      {funnelData.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="p-5">
+            <div className="mb-3 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-foreground">
+                Pipeline áttekintés
+              </h2>
+              <HelpTooltip text="Hány folyamatban lévő deal van jelenleg az egyes pipeline-szakaszokban. Segít látni, hol torlódnak fel az ügyek." />
+            </div>
+            <BarListChart items={funnelData} />
+          </Card>
+          <Card className="p-5">
+            <div className="mb-3 flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-foreground">
+                Új érdeklődők (14 nap)
+              </h2>
+              <HelpTooltip text="Az elmúlt 14 napban naponta hány új kontakt került fel a rendszerbe — akár kézzel, akár a publikus ingatlan-oldal lead-űrlapjáról." />
+            </div>
+            <TrendBarChart points={trendData} />
+          </Card>
+        </div>
+      )}
 
       <div>
         <div className="mb-3 flex items-center justify-between">
