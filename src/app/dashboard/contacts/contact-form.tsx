@@ -9,6 +9,7 @@ import {
   sendFollowUpEmail,
   generateSmsDraft,
   sendSmsToContact,
+  mergeContacts,
   type DuplicateMatch,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,30 @@ export function ContactForm({
 
   const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [confirmMergeId, setConfirmMergeId] = useState<string | null>(null);
+  const [isMerging, startMerging] = useTransition();
+  const [mergeError, setMergeError] = useState<string | null>(null);
+
+  function handleMerge(duplicateId: string) {
+    if (!contactId) return;
+    if (confirmMergeId !== duplicateId) {
+      setConfirmMergeId(duplicateId);
+      return;
+    }
+    setMergeError(null);
+    startMerging(async () => {
+      try {
+        await mergeContacts(contactId, duplicateId);
+        // Reload so the (now possibly filled-in) email/phone/notes fields
+        // reflect the merge — a router.refresh() wouldn't reset this
+        // client component's uncontrolled form state.
+        window.location.reload();
+      } catch (err) {
+        setMergeError(err instanceof Error ? err.message : "Hiba történt");
+        setConfirmMergeId(null);
+      }
+    });
+  }
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -183,15 +208,31 @@ export function ContactForm({
                 Lehet, hogy már létezik ilyen kontakt
               </div>
               {duplicates.map((d) => (
-                <Link
-                  key={d.id}
-                  href={`/dashboard/contacts/${d.id}/edit`}
-                  target="_blank"
-                  className="underline hover:no-underline"
-                >
-                  {d.name} {d.email ? `· ${d.email}` : d.phone ? `· ${d.phone}` : ""}
-                </Link>
+                <div key={d.id} className="flex items-center justify-between gap-2">
+                  <Link
+                    href={`/dashboard/contacts/${d.id}/edit`}
+                    target="_blank"
+                    className="underline hover:no-underline"
+                  >
+                    {d.name} {d.email ? `· ${d.email}` : d.phone ? `· ${d.phone}` : ""}
+                  </Link>
+                  {contactId && (
+                    <button
+                      type="button"
+                      onClick={() => handleMerge(d.id)}
+                      disabled={isMerging}
+                      className="shrink-0 font-medium whitespace-nowrap text-warning underline hover:no-underline disabled:opacity-50"
+                    >
+                      {isMerging && confirmMergeId === d.id
+                        ? "Összevonás…"
+                        : confirmMergeId === d.id
+                          ? "Biztos? Kattints újra"
+                          : "Összevonás ezzel"}
+                    </button>
+                  )}
+                </div>
               ))}
+              {mergeError && <span className="text-danger">{mergeError}</span>}
             </div>
           )}
 

@@ -518,6 +518,84 @@ export async function checkDuplicateContact(input: {
   }));
 }
 
+// Merges `duplicateId` into `keepId`: fills in any email/phone/notes the
+// kept contact is missing, reassigns every linked deal/activity/attachment/
+// campaign-enrollment, then deletes the duplicate row. Email-sequence
+// enrollments have a unique(sequence_id, contact_id) constraint, so a
+// duplicate's enrollment in a sequence the kept contact is already in gets
+// dropped instead of reassigned (can't have both).
+export async function mergeContacts(keepId: string, duplicateId: string) {
+  await ensureCurrentUserProfile();
+  if (keepId === duplicateId) throw new Error("Nem lehet önmagával összevonni egy kontaktot");
+
+  const supabase = await createClient();
+
+  const [{ data: keep, error: keepError }, { data: duplicate, error: duplicateError }] =
+    await Promise.all([
+      supabase.from("contacts").select("email, phone, notes").eq("id", keepId).single(),
+      supabase.from("contacts").select("email, phone, notes").eq("id", duplicateId).single(),
+    ]);
+  if (keepError) throw keepError;
+  if (duplicateError) throw duplicateError;
+
+  const patch: { email?: string; phone?: string; notes?: string } = {};
+  if (!keep.email && duplicate.email) patch.email = duplicate.email;
+  if (!keep.phone && duplicate.phone) patch.phone = duplicate.phone;
+  if (duplicate.notes?.trim()) {
+    patch.notes = keep.notes?.trim()
+      ? `${keep.notes.trim()}\n\n${duplicate.notes.trim()}`
+      : duplicate.notes.trim();
+  }
+  if (Object.keys(patch).length > 0) {
+    const { error } = await supabase.from("contacts").update(patch).eq("id", keepId);
+    if (error) throw error;
+  }
+
+  for (const table of ["activities", "deals", "attachments"] as const) {
+    const { error } = await supabase
+      .from(table)
+      .update({ contact_id: keepId })
+      .eq("contact_id", duplicateId);
+    if (error) throw error;
+  }
+
+  const { data: duplicateEnrollments } = await supabase
+    .from("email_sequence_enrollments")
+    .select("id, sequence_id")
+    .eq("contact_id", duplicateId);
+
+  if (duplicateEnrollments && duplicateEnrollments.length > 0) {
+    const { data: keepEnrollments } = await supabase
+      .from("email_sequence_enrollments")
+      .select("sequence_id")
+      .eq("contact_id", keepId);
+    const keepSequenceIds = new Set((keepEnrollments ?? []).map((e) => e.sequence_id));
+
+    const toDrop = duplicateEnrollments
+      .filter((e) => keepSequenceIds.has(e.sequence_id))
+      .map((e) => e.id);
+    const toReassign = duplicateEnrollments
+      .filter((e) => !keepSequenceIds.has(e.sequence_id))
+      .map((e) => e.id);
+
+    if (toDrop.length > 0) {
+      await supabase.from("email_sequence_enrollments").delete().in("id", toDrop);
+    }
+    if (toReassign.length > 0) {
+      await supabase
+        .from("email_sequence_enrollments")
+        .update({ contact_id: keepId })
+        .in("id", toReassign);
+    }
+  }
+
+  const { error: deleteError } = await supabase.from("contacts").delete().eq("id", duplicateId);
+  if (deleteError) throw deleteError;
+
+  revalidatePath("/dashboard/contacts");
+  revalidatePath(`/dashboard/contacts/${keepId}/edit`);
+}
+
 const VALID_SOURCES = ["website", "referral", "phone", "walk_in", "other"];
 const VALID_STATUSES = ["new", "contacted", "qualified", "inactive"];
 

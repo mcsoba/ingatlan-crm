@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Settings2, XCircle } from "lucide-react";
+import { Plus, Settings2, XCircle, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PipelineBoard, type DealCard } from "./board";
 import { PageHeader } from "@/components/ui/page-header";
@@ -81,6 +81,17 @@ export default async function PipelinePage() {
         helpText="A pipeline minden folyamatban lévő üzletet (deal-t) mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
         action={
           <div className="flex items-center gap-2">
+            {/* Plain <a>, not <Link> — this must be a full browser navigation
+                for the CSV Content-Disposition download to work. The lint
+                rule below false-positives because /export collides in its
+                page-pattern matching with the sibling dynamic route
+                /dashboard/pipeline/[id] (Next.js itself resolves the more
+                specific static segment first, so there's no real conflict). */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/dashboard/pipeline/export" className={buttonVariants("secondary")}>
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              Export CSV
+            </a>
             <Link
               href="/dashboard/pipeline/stages"
               className={buttonVariants("secondary")}
