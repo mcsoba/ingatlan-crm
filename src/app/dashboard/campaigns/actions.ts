@@ -172,6 +172,81 @@ export async function enrollContact(contactId: string, sequenceId: string) {
   revalidatePath(`/dashboard/contacts/${contactId}/edit`);
 }
 
+export async function bulkEnrollByTag(sequenceId: string, formData: FormData) {
+  const { profile } = await ensureCurrentUserProfile();
+  const tagId = String(formData.get("tag_id") ?? "");
+
+  if (!tagId) {
+    redirect(
+      `/dashboard/campaigns/${sequenceId}?enroll_error=${encodeURIComponent("Válassz egy címkét")}`,
+    );
+  }
+
+  const supabase = await createClient();
+
+  const [{ data: steps, error: stepsError }, { data: tagged, error: tagError }] =
+    await Promise.all([
+      supabase
+        .from("email_sequence_steps")
+        .select("delay_days")
+        .eq("sequence_id", sequenceId)
+        .order("step_order", { ascending: true })
+        .limit(1),
+      supabase
+        .from("contact_tags")
+        .select("contact_id, contacts(id, email)")
+        .eq("tag_id", tagId),
+    ]);
+
+  if (stepsError) throw stepsError;
+  if (tagError) throw tagError;
+
+  if (!steps || steps.length === 0) {
+    redirect(
+      `/dashboard/campaigns/${sequenceId}?enroll_error=${encodeURIComponent(
+        "Ehhez a kampányhoz még nincs egyetlen lépés sem hozzáadva",
+      )}`,
+    );
+  }
+
+  const contactsWithEmail = (tagged ?? [])
+    .map((row) => row.contacts as unknown as { id: string; email: string | null } | null)
+    .filter((c): c is { id: string; email: string } => !!c?.email);
+
+  if (contactsWithEmail.length === 0) {
+    redirect(
+      `/dashboard/campaigns/${sequenceId}?enroll_error=${encodeURIComponent(
+        "Ezzel a címkével nincs email-címmel rendelkező kontakt",
+      )}`,
+    );
+  }
+
+  const now = new Date();
+  const nextSendAt = new Date(now.getTime() + steps[0].delay_days * 24 * 60 * 60 * 1000);
+
+  const rows = contactsWithEmail.map((contact) => ({
+    agency_id: profile.agency_id,
+    sequence_id: sequenceId,
+    contact_id: contact.id,
+    status: "active",
+    current_step: 0,
+    next_send_at: nextSendAt.toISOString(),
+  }));
+
+  const { data: inserted, error } = await supabase
+    .from("email_sequence_enrollments")
+    .upsert(rows, { onConflict: "sequence_id,contact_id", ignoreDuplicates: true })
+    .select("id");
+
+  if (error) throw error;
+
+  const enrolled = inserted?.length ?? 0;
+  const skipped = rows.length - enrolled;
+
+  revalidatePath(`/dashboard/campaigns/${sequenceId}`);
+  redirect(`/dashboard/campaigns/${sequenceId}?enrolled=${enrolled}&skipped=${skipped}`);
+}
+
 export async function cancelEnrollment(enrollmentId: string, contactId: string) {
   await ensureCurrentUserProfile();
   const supabase = await createClient();

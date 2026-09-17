@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { addStep, deleteStep, deleteSequence, toggleSequenceActive } from "../actions";
+import {
+  addStep,
+  deleteStep,
+  deleteSequence,
+  toggleSequenceActive,
+  bulkEnrollByTag,
+} from "../actions";
+import { listAgencyTags } from "../../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +29,16 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default async function CampaignDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ enrolled?: string; skipped?: string; enroll_error?: string }>;
 }) {
   const { id } = await params;
+  const { enrolled, skipped, enroll_error: enrollError } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: sequence }, { data: steps, error: stepsError }, { data: enrollments }] =
+  const [{ data: sequence }, { data: steps, error: stepsError }, { data: enrollments }, tags] =
     await Promise.all([
       supabase
         .from("email_sequences")
@@ -46,6 +56,7 @@ export default async function CampaignDetailPage({
         .eq("sequence_id", id)
         .order("enrolled_at", { ascending: false })
         .limit(20),
+      listAgencyTags(),
     ]);
 
   if (stepsError) throw stepsError;
@@ -53,6 +64,7 @@ export default async function CampaignDetailPage({
 
   const toggleActive = toggleSequenceActive.bind(null, sequence.id, sequence.active);
   const addStepWithId = addStep.bind(null, sequence.id);
+  const bulkEnrollWithId = bulkEnrollByTag.bind(null, sequence.id);
   const enrollmentRows = (enrollments ?? []) as unknown as {
     id: string;
     status: string;
@@ -176,6 +188,61 @@ export default async function CampaignDetailPage({
             Lépés hozzáadása
           </Button>
         </form>
+      </Card>
+
+      {(enrolled !== undefined || enrollError) && (
+        <Card
+          className={`flex items-center gap-2.5 p-4 text-sm ${
+            enrollError
+              ? "border-danger/30 bg-danger-soft text-danger"
+              : "border-success/30 bg-success-soft text-success"
+          }`}
+        >
+          {enrollError ? (
+            <>
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {enrollError}
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              {enrolled} kontakt beiratkoztatva
+              {Number(skipped) > 0
+                ? ` (${skipped} kihagyva — már be volt iratkozva)`
+                : ""}
+              .
+            </>
+          )}
+        </Card>
+      )}
+
+      <Card className="p-5">
+        <h2 className={`mb-1 ${sectionLabelClass}`}>Tömeges beiratkoztatás címke alapján</h2>
+        <p className="mb-3 text-sm text-muted">
+          Minden email-címmel rendelkező kontakt beiratkozik, akin a kiválasztott címke szerepel.
+        </p>
+        {tags.length === 0 ? (
+          <p className="text-sm text-muted">
+            Még nincs egyetlen címke sem — hozz létre egyet egy kontakt oldalán, utána itt
+            célzottan beiratkoztathatod a vele jelölt kontaktokat.
+          </p>
+        ) : (
+          <form action={bulkEnrollWithId} className="flex flex-wrap items-center gap-2">
+            <select name="tag_id" required defaultValue="" className={inputClass}>
+              <option value="" disabled>
+                Válassz címkét
+              </option>
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+            <Button type="submit" variant="secondary" size="sm">
+              Beiratkoztatás
+            </Button>
+          </form>
+        )}
       </Card>
 
       <div>

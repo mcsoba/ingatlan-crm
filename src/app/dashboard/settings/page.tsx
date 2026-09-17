@@ -7,10 +7,12 @@ import {
   MessageSquare,
   CalendarDays,
   UserRound,
+  Building2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { disconnectGoogleCalendar, updateMyName } from "./actions";
+import { disconnectGoogleCalendar, updateAgencyBranding, updateMyName } from "./actions";
+import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +39,23 @@ export default async function SettingsPage({
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
-  const { data: googleConnection } = await supabase
-    .from("google_calendar_connections")
-    .select("connected_at")
-    .eq("profile_id", profile.id)
-    .maybeSingle();
+  const [{ data: googleConnection }, { data: agencyBranding }] = await Promise.all([
+    supabase
+      .from("google_calendar_connections")
+      .select("connected_at")
+      .eq("profile_id", profile.id)
+      .maybeSingle(),
+    supabase
+      .from("agencies")
+      .select("logo_path, accent_preset")
+      .eq("id", profile.agency_id)
+      .single(),
+  ]);
+
+  const logoUrl = agencyBranding?.logo_path
+    ? supabase.storage.from("agency-logos").getPublicUrl(agencyBranding.logo_path).data.publicUrl
+    : null;
+  const currentPreset = getAccentPreset(agencyBranding?.accent_preset);
 
   const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -148,6 +162,75 @@ export default async function SettingsPage({
               Mentés
             </Button>
           </form>
+        </Card>
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Iroda branding</div>
+          <p className="text-xs text-muted">
+            A logó és a kiemelő szín megjelenik a publikus ingatlan-oldalakon.
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full"
+            style={{ background: currentPreset.soft, color: currentPreset.hover }}
+          >
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Building2 className="h-4 w-4" strokeWidth={1.75} />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            {profile.role === "owner" ? (
+              <form action={updateAgencyBranding} className="flex flex-col gap-3">
+                <div className={fieldGroupClass}>
+                  <span className={labelClass}>Logó (négyzetes kép ajánlott)</span>
+                  <input
+                    type="file"
+                    name="logo"
+                    accept="image/*"
+                    className="text-sm text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-accent-hover"
+                  />
+                </div>
+                <div className={fieldGroupClass}>
+                  <span className={labelClass}>Kiemelő szín</span>
+                  <div className="flex flex-wrap gap-2">
+                    {ACCENT_PRESETS.map((preset) => (
+                      <label
+                        key={preset.id}
+                        className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs has-[:checked]:border-accent"
+                      >
+                        <input
+                          type="radio"
+                          name="accent_preset"
+                          value={preset.id}
+                          defaultChecked={preset.id === currentPreset.id}
+                          className="sr-only"
+                        />
+                        <span
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{ background: preset.accent }}
+                        />
+                        {preset.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <Button type="submit" variant="secondary" size="sm" className="self-start">
+                  Mentés
+                </Button>
+              </form>
+            ) : (
+              <p className="text-sm text-muted">
+                A branding beállítását csak az iroda tulajdonosa módosíthatja. Jelenlegi szín:{" "}
+                {currentPreset.label}.
+              </p>
+            )}
+          </div>
         </Card>
       </div>
 

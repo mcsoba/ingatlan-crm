@@ -1,9 +1,11 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { revokeGoogleToken } from "@/lib/google";
+import { ACCENT_PRESET_IDS } from "@/lib/accent-presets";
 
 export async function updateMyName(formData: FormData) {
   const { profile } = await ensureCurrentUserProfile();
@@ -20,6 +22,47 @@ export async function updateMyName(formData: FormData) {
   revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/team");
+}
+
+export async function updateAgencyBranding(formData: FormData) {
+  const { profile } = await ensureCurrentUserProfile();
+  if (profile.role !== "owner") {
+    throw new Error("Csak az iroda tulajdonosa módosíthatja a brandinget");
+  }
+
+  const supabase = await createClient();
+  const requestedPreset = String(formData.get("accent_preset") ?? "indigo");
+  const updates: { accent_preset: string; logo_path?: string } = {
+    accent_preset: ACCENT_PRESET_IDS.includes(requestedPreset) ? requestedPreset : "indigo",
+  };
+
+  const file = formData.get("logo");
+  if (file instanceof File && file.size > 0) {
+    const { data: current } = await supabase
+      .from("agencies")
+      .select("logo_path")
+      .eq("id", profile.agency_id)
+      .single();
+
+    const ext = file.name.split(".").pop() || "png";
+    const path = `${profile.agency_id}/logo-${randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("agency-logos")
+      .upload(path, file, { contentType: file.type });
+    if (uploadError) throw uploadError;
+
+    if (current?.logo_path) {
+      await supabase.storage.from("agency-logos").remove([current.logo_path]);
+    }
+
+    updates.logo_path = path;
+  }
+
+  const { error } = await supabase.from("agencies").update(updates).eq("id", profile.agency_id);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/settings");
 }
 
 export async function disconnectGoogleCalendar() {

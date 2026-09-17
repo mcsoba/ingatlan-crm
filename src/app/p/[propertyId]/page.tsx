@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { Building2, Ruler, Wallet } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAccentPreset } from "@/lib/accent-presets";
 import { PrintButton } from "./print-button";
 import { LeadForm } from "./lead-form";
 
@@ -28,7 +30,11 @@ export default async function PublicPropertyPage({
   const isUnavailable = property.status === "sold" || property.status === "rented";
 
   const [{ data: agency }, { data: photoRows }] = await Promise.all([
-    admin.from("agencies").select("name").eq("id", property.agency_id).maybeSingle(),
+    admin
+      .from("agencies")
+      .select("name, logo_path, accent_preset")
+      .eq("id", property.agency_id)
+      .maybeSingle(),
     admin
       .from("property_photos")
       .select("path")
@@ -40,14 +46,36 @@ export default async function PublicPropertyPage({
     (p) => admin.storage.from("property-photos").getPublicUrl(p.path).data.publicUrl,
   );
   const notes = (property.features as { notes?: string } | null)?.notes;
+  const preset = getAccentPreset(agency?.accent_preset);
+  const logoUrl = agency?.logo_path
+    ? admin.storage.from("agency-logos").getPublicUrl(agency.logo_path).data.publicUrl
+    : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl bg-background px-6 py-10 print:py-0">
+    <main
+      className="mx-auto min-h-screen max-w-3xl bg-background px-6 py-10 print:py-0"
+      style={
+        {
+          "--accent": preset.accent,
+          "--accent-hover": preset.hover,
+          "--accent-soft": preset.soft,
+        } as CSSProperties
+      }
+    >
       <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white">
-            <Building2 className="h-4 w-4" strokeWidth={2.25} />
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt=""
+              className="h-7 w-7 rounded-md object-cover"
+            />
+          ) : (
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white">
+              <Building2 className="h-4 w-4" strokeWidth={2.25} />
+            </div>
+          )}
           <span className="text-sm font-semibold text-foreground">
             {agency?.name ?? "Ingatlan CRM"}
           </span>
