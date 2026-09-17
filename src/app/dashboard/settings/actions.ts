@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { revokeGoogleToken } from "@/lib/google";
@@ -61,6 +62,42 @@ export async function updateAgencyBranding(formData: FormData) {
 
   const { error } = await supabase.from("agencies").update(updates).eq("id", profile.agency_id);
   if (error) throw error;
+
+  revalidatePath("/dashboard/settings");
+}
+
+export async function updateAgencyPublicSlug(formData: FormData) {
+  const { profile } = await ensureCurrentUserProfile();
+  if (profile.role !== "owner") {
+    redirect("/dashboard/settings?error=Csak%20az%20iroda%20tulajdonosa%20m%C3%B3dos%C3%ADthatja%20a%20nyilv%C3%A1nos%20linket");
+  }
+
+  const raw = String(formData.get("slug") ?? "").trim().toLowerCase();
+  const slug = raw.replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+
+  if (slug.length < 3) {
+    redirect(
+      `/dashboard/settings?error=${encodeURIComponent("A nyilvános link legalább 3 karakter legyen (kisbetű, szám, kötőjel)")}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agencies")
+    .update({ slug })
+    .eq("id", profile.agency_id);
+
+  if (error) {
+    // A duplikátum-link egy várható, gyakori felhasználói hiba (nem
+    // programhiba) -- ezért a többi settings-akcióval ellentétben (amik
+    // egyszerűen throw-olnak) ez barátságos redirect+banner mintát követ,
+    // ugyanúgy mint a Stripe checkout/portal és a Google OAuth route-ok
+    // (ld. billing/actions.ts, api/google/callback) -- sima throw esetén
+    // élesben a Next.js generikus "Something went wrong" hibaoldala
+    // jelenne meg a beviteli mező melletti üzenet helyett.
+    const message = error.code === "23505" ? "Ez a link már foglalt, válassz másikat" : error.message;
+    redirect(`/dashboard/settings?error=${encodeURIComponent(message)}`);
+  }
 
   revalidatePath("/dashboard/settings");
 }

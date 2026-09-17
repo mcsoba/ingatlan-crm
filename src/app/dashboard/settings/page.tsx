@@ -8,10 +8,16 @@ import {
   CalendarDays,
   UserRound,
   Building2,
+  Link2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { disconnectGoogleCalendar, updateAgencyBranding, updateMyName } from "./actions";
+import {
+  disconnectGoogleCalendar,
+  updateAgencyBranding,
+  updateAgencyPublicSlug,
+  updateMyName,
+} from "./actions";
 import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -47,7 +53,7 @@ export default async function SettingsPage({
       .maybeSingle(),
     supabase
       .from("agencies")
-      .select("logo_path, accent_preset")
+      .select("logo_path, accent_preset, slug")
       .eq("id", profile.agency_id)
       .single(),
   ]);
@@ -56,6 +62,8 @@ export default async function SettingsPage({
     ? supabase.storage.from("agency-logos").getPublicUrl(agencyBranding.logo_path).data.publicUrl
     : null;
   const currentPreset = getAccentPreset(agencyBranding?.accent_preset);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const catalogUrl = `${siteUrl}/a/${agencyBranding?.slug ?? ""}`;
 
   const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -228,6 +236,55 @@ export default async function SettingsPage({
               <p className="text-sm text-muted">
                 A branding beállítását csak az iroda tulajdonosa módosíthatja. Jelenlegi szín:{" "}
                 {currentPreset.label}.
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Nyilvános ingatlan-katalógus</div>
+          <p className="text-xs text-muted">
+            Egy link, ami az iroda összes elérhető ingatlanát felsorolja — Facebookra, weboldalra vagy
+            email-aláírásba illeszthető, mindig friss listát mutat.
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <Link2 className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <a
+              href={`/a/${agencyBranding?.slug ?? ""}`}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all text-sm font-medium text-accent hover:underline"
+            >
+              {catalogUrl}
+            </a>
+            {profile.role === "owner" ? (
+              <form action={updateAgencyPublicSlug} className="mt-3 flex flex-col gap-1.5">
+                <span className={labelClass}>Link szerkesztése</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-muted-subtle">{siteUrl}/a/</span>
+                  <input
+                    name="slug"
+                    defaultValue={agencyBranding?.slug ?? ""}
+                    pattern="[a-z0-9-]+"
+                    className={`${inputClass} max-w-[200px]`}
+                  />
+                  <Button type="submit" variant="secondary" size="sm">
+                    Mentés
+                  </Button>
+                </div>
+                <span className="text-xs text-muted-subtle">
+                  Csak kisbetű, szám és kötőjel. Csak az „Elérhető” státuszú ingatlanok jelennek meg rajta.
+                </span>
+              </form>
+            ) : (
+              <p className="mt-1 text-sm text-muted">
+                A link szerkesztését csak az iroda tulajdonosa végezheti.
               </p>
             )}
           </div>

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Building2, Ruler, Wallet } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -32,7 +33,7 @@ export default async function PublicPropertyPage({
   const [{ data: agency }, { data: photoRows }] = await Promise.all([
     admin
       .from("agencies")
-      .select("name, logo_path, accent_preset")
+      .select("name, logo_path, accent_preset, slug")
       .eq("id", property.agency_id)
       .maybeSingle(),
     admin
@@ -76,9 +77,18 @@ export default async function PublicPropertyPage({
               <Building2 className="h-4 w-4" strokeWidth={2.25} />
             </div>
           )}
-          <span className="text-sm font-semibold text-foreground">
-            {agency?.name ?? "Ingatlan CRM"}
-          </span>
+          {agency?.slug ? (
+            <Link
+              href={`/a/${agency.slug}`}
+              className="text-sm font-semibold text-foreground hover:text-accent"
+            >
+              {agency.name}
+            </Link>
+          ) : (
+            <span className="text-sm font-semibold text-foreground">
+              {agency?.name ?? "Ingatlan CRM"}
+            </span>
+          )}
         </div>
         <PrintButton />
       </div>
