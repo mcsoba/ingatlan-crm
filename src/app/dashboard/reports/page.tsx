@@ -4,9 +4,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { BarListChart } from "@/components/ui/charts";
+import { SOURCE_LABELS } from "@/app/dashboard/contacts/constants";
 
 type DealRow = {
   owner_id: string | null;
+  contact_id: string;
   stage_id: string;
   deal_amount: number | null;
   commission_rate: number | null;
@@ -16,13 +18,14 @@ type DealRow = {
 export default async function ReportsPage() {
   const supabase = await createClient();
 
-  const [{ data: deals }, { data: stages }, { data: members }] =
+  const [{ data: deals }, { data: stages }, { data: members }, { data: contacts }] =
     await Promise.all([
       supabase
         .from("deals")
-        .select("owner_id, stage_id, deal_amount, commission_rate, status"),
+        .select("owner_id, contact_id, stage_id, deal_amount, commission_rate, status"),
       supabase.from("pipeline_stages").select("id, name, position").order("position"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
+      supabase.from("contacts").select("id, source"),
     ]);
 
   const lastStageId = stages && stages.length > 0 ? stages[stages.length - 1].id : null;
@@ -74,6 +77,35 @@ export default async function ReportsPage() {
     .filter((row) => row.stats.commission > 0)
     .map((row) => ({ label: row.name, count: Math.round(row.stats.commission) }));
 
+  // Konverzió forrásonként: melyik kontakt-forrásból (weboldal/ajánlás/stb.)
+  // lesz a legtöbb LEZÁRT deal, nem csak a legtöbb kontakt -- ez segít
+  // eldönteni, hova érdemes marketing-erőforrást fordítani.
+  const closedContactIds = new Set(
+    (deals ?? [])
+      .filter((d) => d.status !== "lost" && lastStageId && d.stage_id === lastStageId)
+      .map((d) => d.contact_id),
+  );
+
+  type SourceStats = { total: number; closed: number };
+  const statsBySource = new Map<string, SourceStats>();
+  for (const contact of contacts ?? []) {
+    const bucket = statsBySource.get(contact.source) ?? { total: 0, closed: 0 };
+    bucket.total += 1;
+    if (closedContactIds.has(contact.id)) bucket.closed += 1;
+    statsBySource.set(contact.source, bucket);
+  }
+
+  const sourceRows = Array.from(statsBySource.entries())
+    .map(([source, stats]) => ({
+      source,
+      label: SOURCE_LABELS[source] ?? source,
+      ...stats,
+      rate: Math.round((stats.closed / stats.total) * 100),
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const sourceChartData = sourceRows.map((row) => ({ label: row.label, count: row.rate }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -87,6 +119,18 @@ export default async function ReportsPage() {
             Jutalék ügynökönként (Ft)
           </div>
           <BarListChart items={commissionChartData} />
+        </Card>
+      )}
+
+      {sourceRows.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-1 text-sm font-semibold text-foreground">
+            Konverzió lead-forrásonként
+          </div>
+          <p className="mb-3 text-xs text-muted">
+            A kontaktok hány százaléka jutott el lezárt dealig, forrásonként.
+          </p>
+          <BarListChart items={sourceChartData} format={(n) => `${n}%`} />
         </Card>
       )}
 

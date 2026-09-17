@@ -1,7 +1,9 @@
 export function BarListChart({
   items,
+  format,
 }: {
   items: { label: string; count: number }[];
+  format?: (count: number) => string;
 }) {
   const max = Math.max(1, ...items.map((i) => i.count));
 
@@ -21,8 +23,8 @@ export function BarListChart({
               style={{ width: `${(item.count / max) * 100}%` }}
             />
           </div>
-          <div className="w-6 shrink-0 text-right text-xs font-medium text-foreground">
-            {item.count}
+          <div className="w-10 shrink-0 text-right text-xs font-medium text-foreground">
+            {format ? format(item.count) : item.count}
           </div>
         </div>
       ))}
