@@ -19,7 +19,7 @@ export default async function ContactsPage({
 
   let query = supabase
     .from("contacts")
-    .select("id, name, email, phone, source, status, lead_score")
+    .select("id, name, email, phone, source, status, lead_score, created_at")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -44,11 +44,21 @@ export default async function ContactsPage({
 
   const contactIds = (contacts ?? []).map((c) => c.id);
   const tagsByContact = new Map<string, { id: string; name: string; color: string }[]>();
+  const lastActivityByContact = new Map<string, string>();
   if (contactIds.length > 0) {
-    const { data: tagLinks } = await supabase
-      .from("contact_tags")
-      .select("contact_id, tags(id, name, color)")
-      .in("contact_id", contactIds);
+    const [{ data: tagLinks }, { data: activityRows }] = await Promise.all([
+      supabase
+        .from("contact_tags")
+        .select("contact_id, tags(id, name, color)")
+        .in("contact_id", contactIds),
+      // Ordered desc so the first row seen per contact is the most recent —
+      // avoids a group-by, same approach as the tag map above.
+      supabase
+        .from("activities")
+        .select("contact_id, created_at")
+        .in("contact_id", contactIds)
+        .order("created_at", { ascending: false }),
+    ]);
     for (const link of tagLinks ?? []) {
       const t = link.tags as unknown as { id: string; name: string; color: string } | null;
       if (!t) continue;
@@ -56,7 +66,15 @@ export default async function ContactsPage({
       list.push(t);
       tagsByContact.set(link.contact_id, list);
     }
+    for (const row of activityRows ?? []) {
+      if (!row.contact_id || lastActivityByContact.has(row.contact_id)) continue;
+      lastActivityByContact.set(row.contact_id, row.created_at);
+    }
   }
+
+  const NEGLECTED_AFTER_DAYS = 14;
+  const NEGLECTABLE_STATUSES = new Set(["contacted", "qualified"]);
+  const now = new Date().getTime();
 
   const hasFilters = Boolean(q || status || source || tag);
 
@@ -141,7 +159,19 @@ export default async function ContactsPage({
         />
       ) : (
         <ContactsTable
-          contacts={contacts.map((c) => ({ ...c, tags: tagsByContact.get(c.id) ?? [] }))}
+          contacts={contacts.map((c) => {
+            const lastActivityAt = lastActivityByContact.get(c.id) ?? c.created_at;
+            const daysSinceActivity = Math.floor(
+              (now - new Date(lastActivityAt).getTime()) / (24 * 60 * 60 * 1000),
+            );
+            return {
+              ...c,
+              tags: tagsByContact.get(c.id) ?? [],
+              isNeglected:
+                NEGLECTABLE_STATUSES.has(c.status) && daysSinceActivity >= NEGLECTED_AFTER_DAYS,
+              daysSinceActivity,
+            };
+          })}
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { BarListChart } from "@/components/ui/charts";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { SOURCE_LABELS } from "@/app/dashboard/contacts/constants";
 
 type DealRow = {
@@ -14,6 +15,10 @@ type DealRow = {
   commission_rate: number | null;
   status: string;
 };
+
+function formatHuf(amount: number): string {
+  return `${Math.round(amount).toLocaleString("hu-HU")} Ft`;
+}
 
 export default async function ReportsPage() {
   const supabase = await createClient();
@@ -106,12 +111,88 @@ export default async function ReportsPage() {
 
   const sourceChartData = sourceRows.map((row) => ({ label: row.label, count: row.rate }));
 
+  // Súlyozott pipeline-előrejelzés: minél közelebb van egy deal a záró
+  // szakaszhoz, annál valószínűbb, hogy megvalósul a bevétele. Egyszerű,
+  // a szakaszok POZÍCIÓJA alapján lineárisan skálázott heurisztika (nem
+  // konfigurálható v1-ben) — a záró szakasz mindig 100%, tehát egy oda
+  // ért (de még nem lost-ra jelölt) deal a teljes összegével számít.
+  const orderedStages = stages ?? [];
+  const probabilityByStage = new Map(
+    orderedStages.map((stage, index) => [
+      stage.id,
+      Math.round(((index + 1) / orderedStages.length) * 100),
+    ]),
+  );
+
+  const forecastByStage = new Map(
+    orderedStages.map((stage) => [stage.id, { raw: 0, weighted: 0 }]),
+  );
+  let forecastRawTotal = 0;
+  let forecastWeightedTotal = 0;
+
+  for (const deal of (deals ?? []) as DealRow[]) {
+    if (deal.status === "lost" || deal.deal_amount == null) continue;
+    const probability = probabilityByStage.get(deal.stage_id) ?? 0;
+    const weighted = (deal.deal_amount * probability) / 100;
+    forecastRawTotal += deal.deal_amount;
+    forecastWeightedTotal += weighted;
+    const bucket = forecastByStage.get(deal.stage_id);
+    if (bucket) {
+      bucket.raw += deal.deal_amount;
+      bucket.weighted += weighted;
+    }
+  }
+
+  const forecastRows = orderedStages
+    .map((stage) => ({
+      stage,
+      probability: probabilityByStage.get(stage.id) ?? 0,
+      ...(forecastByStage.get(stage.id) ?? { raw: 0, weighted: 0 }),
+    }))
+    .filter((row) => row.raw > 0);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Riportok"
         description="Csapat-teljesítmény a pipeline dealek alapján."
       />
+
+      {forecastRows.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            Súlyozott pipeline-előrejelzés
+            <HelpTooltip text="Minden nyitott deal összegét megszorozza a szakaszához tartozó, a szakasz pozíciója alapján becsült záródási valószínűséggel (a záró szakasz 100%). Ez egy egyszerű heurisztika, nem garantált bevétel." />
+          </div>
+          <p className="mb-3 text-xs text-muted">
+            A nyitott dealek nyers összege a szakaszhoz tartozó záródási eséllyel súlyozva.
+          </p>
+          <div className="mb-4 flex flex-wrap gap-6">
+            <div>
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {formatHuf(forecastWeightedTotal)}
+              </div>
+              <div className="text-sm text-muted">Várható bevétel</div>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold tracking-tight text-muted-subtle">
+                {formatHuf(forecastRawTotal)}
+              </div>
+              <div className="text-sm text-muted">Nyers pipeline-összeg</div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {forecastRows.map((row) => (
+              <div key={row.stage.id} className="flex items-center gap-3 text-sm">
+                <span className="w-28 shrink-0 truncate text-foreground">{row.stage.name}</span>
+                <span className="w-10 shrink-0 text-xs text-muted-subtle">{row.probability}%</span>
+                <span className="flex-1 text-muted">{formatHuf(row.raw)}</span>
+                <span className="font-medium text-foreground">{formatHuf(row.weighted)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {commissionChartData.length > 0 && (
         <Card className="p-5">

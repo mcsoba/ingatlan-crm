@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -18,6 +19,8 @@ type ContactRow = {
   status: string;
   lead_score: number | null;
   tags: { id: string; name: string; color: string }[];
+  isNeglected: boolean;
+  daysSinceActivity: number;
 };
 
 const tagVariant = (color: string) =>
@@ -135,7 +138,12 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                   className="h-3.5 w-3.5 accent-[var(--accent)]"
                 />
               </th>
-              <th className="px-4 py-3 font-medium">Név</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="inline-flex items-center gap-1">
+                  Név
+                  <HelpTooltip text="Az óra-ikon azt jelzi, hogy egy felvett/minősített kontaktnak 14+ napja nem volt aktivitása (jegyzet, hívás, megtekintés) — érdemes utánanézni, mielőtt kihűl." />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium">Elérhetőség</th>
               <th className="px-4 py-3 font-medium">Címkék</th>
               <th className="px-4 py-3 font-medium">Forrás</th>
@@ -165,12 +173,22 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/dashboard/contacts/${contact.id}/edit`}
-                    className="font-medium text-foreground hover:text-accent"
-                  >
-                    {contact.name}
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/dashboard/contacts/${contact.id}/edit`}
+                      className="font-medium text-foreground hover:text-accent"
+                    >
+                      {contact.name}
+                    </Link>
+                    {contact.isNeglected && (
+                      <span title={`${contact.daysSinceActivity} napja nincs aktivitás`}>
+                        <Clock
+                          className="h-3.5 w-3.5 shrink-0 text-warning"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {contact.email || contact.phone || "—"}
