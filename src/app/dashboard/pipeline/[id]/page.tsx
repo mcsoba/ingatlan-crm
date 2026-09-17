@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { User, Building2, Trash2, ClipboardCheck, Percent } from "lucide-react";
+import { User, Building2, Trash2, ClipboardCheck, Percent, Printer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -102,12 +102,21 @@ export default async function DealDetailPage({
       <PageHeader
         title={contact?.name ?? "Ismeretlen kontakt"}
         action={
-          <Link
-            href="/dashboard/pipeline"
-            className="text-sm text-muted hover:text-accent"
-          >
-            ← Pipeline
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/dashboard/pipeline/${id}/print`}
+              className="flex items-center gap-1.5 text-sm text-muted hover:text-accent"
+            >
+              <Printer className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Nyomtatás
+            </Link>
+            <Link
+              href="/dashboard/pipeline"
+              className="text-sm text-muted hover:text-accent"
+            >
+              ← Pipeline
+            </Link>
+          </div>
         }
       />
 
