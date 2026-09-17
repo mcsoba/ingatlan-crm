@@ -17,7 +17,13 @@ type ContactRow = {
   source: string;
   status: string;
   lead_score: number | null;
+  tags: { id: string; name: string; color: string }[];
 };
+
+const tagVariant = (color: string) =>
+  (["neutral", "accent", "success", "warning", "danger"].includes(color)
+    ? color
+    : "neutral") as "neutral" | "accent" | "success" | "warning" | "danger";
 
 export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -131,6 +137,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
               </th>
               <th className="px-4 py-3 font-medium">Név</th>
               <th className="px-4 py-3 font-medium">Elérhetőség</th>
+              <th className="px-4 py-3 font-medium">Címkék</th>
               <th className="px-4 py-3 font-medium">Forrás</th>
               <th className="px-4 py-3 font-medium">Státusz</th>
               <th className="px-4 py-3 font-medium">
@@ -167,6 +174,19 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {contact.email || contact.phone || "—"}
+                </td>
+                <td className="px-4 py-3">
+                  {contact.tags.length === 0 ? (
+                    <span className="text-muted-subtle">—</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {contact.tags.map((t) => (
+                        <Badge key={t.id} variant={tagVariant(t.color)}>
+                          {t.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {SOURCE_LABELS[contact.source] ?? contact.source}

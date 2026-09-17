@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { updateProperty } from "../../actions";
 import { PropertyForm } from "../../property-form";
 import { PropertyGallery } from "../../property-gallery";
+import { TagPicker } from "../../../tags/tag-picker";
+import { listAgencyTags } from "../../../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { sectionLabelClass } from "@/components/ui/styles";
@@ -16,18 +18,21 @@ export default async function EditPropertyPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: property }, { data: photoRows }] = await Promise.all([
-    supabase
-      .from("properties")
-      .select("id, address, price, size_sqm, status, features, ai_description")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("property_photos")
-      .select("id, path")
-      .eq("property_id", id)
-      .order("position", { ascending: true }),
-  ]);
+  const [{ data: property }, { data: photoRows }, { data: propertyTagRows }, allTags] =
+    await Promise.all([
+      supabase
+        .from("properties")
+        .select("id, address, price, size_sqm, status, features, ai_description")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("property_photos")
+        .select("id, path")
+        .eq("property_id", id)
+        .order("position", { ascending: true }),
+      supabase.from("property_tags").select("tag_id").eq("property_id", id),
+      listAgencyTags(),
+    ]);
 
   if (!property) notFound();
 
@@ -63,6 +68,14 @@ export default async function EditPropertyPage({
           </div>
         }
       />
+
+      <TagPicker
+        entityType="property"
+        entityId={property.id}
+        allTags={allTags}
+        initialTagIds={(propertyTagRows ?? []).map((r) => r.tag_id)}
+      />
+
       <PropertyForm
         action={updateWithId}
         defaultValues={property}

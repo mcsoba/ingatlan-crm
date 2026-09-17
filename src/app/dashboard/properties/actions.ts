@@ -219,3 +219,85 @@ export async function bulkDeleteProperties(ids: string[]) {
 
   revalidatePath("/dashboard/properties");
 }
+
+export type PropertyComparison = {
+  perProperty: { id: string; pros: string[]; cons: string[] }[];
+  recommendation: string;
+};
+
+export async function compareProperties(
+  propertyIds: string[],
+): Promise<PropertyComparison> {
+  await ensureCurrentUserProfile();
+
+  if (propertyIds.length < 2 || propertyIds.length > 4) {
+    throw new Error("2 és 4 közötti számú ingatlant válassz az összehasonlításhoz");
+  }
+
+  const supabase = await createClient();
+  const { data: properties, error } = await supabase
+    .from("properties")
+    .select("id, address, price, size_sqm, features")
+    .in("id", propertyIds);
+
+  if (error) throw error;
+  if (!properties || properties.length < 2) {
+    throw new Error("Nem található elég ingatlan az összehasonlításhoz");
+  }
+
+  const propertyList = properties
+    .map((p) => {
+      const notes = (p.features as { notes?: string } | null)?.notes;
+      return [
+        `id: ${p.id}`,
+        `cím: ${p.address}`,
+        p.price ? `ár: ${p.price.toLocaleString("hu-HU")} Ft` : "ár: nincs megadva",
+        p.size_sqm ? `méret: ${p.size_sqm} m²` : "méret: nincs megadva",
+        p.price && p.size_sqm ? `ár/m²: ${Math.round(p.price / p.size_sqm).toLocaleString("hu-HU")} Ft/m²` : null,
+        notes ? `jellemzők: ${notes}` : "jellemzők: nincs jegyzet",
+      ]
+        .filter(Boolean)
+        .join(", ");
+    })
+    .join("\n");
+
+  const message = await anthropic.messages.create({
+    model: AI_MODEL,
+    max_tokens: 900,
+    system:
+      "Csak valid JSON objektumot adj vissza, semmi mást (se magyarázat, se markdown code fence). " +
+      'Formátum: {"perProperty": [{"id": "...", "pros": ["..."], "cons": ["..."]}], "recommendation": "..."}. ' +
+      "Minden ingatlanhoz legfeljebb 3 előny és 3 hátrány, magyarul, rövid (néhány szavas) pontokban, kizárólag a megadott adatokból következtetve (ne találj ki adatot). " +
+      "A recommendation mező 2-3 mondatban foglalja össze, melyik ingatlan melyik ügyfél-igényhez illik jobban (ár-érték, méret, elhelyezkedés alapján, amennyiben ezek az adatokból kiderülnek).",
+    messages: [
+      {
+        role: "user",
+        content: `Hasonlítsd össze az alábbi ingatlanokat:\n\n${propertyList}`,
+      },
+    ],
+  });
+
+  const text = message.content
+    .filter((block) => block.type === "text")
+    .map((block) => block.text)
+    .join("")
+    .trim();
+
+  const jsonStart = text.indexOf("{");
+  const jsonEnd = text.lastIndexOf("}");
+  const jsonSlice =
+    jsonStart !== -1 && jsonEnd !== -1 ? text.slice(jsonStart, jsonEnd + 1) : text;
+
+  let parsed: PropertyComparison;
+  try {
+    parsed = JSON.parse(jsonSlice);
+  } catch {
+    throw new Error("Az AI válasza nem volt feldolgozható, próbáld újra");
+  }
+
+  const validIds = new Set(properties.map((p) => p.id));
+  return {
+    perProperty: (parsed.perProperty ?? []).filter((p) => validIds.has(p.id)),
+    recommendation: parsed.recommendation ?? "",
+  };
+}

@@ -3,6 +3,7 @@ import { Plus, Search, Users, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ImportContactsButton } from "./import-button";
 import { ContactsTable } from "./contacts-table";
+import { listAgencyTags } from "../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -11,9 +12,9 @@ import { inputClass } from "@/components/ui/styles";
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; source?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; source?: string; tag?: string }>;
 }) {
-  const { q, status, source } = await searchParams;
+  const { q, status, source, tag } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -25,11 +26,39 @@ export default async function ContactsPage({
   if (status) query = query.eq("status", status);
   if (source) query = query.eq("source", source);
 
-  const { data: contacts, error } = await query;
+  if (tag) {
+    const { data: taggedRows } = await supabase
+      .from("contact_tags")
+      .select("contact_id")
+      .eq("tag_id", tag);
+    const ids = (taggedRows ?? []).map((r) => r.contact_id);
+    query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  }
+
+  const [{ data: contacts, error }, allTags] = await Promise.all([
+    query,
+    listAgencyTags(),
+  ]);
 
   if (error) throw error;
 
-  const hasFilters = Boolean(q || status || source);
+  const contactIds = (contacts ?? []).map((c) => c.id);
+  const tagsByContact = new Map<string, { id: string; name: string; color: string }[]>();
+  if (contactIds.length > 0) {
+    const { data: tagLinks } = await supabase
+      .from("contact_tags")
+      .select("contact_id, tags(id, name, color)")
+      .in("contact_id", contactIds);
+    for (const link of tagLinks ?? []) {
+      const t = link.tags as unknown as { id: string; name: string; color: string } | null;
+      if (!t) continue;
+      const list = tagsByContact.get(link.contact_id) ?? [];
+      list.push(t);
+      tagsByContact.set(link.contact_id, list);
+    }
+  }
+
+  const hasFilters = Boolean(q || status || source || tag);
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,6 +109,16 @@ export default async function ContactsPage({
           <option value="walk_in">Betérő</option>
           <option value="other">Egyéb</option>
         </select>
+        {allTags.length > 0 && (
+          <select name="tag" defaultValue={tag ?? ""} className={inputClass}>
+            <option value="">Minden címke</option>
+            {allTags.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        )}
         <button type="submit" className={buttonVariants("secondary")}>
           Szűrés
         </button>
@@ -101,7 +140,9 @@ export default async function ContactsPage({
           }
         />
       ) : (
-        <ContactsTable contacts={contacts} />
+        <ContactsTable
+          contacts={contacts.map((c) => ({ ...c, tags: tagsByContact.get(c.id) ?? [] }))}
+        />
       )}
     </div>
   );

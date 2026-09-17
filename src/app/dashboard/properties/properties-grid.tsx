@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ImageOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ImageOff, Scale } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,9 +17,16 @@ type PropertyRow = {
   size_sqm: number | null;
   status: string;
   photoUrl: string | null;
+  tags: { id: string; name: string; color: string }[];
 };
 
+const tagVariant = (color: string) =>
+  (["neutral", "accent", "success", "warning", "danger"].includes(color)
+    ? color
+    : "neutral") as "neutral" | "accent" | "success" | "warning" | "danger";
+
 export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -56,6 +64,18 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
           <span className="font-medium text-accent-hover">
             {selected.size} kiválasztva
           </span>
+          {selected.size >= 2 && selected.size <= 4 && (
+            <button
+              type="button"
+              onClick={() =>
+                router.push(`/dashboard/properties/compare?ids=${Array.from(selected).join(",")}`)
+              }
+              className={buttonVariants("secondary", "sm")}
+            >
+              <Scale className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Összehasonlítás
+            </button>
+          )}
           <button
             type="button"
             onClick={handleBulkDelete}
@@ -119,6 +139,15 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
                 </Badge>
               )}
             </div>
+            {property.tags.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {property.tags.map((t) => (
+                  <Badge key={t.id} variant={tagVariant(t.color)}>
+                    {t.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
             <form action={deleteProperty} className="mt-2">
               <input type="hidden" name="id" value={property.id} />
               <button

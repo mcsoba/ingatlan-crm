@@ -9,6 +9,8 @@ import { PropertyMatchPanel } from "../../property-match-panel";
 import { LeadScorePanel } from "../../lead-score-panel";
 import { CampaignPanel } from "../../campaign-panel";
 import { AttachmentsPanel } from "../../../attachments/attachments-panel";
+import { TagPicker } from "../../../tags/tag-picker";
+import { listAgencyTags } from "../../../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { sectionLabelClass } from "@/components/ui/styles";
@@ -32,6 +34,8 @@ export default async function EditContactPage({
     { data: deals, error: dealsError },
     { data: stages },
     { data: activities, error: activitiesError },
+    { data: contactTagRows },
+    allTags,
   ] = await Promise.all([
     supabase
       .from("contacts")
@@ -53,6 +57,8 @@ export default async function EditContactPage({
       .order("done")
       .order("due_at", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
+    supabase.from("contact_tags").select("tag_id").eq("contact_id", id),
+    listAgencyTags(),
   ]);
 
   if (dealsError) throw dealsError;
@@ -76,6 +82,13 @@ export default async function EditContactPage({
             ← Kontaktok
           </Link>
         }
+      />
+
+      <TagPicker
+        entityType="contact"
+        entityId={contact.id}
+        allTags={allTags}
+        initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
       />
 
       <div className="max-w-md">
