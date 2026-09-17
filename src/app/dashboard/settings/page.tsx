@@ -193,7 +193,7 @@ export default async function SettingsPage({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            {profile.role === "owner" ? (
+            {profile.role === "owner" || profile.role === "admin" ? (
               <form action={updateAgencyBranding} className="flex flex-col gap-3">
                 <div className={fieldGroupClass}>
                   <span className={labelClass}>Logó (négyzetes kép ajánlott)</span>
@@ -234,7 +234,7 @@ export default async function SettingsPage({
               </form>
             ) : (
               <p className="text-sm text-muted">
-                A branding beállítását csak az iroda tulajdonosa módosíthatja. Jelenlegi szín:{" "}
+                A branding beállítását csak az iroda tulajdonosa vagy admin tagja módosíthatja. Jelenlegi szín:{" "}
                 {currentPreset.label}.
               </p>
             )}

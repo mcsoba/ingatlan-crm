@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ensureCurrentUserProfile } from "@/lib/agency";
+import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { revokeGoogleToken } from "@/lib/google";
 import { ACCENT_PRESET_IDS } from "@/lib/accent-presets";
 
@@ -26,10 +26,7 @@ export async function updateMyName(formData: FormData) {
 }
 
 export async function updateAgencyBranding(formData: FormData) {
-  const { profile } = await ensureCurrentUserProfile();
-  if (profile.role !== "owner") {
-    throw new Error("Csak az iroda tulajdonosa módosíthatja a brandinget");
-  }
+  const profile = await requireOwnerOrAdmin();
 
   const supabase = await createClient();
   const requestedPreset = String(formData.get("accent_preset") ?? "indigo");

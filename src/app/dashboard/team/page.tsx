@@ -1,8 +1,13 @@
-import { UserRound, Crown, Phone } from "lucide-react";
+import { UserRound, Crown, ShieldCheck, Phone } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inviteTeamMember, removeTeamMember, updateMyPhone } from "./actions";
+import {
+  inviteTeamMember,
+  removeTeamMember,
+  updateMyPhone,
+  updateTeamMemberRole,
+} from "./actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +16,13 @@ import { inputClass } from "@/components/ui/styles";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
+  admin: "Admin",
   agent: "Ügynök",
 };
 
 export default async function TeamPage() {
   const { profile } = await ensureCurrentUserProfile();
+  const canManageTeam = profile.role === "owner" || profile.role === "admin";
   const supabase = await createClient();
 
   const { data: members, error } = await supabase
@@ -26,7 +33,7 @@ export default async function TeamPage() {
   if (error) throw error;
 
   const emailById = new Map<string, string>();
-  if (profile.role === "owner" && members && members.length > 0) {
+  if (canManageTeam && members && members.length > 0) {
     const admin = createAdminClient();
     const { data: usersPage } = await admin.auth.admin.listUsers({
       perPage: 200,
@@ -47,6 +54,8 @@ export default async function TeamPage() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
               {member.role === "owner" ? (
                 <Crown className="h-4 w-4" strokeWidth={1.75} />
+              ) : member.role === "admin" ? (
+                <ShieldCheck className="h-4 w-4" strokeWidth={1.75} />
               ) : (
                 <UserRound className="h-4 w-4" strokeWidth={1.75} />
               )}
@@ -83,8 +92,25 @@ export default async function TeamPage() {
                   </button>
                 </form>
               )}
+              {profile.role === "owner" && member.role !== "owner" && (
+                <form action={updateTeamMemberRole} className="mt-1.5">
+                  <input type="hidden" name="id" value={member.id} />
+                  <input
+                    type="hidden"
+                    name="role"
+                    value={member.role === "admin" ? "agent" : "admin"}
+                  />
+                  <button
+                    type="submit"
+                    className="text-xs text-muted hover:text-accent"
+                  >
+                    {member.role === "admin" ? "Admin jog visszavonása" : "Admin-ná tétel"}
+                  </button>
+                </form>
+              )}
             </div>
-            {profile.role === "owner" && member.id !== profile.id && (
+            {((profile.role === "owner" && member.id !== profile.id) ||
+              (profile.role === "admin" && member.role === "agent")) && (
               <form action={removeTeamMember}>
                 <input type="hidden" name="id" value={member.id} />
                 <button
@@ -99,7 +125,7 @@ export default async function TeamPage() {
         ))}
       </div>
 
-      {profile.role === "owner" ? (
+      {canManageTeam ? (
         <form
           action={inviteTeamMember}
           className="mt-6 flex gap-2 border-t border-border-subtle pt-4"
@@ -115,7 +141,7 @@ export default async function TeamPage() {
         </form>
       ) : (
         <p className="mt-6 text-sm text-muted">
-          Csak az iroda tulajdonosa hívhat meg új csapattagot.
+          Csak az iroda tulajdonosa vagy admin tagja hívhat meg új csapattagot.
         </p>
       )}
     </div>

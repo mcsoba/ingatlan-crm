@@ -68,3 +68,21 @@ export const ensureCurrentUserProfile = cache(async function ensureCurrentUserPr
 
   return { user, profile };
 });
+
+/** Throws unless the caller is the agency owner. */
+export async function requireOwner() {
+  const { profile } = await ensureCurrentUserProfile();
+  if (profile.role !== "owner") {
+    throw new Error("Ehhez az iroda tulajdonosának jogosultsága szükséges");
+  }
+  return profile;
+}
+
+/** Throws unless the caller is the agency owner or an admin. */
+export async function requireOwnerOrAdmin() {
+  const { profile } = await ensureCurrentUserProfile();
+  if (profile.role !== "owner" && profile.role !== "admin") {
+    throw new Error("Ehhez tulajdonosi vagy admin jogosultság szükséges");
+  }
+  return profile;
+}

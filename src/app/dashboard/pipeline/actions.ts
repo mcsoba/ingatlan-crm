@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ensureCurrentUserProfile } from "@/lib/agency";
+import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 
 export async function createDeal(formData: FormData) {
@@ -203,7 +203,7 @@ export async function deleteDeal(formData: FormData) {
 }
 
 export async function createStage(formData: FormData) {
-  const { profile } = await ensureCurrentUserProfile();
+  const profile = await requireOwnerOrAdmin();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("A név megadása kötelező");
 
@@ -230,7 +230,7 @@ export async function createStage(formData: FormData) {
 }
 
 export async function renameStage(id: string, formData: FormData) {
-  await ensureCurrentUserProfile();
+  await requireOwnerOrAdmin();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("A név megadása kötelező");
 
@@ -247,7 +247,7 @@ export async function renameStage(id: string, formData: FormData) {
 }
 
 export async function deleteStage(formData: FormData) {
-  await ensureCurrentUserProfile();
+  await requireOwnerOrAdmin();
   const id = String(formData.get("id"));
 
   const supabase = await createClient();
@@ -270,7 +270,7 @@ export async function deleteStage(formData: FormData) {
 }
 
 export async function moveStage(id: string, direction: "up" | "down") {
-  await ensureCurrentUserProfile();
+  await requireOwnerOrAdmin();
   const supabase = await createClient();
 
   const { data: stages, error } = await supabase
