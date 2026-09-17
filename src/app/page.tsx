@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  Building2,
-  Sparkles,
-  Kanban,
-  Users,
-  ListChecks,
-  ArrowRight,
-} from "lucide-react";
+import { Sparkles, Kanban, Users, ListChecks, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { MarketingHeader } from "@/components/marketing-header";
+import { MarketingFooter } from "@/components/marketing-footer";
 
 const FEATURES = [
   {
@@ -51,24 +46,7 @@ export default async function Home() {
 
   return (
     <main className="flex min-h-screen flex-col bg-background">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white">
-            <Building2 className="h-4 w-4" strokeWidth={2.25} />
-          </div>
-          <span className="text-sm font-semibold text-foreground">
-            Ingatlan CRM
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/login" className={buttonVariants("ghost", "sm")}>
-            Bejelentkezés
-          </Link>
-          <Link href="/signup" className={buttonVariants("primary", "sm")}>
-            Regisztráció
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 py-20 text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
@@ -107,6 +85,8 @@ export default async function Home() {
           </Card>
         ))}
       </section>
+
+      <MarketingFooter />
     </main>
   );
 }
