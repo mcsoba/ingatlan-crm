@@ -3,6 +3,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 import { sendSms } from "@/lib/twilio";
 
+const MAX_NAME_LENGTH = 200;
+const MAX_CONTACT_FIELD_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 5000;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Spam-védelem: nincs bejelentkezés ezen a végponton, tehát bárki
+// szkriptelhetné a hívásokat. Két olcsó, kulcs nélküli réteg:
+// - honeypot mező (a valós felhasználó sosem tölti ki, egy egyszerű bot igen)
+// - IP-alapú rate-limit a lead_submission_log táblára építve
+const IP_WINDOW_MINUTES = 10;
+const IP_MAX_SUBMISSIONS = 5;
+const AGENCY_WINDOW_HOURS = 24;
+const AGENCY_MAX_SUBMISSIONS = 3;
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]!.trim();
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
+
 async function autoEnroll(
   admin: ReturnType<typeof createAdminClient>,
   agencyId: string,
@@ -130,7 +150,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Érvénytelen kérés" }, { status: 400 });
   }
 
-  const { agencyId, propertyId, name, email, phone, message } = body as Record<
+  const { agencyId, propertyId, name, email, phone, message, hp } = body as Record<
     string,
     unknown
   >;
@@ -141,6 +161,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  const trimmedName = name.trim().slice(0, MAX_NAME_LENGTH);
+
+  const leadEmail = typeof email === "string" && email.trim() ? email.trim() : null;
+  if (leadEmail && (leadEmail.length > MAX_CONTACT_FIELD_LENGTH || !EMAIL_PATTERN.test(leadEmail))) {
+    return NextResponse.json({ error: "Érvénytelen email cím" }, { status: 400 });
+  }
+
+  const leadPhone =
+    typeof phone === "string" && phone.trim()
+      ? phone.trim().slice(0, MAX_CONTACT_FIELD_LENGTH)
+      : null;
 
   const admin = createAdminClient();
 
@@ -154,7 +186,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ismeretlen iroda" }, { status: 404 });
   }
 
-  let notes = typeof message === "string" ? message.trim() : "";
+  const ip = getClientIp(request);
+  const isHoneypotTripped = typeof hp === "string" && hp.trim() !== "";
+
+  const ipWindowStart = new Date(Date.now() - IP_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const { count: ipCount } = await admin
+    .from("lead_submission_log")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", ipWindowStart);
+
+  const agencyWindowStart = new Date(
+    Date.now() - AGENCY_WINDOW_HOURS * 60 * 60 * 1000,
+  ).toISOString();
+  const { count: agencyIpCount } = await admin
+    .from("lead_submission_log")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .eq("agency_id", agencyId)
+    .gte("created_at", agencyWindowStart);
+
+  const isRateLimited =
+    (ipCount ?? 0) >= IP_MAX_SUBMISSIONS || (agencyIpCount ?? 0) >= AGENCY_MAX_SUBMISSIONS;
+  const shouldBlock = isHoneypotTripped || isRateLimited;
+
+  await admin.from("lead_submission_log").insert({
+    agency_id: agencyId,
+    ip,
+    blocked: shouldBlock,
+  });
+
+  if (isHoneypotTripped) {
+    // Ne áruljuk el a botnak, hogy blokkolva lett — sikeres válasz látszatát
+    // keltjük, hogy a bot ne próbálkozzon másik módszerrel.
+    return NextResponse.json({ ok: true });
+  }
+
+  if (isRateLimited) {
+    return NextResponse.json(
+      { error: "Túl sok próbálkozás, kérlek próbáld később." },
+      { status: 429 },
+    );
+  }
+
+  let notes =
+    typeof message === "string" ? message.trim().slice(0, MAX_MESSAGE_LENGTH) : "";
   if (typeof propertyId === "string" && propertyId) {
     const { data: property } = await admin
       .from("properties")
@@ -166,14 +242,11 @@ export async function POST(request: Request) {
     }
   }
 
-  const leadEmail = typeof email === "string" && email.trim() ? email.trim() : null;
-  const leadPhone = typeof phone === "string" && phone.trim() ? phone.trim() : null;
-
   const { data: insertedContact, error } = await admin
     .from("contacts")
     .insert({
       agency_id: agencyId,
-      name: name.trim(),
+      name: trimmedName,
       email: leadEmail,
       phone: leadPhone,
       source: "website",
@@ -189,12 +262,12 @@ export async function POST(request: Request) {
 
   await Promise.all([
     notifyAgency(admin, agencyId, agency.name, {
-      name: name.trim(),
+      name: trimmedName,
       email: leadEmail,
       phone: leadPhone,
       notes,
     }),
-    notifyAgencySms(admin, agencyId, name.trim()),
+    notifyAgencySms(admin, agencyId, trimmedName),
     autoEnroll(admin, agencyId, insertedContact.id, Boolean(leadEmail)),
   ]);
 

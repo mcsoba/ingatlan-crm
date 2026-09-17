@@ -17,6 +17,7 @@ export function LeadForm({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [hp, setHp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -30,7 +31,7 @@ export function LeadForm({
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agencyId, propertyId, name, email, phone, message }),
+        body: JSON.stringify({ agencyId, propertyId, name, email, phone, message, hp }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -63,6 +64,17 @@ export function LeadForm({
       </p>
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3">
+        {/* Honeypot: rejtett mező, valós felhasználó sosem tölti ki, bot igen. */}
+        <input
+          type="text"
+          name="company"
+          value={hp}
+          onChange={(e) => setHp(e.target.value)}
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="absolute -left-[9999px] h-0 w-0 opacity-0"
+        />
         <div className={fieldGroupClass}>
           <span className={labelClass}>Név</span>
           <input
