@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Building2, Ruler, Wallet } from "lucide-react";
@@ -8,19 +10,45 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
+const loadAgency = cache(async (slug: string) => {
+  const admin = createAdminClient();
+  const { data: agency } = await admin
+    .from("agencies")
+    .select("id, name, logo_path, accent_preset")
+    .eq("slug", slug)
+    .maybeSingle();
+  return { admin, agency };
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const { admin, agency } = await loadAgency(slug);
+  if (!agency) return { title: "Iroda nem található" };
+
+  const title = `${agency.name} — ingatlanjaink`;
+  const description = "Elérhető ingatlanaink egy helyen.";
+  const imageUrl = agency.logo_path
+    ? admin.storage.from("agency-logos").getPublicUrl(agency.logo_path).data.publicUrl
+    : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: imageUrl ? [imageUrl] : undefined },
+  };
+}
+
 export default async function AgencyCatalogPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const admin = createAdminClient();
-
-  const { data: agency } = await admin
-    .from("agencies")
-    .select("id, name, logo_path, accent_preset")
-    .eq("slug", slug)
-    .maybeSingle();
+  const { admin, agency } = await loadAgency(slug);
 
   if (!agency) notFound();
 

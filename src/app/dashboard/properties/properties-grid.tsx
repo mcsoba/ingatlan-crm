@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ImageOff, Scale } from "lucide-react";
+import { ImageOff, Scale, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,6 +16,7 @@ type PropertyRow = {
   price: number | null;
   size_sqm: number | null;
   status: string;
+  view_count: number;
   photoUrl: string | null;
   tags: { id: string; name: string; color: string }[];
 };
@@ -139,6 +140,12 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
                 </Badge>
               )}
             </div>
+            {property.view_count > 0 && (
+              <div className="mt-1 flex items-center gap-1 text-xs text-muted-subtle">
+                <Eye className="h-3 w-3" strokeWidth={1.75} />
+                {property.view_count} megtekintés
+              </div>
+            )}
             {property.tags.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {property.tags.map((t) => (

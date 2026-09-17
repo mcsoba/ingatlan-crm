@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Building2, Ruler, Wallet } from "lucide-react";
@@ -7,21 +9,65 @@ import { getAccentPreset } from "@/lib/accent-presets";
 import { PrintButton } from "./print-button";
 import { LeadForm } from "./lead-form";
 
+const loadProperty = cache(async (propertyId: string) => {
+  const admin = createAdminClient();
+  const { data: property } = await admin
+    .from("properties")
+    .select("id, agency_id, address, price, size_sqm, status, ai_description, features")
+    .eq("id", propertyId)
+    .maybeSingle();
+  return { admin, property };
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ propertyId: string }>;
+}): Promise<Metadata> {
+  const { propertyId } = await params;
+  const { admin, property } = await loadProperty(propertyId);
+  if (!property) return { title: "Ingatlan nem található" };
+
+  const { data: photoRow } = await admin
+    .from("property_photos")
+    .select("path")
+    .eq("property_id", propertyId)
+    .order("position", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const priceLabel = property.price ? `${property.price.toLocaleString("hu-HU")} Ft` : null;
+  const sizeLabel = property.size_sqm ? `${property.size_sqm} m²` : null;
+  const description =
+    [priceLabel, sizeLabel].filter(Boolean).join(" · ") ||
+    property.ai_description ||
+    "Ingatlan részletei";
+  const imageUrl = photoRow
+    ? admin.storage.from("property-photos").getPublicUrl(photoRow.path).data.publicUrl
+    : undefined;
+
+  return {
+    title: property.address,
+    description,
+    openGraph: {
+      title: property.address,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
+
 export default async function PublicPropertyPage({
   params,
 }: {
   params: Promise<{ propertyId: string }>;
 }) {
   const { propertyId } = await params;
-  const admin = createAdminClient();
-
-  const { data: property } = await admin
-    .from("properties")
-    .select("id, agency_id, address, price, size_sqm, status, ai_description, features")
-    .eq("id", propertyId)
-    .maybeSingle();
+  const { admin, property } = await loadProperty(propertyId);
 
   if (!property) notFound();
+
+  await admin.rpc("increment_property_view_count", { p_id: propertyId });
 
   const STATUS_LABELS: Record<string, string> = {
     reserved: "Foglalt",

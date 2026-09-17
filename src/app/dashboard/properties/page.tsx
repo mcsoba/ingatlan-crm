@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus, Search, Building2, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PropertiesGrid } from "./properties-grid";
+import { ImportPropertiesButton } from "./import-button";
 import { STATUS_LABELS } from "./constants";
 import { listAgencyTags } from "../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
@@ -19,7 +20,7 @@ export default async function PropertiesPage({
 
   let query = supabase
     .from("properties")
-    .select("id, address, price, size_sqm, status")
+    .select("id, address, price, size_sqm, status, view_count")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("address", `%${q}%`);
@@ -90,6 +91,7 @@ export default async function PropertiesPage({
               <Download className="h-4 w-4" strokeWidth={1.75} />
               Export CSV
             </a>
+            <ImportPropertiesButton />
             <Link
               href="/dashboard/properties/new"
               className={buttonVariants("primary")}

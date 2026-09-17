@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
+import { parseCsv } from "@/lib/csv";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -300,4 +301,70 @@ export async function compareProperties(
     perProperty: (parsed.perProperty ?? []).filter((p) => validIds.has(p.id)),
     recommendation: parsed.recommendation ?? "",
   };
+}
+
+export type ImportResult = { imported: number; skipped: number };
+
+export async function importPropertiesCsv(formData: FormData): Promise<ImportResult> {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Válassz ki egy CSV fájlt");
+  }
+
+  const text = await file.text();
+  const rows = parseCsv(text);
+  if (rows.length === 0) return { imported: 0, skipped: 0 };
+
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const addressIdx = header.indexOf("address");
+  if (addressIdx === -1) {
+    throw new Error(
+      "A CSV első sorában (fejléc) kötelező az 'address' oszlop. Elvárt formátum: address,price,size_sqm,status,notes",
+    );
+  }
+  const priceIdx = header.indexOf("price");
+  const sizeIdx = header.indexOf("size_sqm");
+  const statusIdx = header.indexOf("status");
+  const notesIdx = header.indexOf("notes");
+
+  let imported = 0;
+  let skipped = 0;
+  const toInsert: {
+    agency_id: string;
+    address: string;
+    price: number | null;
+    size_sqm: number | null;
+    status: string;
+    features: { notes?: string };
+  }[] = [];
+
+  for (const row of rows.slice(1)) {
+    const address = row[addressIdx]?.trim();
+    if (!address) {
+      skipped++;
+      continue;
+    }
+    const status = row[statusIdx]?.trim().toLowerCase();
+    const notes = row[notesIdx]?.trim();
+    toInsert.push({
+      agency_id: profile.agency_id,
+      address,
+      price: parseNumber(row[priceIdx] ?? null),
+      size_sqm: parseNumber(row[sizeIdx] ?? null),
+      status: VALID_STATUSES.includes(status) ? status : "available",
+      features: notes ? { notes } : {},
+    });
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from("properties").insert(toInsert);
+    if (error) throw error;
+    imported = toInsert.length;
+  }
+
+  revalidatePath("/dashboard/properties");
+  return { imported, skipped };
 }
