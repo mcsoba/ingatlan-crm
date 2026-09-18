@@ -26,6 +26,10 @@ export async function createActivity(formData: FormData) {
   const type = String(formData.get("type") ?? "note");
   const dueAtRaw = String(formData.get("due_at") ?? "");
   const redirectTo = String(formData.get("redirect_to") ?? "");
+  const recurrenceRaw = String(formData.get("recurrence") ?? "none");
+  const recurrence = ["none", "daily", "weekly", "monthly"].includes(recurrenceRaw)
+    ? recurrenceRaw
+    : "none";
 
   const { error } = await supabase.from("activities").insert({
     agency_id: profile.agency_id,
@@ -34,6 +38,7 @@ export async function createActivity(formData: FormData) {
     type,
     content,
     due_at: dueAtRaw ? new Date(dueAtRaw).toISOString() : null,
+    recurrence,
   });
 
   if (error) throw error;

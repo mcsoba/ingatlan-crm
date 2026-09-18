@@ -207,6 +207,17 @@ export function ActivityPanel({
               name="due_at"
               className={`${inputClass} py-1.5`}
             />
+            <select
+              name="recurrence"
+              defaultValue="none"
+              title="Ismétlődés"
+              className={`${inputClass} py-1.5`}
+            >
+              <option value="none">Nem ismétlődik</option>
+              <option value="daily">Naponta</option>
+              <option value="weekly">Hetente</option>
+              <option value="monthly">Havonta</option>
+            </select>
           </div>
           <textarea
             name="content"

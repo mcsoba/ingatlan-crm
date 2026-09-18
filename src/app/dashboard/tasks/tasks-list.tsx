@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { StickyNote, Phone, Eye, Bell, Trash2, type LucideIcon } from "lucide-react";
+import { StickyNote, Phone, Eye, Bell, Trash2, Repeat, type LucideIcon } from "lucide-react";
 import { toggleActivityDone, deleteActivity } from "../activities/actions";
 import { Card } from "@/components/ui/card";
 
@@ -20,12 +20,19 @@ const TYPE_ICONS: Record<string, LucideIcon> = {
   reminder: Bell,
 };
 
+const RECURRENCE_LABELS: Record<string, string> = {
+  daily: "Naponta ismétlődik",
+  weekly: "Hetente ismétlődik",
+  monthly: "Havonta ismétlődik",
+};
+
 export type TaskRow = {
   id: string;
   type: string;
   content: string;
   due_at: string | null;
   done: boolean;
+  recurrence: string;
   contacts: { id: string; name: string } | null;
   deals: { id: string } | null;
 };
@@ -101,10 +108,17 @@ export function TasksList({ activities }: { activities: TaskRow[] }) {
                   />
                   <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs text-muted">
-                      {TYPE_LABELS[task.type] ?? task.type}
-                      {task.due_at &&
-                        ` · ${new Date(task.due_at).toLocaleDateString("hu-HU")}`}
+                    <div className="flex items-center gap-1 text-xs text-muted">
+                      <span>
+                        {TYPE_LABELS[task.type] ?? task.type}
+                        {task.due_at &&
+                          ` · ${new Date(task.due_at).toLocaleDateString("hu-HU")}`}
+                      </span>
+                      {task.recurrence !== "none" && (
+                        <span title={RECURRENCE_LABELS[task.recurrence]}>
+                          <Repeat className="h-3 w-3 text-accent" />
+                        </span>
+                      )}
                     </div>
                     <div className="break-words text-foreground">{task.content}</div>
                     {task.contacts && (

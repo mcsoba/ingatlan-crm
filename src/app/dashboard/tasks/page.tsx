@@ -18,7 +18,7 @@ export default async function TasksPage({
 
   let query = supabase
     .from("activities")
-    .select("id, type, content, due_at, done, contacts(id, name), deals(id)")
+    .select("id, type, content, due_at, done, recurrence, contacts(id, name), deals(id)")
     .neq("type", "checklist")
     .order("due_at", { ascending: true, nullsFirst: false });
 

@@ -16,6 +16,7 @@ import {
   ListChecks,
   History,
   Tag,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
   { href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard },
   { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
+  { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
 ];
 
 export function SidebarNav() {
