@@ -118,6 +118,19 @@ export function PipelineBoard({
     };
   }, [draggingId]);
 
+  function moveCardToStage(dealId: string, stageId: string) {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === dealId
+          ? { ...card, stageId, isStale: false, daysSinceUpdate: 0 }
+          : card,
+      ),
+    );
+    moveDeal(dealId, stageId).catch(() => {
+      // Same best-effort optimistic update as the drag path.
+    });
+  }
+
   const needle = query.trim().toLowerCase();
   const visibleCards = cards.filter((c) => {
     if (onlyMine && c.ownerId !== currentUserId) return false;
@@ -183,7 +196,7 @@ export function PipelineBoard({
           </span>
         )}
       </div>
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex snap-x gap-4 overflow-x-auto pb-4">
       {stages.map((stage) => (
         <div
           key={stage.id}
@@ -191,7 +204,7 @@ export function PipelineBoard({
             if (el) columnRefs.current.set(stage.id, el);
             else columnRefs.current.delete(stage.id);
           }}
-          className={`w-64 flex-shrink-0 rounded-xl p-2.5 transition-colors ${
+          className={`w-64 flex-shrink-0 snap-start rounded-xl p-2.5 transition-colors ${
             hoverStageId === stage.id ? "bg-accent-soft" : "bg-background"
           }`}
         >
@@ -218,7 +231,12 @@ export function PipelineBoard({
               .map((card) => (
                 <Card
                   key={card.id}
-                  onPointerDown={() => setDraggingId(card.id)}
+                  onPointerDown={(e) => {
+                    // Touch drags fight with horizontal scrolling and never
+                    // deliver a reliable pointerup, so touch users move
+                    // deals with the stage dropdown below instead.
+                    if (e.pointerType === "mouse") setDraggingId(card.id);
+                  }}
                   title={card.isStale ? `${card.daysSinceUpdate} napja nincs mozgás ezen a dealen` : undefined}
                   className={`cursor-grab p-3 text-sm shadow-sm select-none active:cursor-grabbing ${
                     draggingId === card.id ? "opacity-50" : ""
@@ -253,6 +271,18 @@ export function PipelineBoard({
                       <span>{card.daysSinceUpdate} napja mozdulatlan</span>
                     </div>
                   )}
+                  <select
+                    aria-label="Szakasz módosítása"
+                    value={card.stageId}
+                    onChange={(e) => moveCardToStage(card.id, e.target.value)}
+                    className="mt-2 w-full rounded-md border border-border bg-surface px-2 py-1 text-xs text-foreground md:hidden"
+                  >
+                    {stages.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                   {!card.isClosed && (
                     <div className="mt-2 flex items-center justify-between">
                       <span
