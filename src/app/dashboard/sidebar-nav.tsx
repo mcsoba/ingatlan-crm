@@ -18,6 +18,7 @@ import {
   Tag,
   HelpCircle,
   Trash2,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard },
   { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
   { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
+  { href: "/dashboard/whats-new", label: "Újdonságok", icon: Sparkles },
 ];
 
 export function SidebarNav() {

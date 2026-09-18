@@ -24,6 +24,7 @@ import {
   updateMyName,
 } from "./actions";
 import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
+import { MfaPanel } from "./mfa-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,9 @@ export default async function SettingsPage({
   const { error, google } = await searchParams;
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
+
+  const { data: mfaFactors } = await supabase.auth.mfa.listFactors();
+  const verifiedMfaFactor = mfaFactors?.totp.find((f) => f.status === "verified") ?? null;
 
   const [{ data: googleConnection }, { data: agencyBranding }] = await Promise.all([
     supabase
@@ -158,23 +162,26 @@ export default async function SettingsPage({
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
             <UserRound className="h-4 w-4" strokeWidth={1.75} />
           </div>
-          <form action={updateMyName} className="flex min-w-0 flex-1 flex-col gap-3">
-            <div className={fieldGroupClass}>
-              <span className={labelClass}>Megjelenített név</span>
-              <input
-                name="full_name"
-                defaultValue={profile.full_name ?? ""}
-                placeholder={user.email ?? "Név"}
-                className={`${inputClass} max-w-xs`}
-              />
-              <span className="text-xs text-muted-subtle">
-                Ez jelenik meg a köszöntésben és a csapat-listában {user.email} helyett.
-              </span>
-            </div>
-            <Button type="submit" variant="secondary" size="sm" className="self-start">
-              Mentés
-            </Button>
-          </form>
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <form action={updateMyName} className="flex flex-col gap-3">
+              <div className={fieldGroupClass}>
+                <span className={labelClass}>Megjelenített név</span>
+                <input
+                  name="full_name"
+                  defaultValue={profile.full_name ?? ""}
+                  placeholder={user.email ?? "Név"}
+                  className={`${inputClass} max-w-xs`}
+                />
+                <span className="text-xs text-muted-subtle">
+                  Ez jelenik meg a köszöntésben és a csapat-listában {user.email} helyett.
+                </span>
+              </div>
+              <Button type="submit" variant="secondary" size="sm" className="self-start">
+                Mentés
+              </Button>
+            </form>
+            <MfaPanel initialFactor={verifiedMfaFactor} />
+          </div>
         </Card>
       </div>
 

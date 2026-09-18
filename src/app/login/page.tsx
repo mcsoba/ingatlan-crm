@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,15 +29,82 @@ export default function LoginPage() {
       password,
     });
 
+    if (error) {
+      setLoading(false);
+      setError(error.message);
+      return;
+    }
+
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== aal.nextLevel) {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const factor = factors?.totp.find((f) => f.status === "verified");
+      setLoading(false);
+      if (factor) {
+        setMfaFactorId(factor.id);
+        return;
+      }
+    }
+
+    setLoading(false);
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  async function handleMfaSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaFactorId) return;
+    setError(null);
+    setLoading(true);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId: mfaFactorId,
+      code: mfaCode.trim(),
+    });
+
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      setError("Hibás kód — ellenőrizd, és próbáld újra.");
       return;
     }
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  if (mfaFactorId) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
+        <Card className="p-6">
+          <h1 className="text-lg font-semibold text-foreground">Kétfaktoros hitelesítés</h1>
+          <p className="mt-1 text-sm text-muted">
+            Add meg az authenticator-alkalmazásodban látható 6 jegyű kódot.
+          </p>
+
+          <form onSubmit={handleMfaSubmit} className="mt-5 flex flex-col gap-4">
+            <div className={fieldGroupClass}>
+              <span className={labelClass}>Kód</span>
+              <input
+                inputMode="numeric"
+                autoFocus
+                required
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            {error && <p className="text-sm text-danger">{error}</p>}
+
+            <Button type="submit" disabled={loading} className="mt-1">
+              {loading ? "Ellenőrzés…" : "Belépés"}
+            </Button>
+          </form>
+        </Card>
+      </main>
+    );
   }
 
   return (
