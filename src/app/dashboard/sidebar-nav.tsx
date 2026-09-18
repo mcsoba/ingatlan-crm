@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  Inbox,
   Building2,
   Kanban,
   UsersRound,
@@ -25,6 +26,7 @@ import {
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Áttekintés", icon: LayoutDashboard },
   { href: "/dashboard/tasks", label: "Teendők", icon: ListChecks },
+  { href: "/dashboard/leads", label: "Lead-postaláda", icon: Inbox },
   { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
   { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
