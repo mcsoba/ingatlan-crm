@@ -93,6 +93,7 @@ export async function GET(request: Request) {
         .from("contacts")
         .select("id, name, source")
         .eq("agency_id", agency.id)
+        .is("deleted_at", null)
         .gte("created_at", dayAgo.toISOString()),
     ]);
 

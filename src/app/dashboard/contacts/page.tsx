@@ -19,7 +19,7 @@ export default async function ContactsPage({
 
   let query = supabase
     .from("contacts")
-    .select("id, name, email, phone, source, status, lead_score, created_at")
+    .select("id, name, email, phone, source, status, lead_score, owner_id, created_at")
     .order("created_at", { ascending: false });
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -35,12 +35,15 @@ export default async function ContactsPage({
     query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const [{ data: contacts, error }, allTags] = await Promise.all([
+  const [{ data: contacts, error }, allTags, { data: members }] = await Promise.all([
     query,
     listAgencyTags(),
+    supabase.from("profiles").select("id, full_name"),
   ]);
 
   if (error) throw error;
+
+  const nameByOwnerId = new Map((members ?? []).map((m) => [m.id, m.full_name]));
 
   const contactIds = (contacts ?? []).map((c) => c.id);
   const tagsByContact = new Map<string, { id: string; name: string; color: string }[]>();
@@ -168,6 +171,7 @@ export default async function ContactsPage({
             return {
               ...c,
               tags: tagsByContact.get(c.id) ?? [],
+              ownerName: c.owner_id ? (nameByOwnerId.get(c.owner_id) ?? null) : null,
               isNeglected:
                 NEGLECTABLE_STATUSES.has(c.status) && daysSinceActivity >= NEGLECTED_AFTER_DAYS,
               daysSinceActivity,

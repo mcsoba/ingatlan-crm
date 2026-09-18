@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 
@@ -170,6 +171,34 @@ export async function markDealLost(dealId: string, formData: FormData) {
   revalidatePath("/dashboard/pipeline");
 }
 
+export async function markDealWon(dealId: string) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: lastStage, error: stageError } = await supabase
+    .from("pipeline_stages")
+    .select("id")
+    .order("position", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (stageError) throw stageError;
+
+  const { error } = await supabase
+    .from("deals")
+    .update({
+      stage_id: lastStage.id,
+      status: "open",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+  revalidatePath("/dashboard/pipeline");
+}
+
 export async function reopenDeal(dealId: string) {
   await ensureCurrentUserProfile();
   const supabase = await createClient();
@@ -191,11 +220,20 @@ export async function reopenDeal(dealId: string) {
 }
 
 export async function deleteDeal(formData: FormData) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   const id = String(formData.get("id"));
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("deals").delete().eq("id", id);
+  // Admin client, not RLS-scoped: the deals SELECT policy excludes
+  // deleted_at rows, and Postgres applies that policy to a plain UPDATE's
+  // row-visibility/WITH CHECK too, so this write would fail (or silently
+  // match nothing, for a restore) under RLS. The explicit agency_id filter
+  // is what keeps this safe now that RLS isn't doing that job.
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("deals")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("agency_id", profile.agency_id)
+    .eq("id", id);
   if (error) throw error;
 
   revalidatePath("/dashboard/pipeline");

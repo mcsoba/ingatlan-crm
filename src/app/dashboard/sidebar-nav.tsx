@@ -17,6 +17,7 @@ import {
   History,
   Tag,
   HelpCircle,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
   { href: "/dashboard/reports", label: "Riportok", icon: BarChart3 },
   { href: "/dashboard/audit-log", label: "Előzmények", icon: History },
+  { href: "/dashboard/trash", label: "Lomtár", icon: Trash2 },
   { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
   { href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard },
   { href: "/dashboard/settings", label: "Beállítások", icon: Settings },

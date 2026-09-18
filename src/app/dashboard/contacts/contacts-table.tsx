@@ -19,6 +19,7 @@ type ContactRow = {
   source: string;
   status: string;
   lead_score: number | null;
+  ownerName: string | null;
   tags: { id: string; name: string; color: string }[];
   isNeglected: boolean;
   daysSinceActivity: number;
@@ -190,6 +191,12 @@ export function ContactsTable({
               <th className="px-4 py-3 font-medium">Elérhetőség</th>
               <th className="px-4 py-3 font-medium">Címkék</th>
               <th className="px-4 py-3 font-medium">Forrás</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="inline-flex items-center gap-1">
+                  Ügynök
+                  <HelpTooltip text="Automatikus lead-kiosztás esetén az a csapattag, akihez a kontakt körbeosztással került. Kikapcsolt kiosztásnál, vagy kézzel felvett kontaktnál üres." />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium">Státusz</th>
               <th className="px-4 py-3 font-medium">
                 <span className="inline-flex items-center gap-1">
@@ -251,6 +258,9 @@ export function ContactsTable({
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {SOURCE_LABELS[contact.source] ?? contact.source}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {contact.ownerName ?? <span className="text-muted-subtle">—</span>}
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={STATUS_VARIANTS[contact.status] ?? "neutral"}>

@@ -57,6 +57,7 @@ export default async function AgencyCatalogPage({
     .select("id, address, price, size_sqm, status, created_at")
     .eq("agency_id", agency.id)
     .eq("status", "available")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   const propertyIds = (properties ?? []).map((p) => p.id);

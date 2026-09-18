@@ -32,7 +32,8 @@ const loadComparison = cache(async (id: string) => {
     admin
       .from("properties")
       .select("id, address, price, size_sqm")
-      .in("id", comparison.property_ids as string[]),
+      .in("id", comparison.property_ids as string[])
+      .is("deleted_at", null),
   ]);
 
   return { admin, comparison, agency, properties: properties ?? [] };

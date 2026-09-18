@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 export type ButtonSize = "sm" | "md";
 
 const base =
@@ -12,6 +12,7 @@ const variants: Record<ButtonVariant, string> = {
     "bg-surface border border-border text-foreground hover:bg-background",
   ghost: "text-muted hover:text-foreground hover:bg-background",
   danger: "text-danger hover:bg-danger-soft",
+  success: "bg-success text-white hover:bg-success/90",
 };
 
 const sizes: Record<ButtonSize, string> = {

@@ -17,12 +17,14 @@ const ACTION_LABELS: Record<string, string> = {
   insert: "Létrehozva",
   update: "Módosítva",
   delete: "Törölve",
+  restore: "Visszaállítva",
 };
 
 const ACTION_VARIANTS: Record<string, BadgeVariant> = {
   insert: "success",
   update: "accent",
   delete: "danger",
+  restore: "success",
 };
 
 function recordHref(tableName: string, recordId: string): string | null {

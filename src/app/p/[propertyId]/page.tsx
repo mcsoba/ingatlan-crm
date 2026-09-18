@@ -15,6 +15,7 @@ const loadProperty = cache(async (propertyId: string) => {
     .from("properties")
     .select("id, agency_id, address, price, size_sqm, status, ai_description, features")
     .eq("id", propertyId)
+    .is("deleted_at", null)
     .maybeSingle();
   return { admin, property };
 });

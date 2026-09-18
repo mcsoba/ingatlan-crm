@@ -20,7 +20,9 @@ export async function GET(request: Request) {
 
   const { data: dueEnrollments, error: dueError } = await admin
     .from("email_sequence_enrollments")
-    .select("id, agency_id, sequence_id, contact_id, current_step, enrolled_at, contacts(name, email)")
+    .select(
+      "id, agency_id, sequence_id, contact_id, current_step, enrolled_at, contacts(name, email, deleted_at)",
+    )
     .eq("status", "active")
     .not("next_send_at", "is", null)
     .lte("next_send_at", now.toISOString())
@@ -35,9 +37,13 @@ export async function GET(request: Request) {
   let skipped = 0;
 
   for (const enrollment of dueEnrollments ?? []) {
-    const contact = enrollment.contacts as unknown as { name: string; email: string | null } | null;
+    const contact = enrollment.contacts as unknown as {
+      name: string;
+      email: string | null;
+      deleted_at: string | null;
+    } | null;
 
-    if (!contact?.email) {
+    if (!contact?.email || contact.deleted_at) {
       await admin
         .from("email_sequence_enrollments")
         .update({ status: "cancelled", next_send_at: null })

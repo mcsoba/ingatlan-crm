@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
   const { data: dueActivities, error: dueError } = await admin
     .from("activities")
-    .select("id, content, due_at, contacts(name, phone)")
+    .select("id, content, due_at, contacts(name, phone, deleted_at)")
     .eq("type", "viewing")
     .eq("done", false)
     .eq("sms_reminder_sent", false)
@@ -33,9 +33,13 @@ export async function GET(request: Request) {
   let skipped = 0;
 
   for (const activity of dueActivities ?? []) {
-    const contact = activity.contacts as unknown as { name: string; phone: string | null } | null;
+    const contact = activity.contacts as unknown as {
+      name: string;
+      phone: string | null;
+      deleted_at: string | null;
+    } | null;
 
-    if (!contact?.phone) {
+    if (!contact?.phone || contact.deleted_at) {
       await admin
         .from("activities")
         .update({ sms_reminder_sent: true })

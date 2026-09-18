@@ -121,6 +121,21 @@ export async function updateAgencyWebhook(formData: FormData) {
   revalidatePath("/dashboard/settings");
 }
 
+export async function updateAutoAssignLeads(formData: FormData) {
+  const profile = await requireOwnerOrAdmin();
+  const enabled = formData.get("auto_assign_leads") === "on";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agencies")
+    .update({ auto_assign_leads: enabled })
+    .eq("id", profile.agency_id);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/settings");
+}
+
 export async function disconnectGoogleCalendar() {
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();

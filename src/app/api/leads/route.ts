@@ -76,6 +76,7 @@ async function notifyAgency(
   agencyId: string,
   agencyName: string,
   lead: { name: string; email: string | null; phone: string | null; notes: string },
+  assignedName?: string | null,
 ) {
   try {
     const { data: members } = await admin
@@ -99,6 +100,7 @@ async function notifyAgency(
       `Név: ${lead.name}`,
       lead.email ? `Email: ${lead.email}` : null,
       lead.phone ? `Telefon: ${lead.phone}` : null,
+      assignedName ? `\nKiosztva: ${assignedName}` : null,
       lead.notes ? `\n${lead.notes}` : null,
     ]
       .filter((l): l is string => l !== null)
@@ -107,7 +109,9 @@ async function notifyAgency(
     await getResend().emails.send({
       from: EMAIL_FROM,
       to: recipients,
-      subject: `Új érdeklődő: ${lead.name}`,
+      subject: assignedName
+        ? `Új érdeklődő (kiosztva: ${assignedName}): ${lead.name}`
+        : `Új érdeklődő: ${lead.name}`,
       html: textToHtml(bodyLines),
       text: bodyLines,
     });
@@ -121,6 +125,7 @@ async function notifyAgencySms(
   admin: ReturnType<typeof createAdminClient>,
   agencyId: string,
   leadName: string,
+  assignedName?: string | null,
 ) {
   try {
     const { data: members } = await admin
@@ -133,15 +138,56 @@ async function notifyAgencySms(
       .map((m) => m.phone)
       .filter((p): p is string => Boolean(p));
 
-    await Promise.all(
-      phones.map((phone) =>
-        sendSms(phone, `Új érdeklődő: ${leadName}. Nézd meg a CRM-ben.`),
-      ),
-    );
+    const body = assignedName
+      ? `Új érdeklődő: ${leadName} (kiosztva: ${assignedName}). Nézd meg a CRM-ben.`
+      : `Új érdeklődő: ${leadName}. Nézd meg a CRM-ben.`;
+
+    await Promise.all(phones.map((phone) => sendSms(phone, body)));
   } catch {
     // Az SMS-értesítés nem kritikus — a lead a CRM-ben már mentve van,
     // egy sikertelen küldés miatt nem szabad hibát dobni a beküldőnek.
   }
+}
+
+// Automatikus lead-kiosztás: a legkevesebb (nyitott) kontakttal rendelkező
+// csapattag kapja a lead-et -- ez egy önkiegyensúlyozó körbeosztás, nincs
+// szükség külön "ki jött utoljára" mutató-táblára, és új/eltávolított
+// csapattagoknál is magától helyesen viselkedik.
+async function assignLeadRoundRobin(
+  admin: ReturnType<typeof createAdminClient>,
+  agencyId: string,
+): Promise<{ id: string; full_name: string | null } | null> {
+  const { data: members } = await admin
+    .from("profiles")
+    .select("id, full_name")
+    .eq("agency_id", agencyId);
+
+  if (!members || members.length === 0) return null;
+
+  const { data: assigned } = await admin
+    .from("contacts")
+    .select("owner_id")
+    .eq("agency_id", agencyId)
+    .is("deleted_at", null)
+    .not("owner_id", "is", null);
+
+  const counts = new Map<string, number>();
+  for (const member of members) counts.set(member.id, 0);
+  for (const row of assigned ?? []) {
+    if (row.owner_id) counts.set(row.owner_id, (counts.get(row.owner_id) ?? 0) + 1);
+  }
+
+  let winner = members[0];
+  let winnerCount = counts.get(winner.id) ?? 0;
+  for (const member of members.slice(1)) {
+    const count = counts.get(member.id) ?? 0;
+    if (count < winnerCount) {
+      winner = member;
+      winnerCount = count;
+    }
+  }
+
+  return winner;
 }
 
 export async function POST(request: Request) {
@@ -179,7 +225,7 @@ export async function POST(request: Request) {
 
   const { data: agency } = await admin
     .from("agencies")
-    .select("id, name, lead_webhook_url")
+    .select("id, name, lead_webhook_url, auto_assign_leads")
     .eq("id", agencyId)
     .maybeSingle();
 
@@ -237,11 +283,16 @@ export async function POST(request: Request) {
       .from("properties")
       .select("address")
       .eq("id", propertyId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (property) {
       notes = `Érdeklődés ingatlanra: ${property.address}${notes ? `\n\n${notes}` : ""}`;
     }
   }
+
+  const assignee = agency.auto_assign_leads
+    ? await assignLeadRoundRobin(admin, agencyId)
+    : null;
 
   const { data: insertedContact, error } = await admin
     .from("contacts")
@@ -253,6 +304,7 @@ export async function POST(request: Request) {
       source: "website",
       status: "new",
       notes: notes || null,
+      owner_id: assignee?.id ?? null,
     })
     .select("id")
     .single();
@@ -262,13 +314,19 @@ export async function POST(request: Request) {
   }
 
   await Promise.all([
-    notifyAgency(admin, agencyId, agency.name, {
-      name: trimmedName,
-      email: leadEmail,
-      phone: leadPhone,
-      notes,
-    }),
-    notifyAgencySms(admin, agencyId, trimmedName),
+    notifyAgency(
+      admin,
+      agencyId,
+      agency.name,
+      {
+        name: trimmedName,
+        email: leadEmail,
+        phone: leadPhone,
+        notes,
+      },
+      assignee?.full_name,
+    ),
+    notifyAgencySms(admin, agencyId, trimmedName, assignee?.full_name),
     autoEnroll(admin, agencyId, insertedContact.id, Boolean(leadEmail)),
     agency.lead_webhook_url
       ? sendLeadWebhook(agency.lead_webhook_url, {

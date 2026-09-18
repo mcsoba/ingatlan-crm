@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { User, Building2, Trash2, ClipboardCheck, Percent, Printer } from "lucide-react";
+import { User, Building2, Trash2, ClipboardCheck, Percent, Printer, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   deleteDeal,
+  markDealWon,
   seedTransactionChecklist,
   updateDealCommission,
   updateDealNotes,
@@ -80,6 +81,9 @@ export default async function DealDetailPage({
   const updateNotesWithId = updateDealNotes.bind(null, dealRow.id);
   const updateCommissionWithId = updateDealCommission.bind(null, dealRow.id);
   const seedChecklistWithId = seedTransactionChecklist.bind(null, dealRow.id);
+  const markWonWithId = markDealWon.bind(null, dealRow.id);
+  const isLastStage =
+    !!stages && stages.length > 0 && dealRow.stage_id === stages[stages.length - 1].id;
 
   const memberEmailById = new Map<string, string>();
   if (members && members.length > 0) {
@@ -167,13 +171,35 @@ export default async function DealDetailPage({
           </Card>
         </div>
 
-        {dealRow.status === "lost" && (
+        {dealRow.status === "lost" ? (
           <LostDealPanel
             dealId={dealRow.id}
             status={dealRow.status}
             lostReason={dealRow.lost_reason}
             lostAt={dealRow.lost_at}
           />
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            {isLastStage ? (
+              <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+                <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
+                Nyertes ügylet
+              </span>
+            ) : (
+              <form action={markWonWithId}>
+                <Button type="submit" variant="success">
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
+                  Nyertesnek jelölés
+                </Button>
+              </form>
+            )}
+            <LostDealPanel
+              dealId={dealRow.id}
+              status={dealRow.status}
+              lostReason={dealRow.lost_reason}
+              lostAt={dealRow.lost_at}
+            />
+          </div>
         )}
 
         <Card className="border-accent/20 bg-accent-soft/40 p-4">
@@ -319,14 +345,6 @@ export default async function DealDetailPage({
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-          {dealRow.status === "open" && (
-            <LostDealPanel
-              dealId={dealRow.id}
-              status={dealRow.status}
-              lostReason={dealRow.lost_reason}
-              lostAt={dealRow.lost_at}
-            />
-          )}
           <form action={deleteDeal}>
             <input type="hidden" name="id" value={dealRow.id} />
             <button

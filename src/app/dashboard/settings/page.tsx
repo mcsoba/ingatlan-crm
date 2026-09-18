@@ -11,6 +11,7 @@ import {
   Link2,
   Webhook,
   Download,
+  Shuffle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
@@ -19,6 +20,7 @@ import {
   updateAgencyBranding,
   updateAgencyPublicSlug,
   updateAgencyWebhook,
+  updateAutoAssignLeads,
   updateMyName,
 } from "./actions";
 import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
@@ -56,7 +58,7 @@ export default async function SettingsPage({
       .maybeSingle(),
     supabase
       .from("agencies")
-      .select("logo_path, accent_preset, slug, lead_webhook_url")
+      .select("logo_path, accent_preset, slug, lead_webhook_url, auto_assign_leads")
       .eq("id", profile.agency_id)
       .single(),
   ]);
@@ -331,6 +333,46 @@ export default async function SettingsPage({
               <p className="text-sm text-muted">
                 A webhook beállítását csak az iroda tulajdonosa vagy admin tagja végezheti.
                 {agencyBranding?.lead_webhook_url ? " Jelenleg be van kapcsolva." : " Jelenleg nincs beállítva."}
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Automatikus lead-kiosztás</div>
+          <p className="text-xs text-muted">
+            Bekapcsolva minden új, publikus lead-űrlapról érkező érdeklődő automatikusan egy
+            csapattaghoz kerül (körbeosztással, a legkevesebb hozzárendelt kontakttal rendelkező
+            kapja) — az értesítés is elsődlegesen neki megy. Kikapcsolva senkihez sincs kiosztva,
+            az egész csapat egyszerre kap értesítést, mint eddig.
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <Shuffle className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            {profile.role === "owner" || profile.role === "admin" ? (
+              <form action={updateAutoAssignLeads} className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    name="auto_assign_leads"
+                    defaultChecked={agencyBranding?.auto_assign_leads ?? false}
+                    className="h-4 w-4 rounded border-border"
+                  />
+                  Új lead-ek automatikus kiosztása csapattagok között
+                </label>
+                <Button type="submit" variant="secondary" size="sm" className="self-start">
+                  Mentés
+                </Button>
+              </form>
+            ) : (
+              <p className="text-sm text-muted">
+                Ezt csak az iroda tulajdonosa vagy admin tagja állíthatja.
+                {agencyBranding?.auto_assign_leads ? " Jelenleg be van kapcsolva." : " Jelenleg nincs beállítva."}
               </p>
             )}
           </div>

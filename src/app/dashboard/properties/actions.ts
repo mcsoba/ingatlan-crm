@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
@@ -234,25 +235,50 @@ export async function generateDescription(input: {
 }
 
 export async function deleteProperty(formData: FormData) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   const id = String(formData.get("id"));
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("properties").delete().eq("id", id);
-  if (error) throw error;
+  await softDeleteProperties(profile.agency_id, [id]);
 
   revalidatePath("/dashboard/properties");
 }
 
 export async function bulkDeleteProperties(ids: string[]) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   if (ids.length === 0) return;
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("properties").delete().in("id", ids);
-  if (error) throw error;
+  await softDeleteProperties(profile.agency_id, ids);
 
   revalidatePath("/dashboard/properties");
+}
+
+// Soft-delete: sets deleted_at instead of removing the row, so it can be
+// restored from /dashboard/trash within 30 days. Mirrors the FK behavior the
+// hard-delete used to rely on (deleting a property used to null out the
+// property_id on any deals pointing at it) by doing the same here.
+//
+// Uses the admin client, not the RLS-scoped one: see the matching comment
+// on softDeleteContacts (contacts/actions.ts) for why -- the properties
+// SELECT policy excluding deleted_at rows breaks plain-RLS UPDATEs that set
+// or clear that column. The explicit agency_id filter is what keeps this
+// safe now that RLS isn't doing that job.
+async function softDeleteProperties(agencyId: string, ids: string[]) {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { error } = await admin
+    .from("properties")
+    .update({ deleted_at: now })
+    .eq("agency_id", agencyId)
+    .in("id", ids);
+  if (error) throw error;
+
+  const { error: dealsError } = await admin
+    .from("deals")
+    .update({ property_id: null })
+    .eq("agency_id", agencyId)
+    .in("property_id", ids);
+  if (dealsError) throw dealsError;
 }
 
 export type PropertyComparison = {
