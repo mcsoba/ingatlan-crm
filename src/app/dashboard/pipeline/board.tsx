@@ -12,6 +12,7 @@ export type DealCard = {
   contactName: string;
   propertyAddress: string | null;
   dealAmount: number | null;
+  ownerId: string | null;
   ownerName: string | null;
   activityStatus: "overdue" | "today" | "scheduled" | "none";
   isClosed: boolean;
@@ -55,14 +56,18 @@ export type Stage = {
 export function PipelineBoard({
   stages,
   deals,
+  currentUserId,
 }: {
   stages: Stage[];
   deals: DealCard[];
+  currentUserId: string;
 }) {
   const [cards, setCards] = useState(deals);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverStageId, setHoverStageId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [onlyAttention, setOnlyAttention] = useState(false);
   const columnRefs = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
@@ -114,13 +119,19 @@ export function PipelineBoard({
   }, [draggingId]);
 
   const needle = query.trim().toLowerCase();
-  const visibleCards = needle
-    ? cards.filter((c) =>
-        `${c.contactName} ${c.propertyAddress ?? ""} ${c.ownerName ?? ""}`
-          .toLowerCase()
-          .includes(needle),
-      )
-    : cards;
+  const visibleCards = cards.filter((c) => {
+    if (onlyMine && c.ownerId !== currentUserId) return false;
+    if (
+      onlyAttention &&
+      (c.isClosed || (c.activityStatus !== "overdue" && c.activityStatus !== "none"))
+    ) {
+      return false;
+    }
+    if (!needle) return true;
+    return `${c.contactName} ${c.propertyAddress ?? ""} ${c.ownerName ?? ""}`
+      .toLowerCase()
+      .includes(needle);
+  });
   const openCards = visibleCards.filter((c) => !c.isClosed);
   const openValue = openCards.reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
   const needsAttention = openCards.filter(
@@ -137,6 +148,26 @@ export function PipelineBoard({
           placeholder="Keresés kontakt, cím vagy felelős szerint…"
           className="w-72 max-w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent"
         />
+        {(
+          [
+            ["Csak az enyéim", onlyMine, setOnlyMine],
+            ["Figyelmet igényel", onlyAttention, setOnlyAttention],
+          ] as const
+        ).map(([label, active, set]) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={active}
+            onClick={() => set(!active)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              active
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-border bg-surface text-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
         <span className="text-muted">
           Nyitott dealek: <b className="text-foreground">{openCards.length}</b>
         </span>

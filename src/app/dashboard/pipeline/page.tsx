@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Settings2, XCircle, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PipelineBoard, type DealCard } from "./board";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,7 @@ type DealRow = {
 const STALE_AFTER_DAYS = 14;
 
 export default async function PipelinePage() {
+  const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
   const [
@@ -101,6 +103,7 @@ export default async function PipelinePage() {
         contactName: deal.contacts?.name ?? "Ismeretlen kontakt",
         propertyAddress: deal.properties?.address ?? null,
         dealAmount: deal.deal_amount,
+        ownerId: deal.owner_id,
         ownerName: deal.owner_id ? (ownerNameById.get(deal.owner_id) ?? null) : null,
         activityStatus: isClosed ? "none" : activityStatus(deal.id),
         isClosed,
@@ -151,7 +154,7 @@ export default async function PipelinePage() {
         }
       />
 
-      <PipelineBoard stages={stages} deals={dealCards} />
+      <PipelineBoard stages={stages} deals={dealCards} currentUserId={profile.id} />
 
       {lostDeals.length > 0 && (
         <div>
