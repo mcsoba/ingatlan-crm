@@ -42,6 +42,41 @@ export async function createDeal(formData: FormData) {
   redirect("/dashboard/pipeline");
 }
 
+// One-click "next step" from the pipeline board: schedules a follow-up
+// reminder N days out (09:00 local server time) on the deal and its contact,
+// so a deal with no planned activity can be fixed without leaving the board.
+export async function scheduleDealFollowUp(dealId: string, days: number) {
+  const { profile } = await ensureCurrentUserProfile();
+  if (!Number.isInteger(days) || days < 0 || days > 365) {
+    throw new Error("Érvénytelen határidő");
+  }
+  const supabase = await createClient();
+
+  const { data: deal, error: dealError } = await supabase
+    .from("deals")
+    .select("contact_id")
+    .eq("id", dealId)
+    .single();
+  if (dealError) throw dealError;
+
+  const due = new Date();
+  due.setDate(due.getDate() + days);
+  due.setHours(9, 0, 0, 0);
+
+  const { error } = await supabase.from("activities").insert({
+    agency_id: profile.agency_id,
+    contact_id: deal.contact_id,
+    deal_id: dealId,
+    type: "reminder",
+    content: "Követés — következő lépés egyeztetése",
+    due_at: due.toISOString(),
+  });
+  if (error) throw error;
+
+  revalidatePath("/dashboard/pipeline");
+  revalidatePath("/dashboard");
+}
+
 export async function moveDeal(dealId: string, stageId: string) {
   await ensureCurrentUserProfile();
   const supabase = await createClient();

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Building2, Clock } from "lucide-react";
-import { moveDeal } from "./actions";
+import { moveDeal, scheduleDealFollowUp } from "./actions";
 import { Card } from "@/components/ui/card";
 
 export type DealCard = {
@@ -117,6 +117,17 @@ export function PipelineBoard({
       window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [draggingId]);
+
+  function scheduleFollowUp(dealId: string, days: number) {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === dealId ? { ...card, activityStatus: days === 0 ? "today" : "scheduled" } : card,
+      ),
+    );
+    scheduleDealFollowUp(dealId, days).catch(() => {
+      // Optimistic like the stage move; a reload re-syncs on failure.
+    });
+  }
 
   function moveCardToStage(dealId: string, stageId: string) {
     setCards((prev) =>
@@ -283,6 +294,24 @@ export function PipelineBoard({
                       </option>
                     ))}
                   </select>
+                  {!card.isClosed &&
+                    (card.activityStatus === "none" || card.activityStatus === "overdue") && (
+                      <select
+                        aria-label="Teendő ütemezése"
+                        value=""
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onChange={(e) => scheduleFollowUp(card.id, Number(e.target.value))}
+                        className="mt-2 w-full rounded-md border border-dashed border-warning/60 bg-surface px-2 py-1 text-xs text-warning"
+                      >
+                        <option value="" disabled>
+                          + Teendő ütemezése…
+                        </option>
+                        <option value="0">Ma</option>
+                        <option value="1">Holnap</option>
+                        <option value="3">3 nap múlva</option>
+                        <option value="7">1 hét múlva</option>
+                      </select>
+                    )}
                   {!card.isClosed && (
                     <div className="mt-2 flex items-center justify-between">
                       <span
