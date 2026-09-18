@@ -12,6 +12,9 @@ export type DealCard = {
   contactName: string;
   propertyAddress: string | null;
   dealAmount: number | null;
+  ownerName: string | null;
+  activityStatus: "overdue" | "today" | "scheduled" | "none";
+  isClosed: boolean;
   isStale: boolean;
   daysSinceUpdate: number;
 };
@@ -26,6 +29,22 @@ function formatCompactHuf(amount: number): string {
   }
   return `${amount.toLocaleString("hu-HU")} Ft`;
 }
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+}
+
+const ACTIVITY_INDICATOR = {
+  overdue: { label: "Lejárt teendő", className: "bg-danger" },
+  today: { label: "Mai teendő", className: "bg-warning" },
+  scheduled: { label: "Teendő ütemezve", className: "bg-success" },
+  none: { label: "Nincs tervezett teendő", className: "bg-muted-subtle" },
+} as const;
 
 export type Stage = {
   id: string;
@@ -43,6 +62,7 @@ export function PipelineBoard({
   const [cards, setCards] = useState(deals);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverStageId, setHoverStageId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const columnRefs = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
@@ -93,7 +113,45 @@ export function PipelineBoard({
     };
   }, [draggingId]);
 
+  const needle = query.trim().toLowerCase();
+  const visibleCards = needle
+    ? cards.filter((c) =>
+        `${c.contactName} ${c.propertyAddress ?? ""} ${c.ownerName ?? ""}`
+          .toLowerCase()
+          .includes(needle),
+      )
+    : cards;
+  const openCards = visibleCards.filter((c) => !c.isClosed);
+  const openValue = openCards.reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
+  const needsAttention = openCards.filter(
+    (c) => c.activityStatus === "overdue" || c.activityStatus === "none",
+  ).length;
+
   return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Keresés kontakt, cím vagy felelős szerint…"
+          className="w-72 max-w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent"
+        />
+        <span className="text-muted">
+          Nyitott dealek: <b className="text-foreground">{openCards.length}</b>
+        </span>
+        <span className="text-muted">
+          Összérték:{" "}
+          <b className="text-foreground">
+            {openValue > 0 ? formatCompactHuf(openValue) : "—"}
+          </b>
+        </span>
+        {needsAttention > 0 && (
+          <span className="text-warning">
+            {needsAttention} deal-hez nincs (vagy lejárt) teendő
+          </span>
+        )}
+      </div>
     <div className="flex gap-4 overflow-x-auto pb-4">
       {stages.map((stage) => (
         <div
@@ -109,10 +167,10 @@ export function PipelineBoard({
           <div className="mb-3 flex items-center gap-2 px-1 text-sm font-medium text-foreground">
             {stage.name}
             <span className="rounded-full bg-surface px-1.5 py-0.5 text-xs text-muted">
-              {cards.filter((c) => c.stageId === stage.id).length}
+              {visibleCards.filter((c) => c.stageId === stage.id).length}
             </span>
             {(() => {
-              const total = cards
+              const total = visibleCards
                 .filter((c) => c.stageId === stage.id)
                 .reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
               return total > 0 ? (
@@ -124,7 +182,7 @@ export function PipelineBoard({
           </div>
 
           <div className="flex flex-col gap-2">
-            {cards
+            {visibleCards
               .filter((card) => card.stageId === stage.id)
               .map((card) => (
                 <Card
@@ -147,6 +205,11 @@ export function PipelineBoard({
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
+                  {card.dealAmount != null && card.dealAmount > 0 && (
+                    <div className="mt-1 font-semibold text-foreground">
+                      {formatCompactHuf(card.dealAmount)}
+                    </div>
+                  )}
                   {card.propertyAddress && (
                     <div className="mt-1.5 flex items-center gap-1.5 text-muted">
                       <Building2 className="h-3 w-3 shrink-0" strokeWidth={1.75} />
@@ -159,11 +222,29 @@ export function PipelineBoard({
                       <span>{card.daysSinceUpdate} napja mozdulatlan</span>
                     </div>
                   )}
+                  {!card.isClosed && (
+                    <div className="mt-2 flex items-center justify-between">
+                      <span
+                        title={ACTIVITY_INDICATOR[card.activityStatus].label}
+                        aria-label={ACTIVITY_INDICATOR[card.activityStatus].label}
+                        className={`h-2.5 w-2.5 rounded-full ${ACTIVITY_INDICATOR[card.activityStatus].className}`}
+                      />
+                      {card.ownerName && (
+                        <span
+                          title={card.ownerName}
+                          className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-soft text-[10px] font-semibold text-accent"
+                        >
+                          {initials(card.ownerName)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </Card>
               ))}
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }

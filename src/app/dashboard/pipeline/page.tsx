@@ -14,6 +14,7 @@ type DealRow = {
   stage_id: string;
   updated_at: string;
   deal_amount: number | null;
+  owner_id: string | null;
   status: string;
   lost_reason: string | null;
   lost_at: string | null;
@@ -26,19 +27,29 @@ const STALE_AFTER_DAYS = 14;
 export default async function PipelinePage() {
   const supabase = await createClient();
 
-  const [{ data: stages, error: stagesError }, { data: deals, error: dealsError }] =
-    await Promise.all([
-      supabase
-        .from("pipeline_stages")
-        .select("id, name, position")
-        .order("position"),
-      supabase
-        .from("deals")
-        .select(
-          "id, stage_id, updated_at, deal_amount, status, lost_reason, lost_at, contacts(name), properties(address)",
-        )
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    { data: stages, error: stagesError },
+    { data: deals, error: dealsError },
+    { data: openActivities },
+    { data: members },
+  ] = await Promise.all([
+    supabase
+      .from("pipeline_stages")
+      .select("id, name, position")
+      .order("position"),
+    supabase
+      .from("deals")
+      .select(
+        "id, stage_id, updated_at, deal_amount, owner_id, status, lost_reason, lost_at, contacts(name), properties(address)",
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("activities")
+      .select("deal_id, due_at")
+      .eq("done", false)
+      .not("deal_id", "is", null),
+    supabase.from("profiles").select("id, full_name"),
+  ]);
 
   if (stagesError) throw stagesError;
   if (dealsError) throw dealsError;
@@ -48,6 +59,33 @@ export default async function PipelinePage() {
   const now = new Date().getTime();
 
   const allDeals = deals as unknown as DealRow[];
+
+  // Pipedrive-style "next activity" signal per deal: overdue (red), due
+  // today (amber), scheduled (green) or nothing planned (grey warning).
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayMs = startOfToday.getTime();
+  const endOfTodayMs = startOfTodayMs + 24 * 60 * 60 * 1000;
+  const nextDueByDeal = new Map<string, number | "undated">();
+  for (const a of openActivities ?? []) {
+    if (!a.deal_id) continue;
+    const due = a.due_at ? new Date(a.due_at).getTime() : "undated";
+    const prev = nextDueByDeal.get(a.deal_id);
+    if (prev === undefined || (due !== "undated" && (prev === "undated" || due < prev))) {
+      nextDueByDeal.set(a.deal_id, due);
+    }
+  }
+  function activityStatus(dealId: string): DealCard["activityStatus"] {
+    const due = nextDueByDeal.get(dealId);
+    if (due === undefined) return "none";
+    if (due === "undated") return "scheduled";
+    if (due < startOfTodayMs) return "overdue";
+    if (due < endOfTodayMs) return "today";
+    return "scheduled";
+  }
+  const ownerNameById = new Map(
+    (members ?? []).map((m) => [m.id as string, m.full_name as string | null]),
+  );
 
   const dealCards: DealCard[] = allDeals
     .filter((deal) => deal.status !== "lost")
@@ -63,6 +101,9 @@ export default async function PipelinePage() {
         contactName: deal.contacts?.name ?? "Ismeretlen kontakt",
         propertyAddress: deal.properties?.address ?? null,
         dealAmount: deal.deal_amount,
+        ownerName: deal.owner_id ? (ownerNameById.get(deal.owner_id) ?? null) : null,
+        activityStatus: isClosed ? "none" : activityStatus(deal.id),
+        isClosed,
         isStale: !isClosed && daysSinceUpdate >= STALE_AFTER_DAYS,
         daysSinceUpdate,
       };
