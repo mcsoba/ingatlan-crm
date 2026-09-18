@@ -40,7 +40,7 @@ export default async function DashboardLayout({
             </div>
 
             <div>
-              <NotificationsPanel />
+              <NotificationsPanel agencyId={profile.agency_id} />
               <div className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5">
                 <div className="min-w-0">
                   <div className="truncate text-xs font-medium text-sidebar-foreground">

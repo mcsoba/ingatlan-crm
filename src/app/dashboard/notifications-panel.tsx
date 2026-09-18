@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, CircleAlert, Clock, UserPlus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { getNotifications, type NotificationsData } from "./notifications-actions";
 
 function activityHref(contactId: string | null, dealId: string | null): string {
@@ -11,7 +12,7 @@ function activityHref(contactId: string | null, dealId: string | null): string {
   return "/dashboard/calendar";
 }
 
-export function NotificationsPanel() {
+export function NotificationsPanel({ agencyId }: { agencyId: string }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<NotificationsData | null>(null);
 
@@ -22,6 +23,52 @@ export function NotificationsPanel() {
         // Non-critical widget — silently skip on failure.
       });
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    // Realtime authorizes postgres_changes per-message against the socket's
+    // current access token (RLS: agency_id = current_agency_id() and
+    // deleted_at is null) — with @supabase/ssr's cookie-based session, that
+    // token isn't guaranteed to be wired into the realtime client yet at
+    // mount time, so fetch the session and set it explicitly before joining
+    // instead of relying on the client's internal auth-change wiring.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (session) supabase.realtime.setAuth(session.access_token);
+      startChannel();
+    });
+
+    function startChannel() {
+      // The agency_id filter below is a bandwidth optimization, not the
+      // security boundary — a stray event for another agency's row would be
+      // dropped server-side (RLS) before it ever reached this client.
+      channel = supabase
+        .channel(`notifications:${agencyId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "activities", filter: `agency_id=eq.${agencyId}` },
+          () => {
+            getNotifications().then(setData).catch(() => {});
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "contacts", filter: `agency_id=eq.${agencyId}` },
+          () => {
+            getNotifications().then(setData).catch(() => {});
+          },
+        )
+        .subscribe();
+    }
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [agencyId]);
 
   const count = data ? data.overdue.length + data.dueToday.length + data.newLeads.length : 0;
 
