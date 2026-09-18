@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
-import { BarListChart } from "@/components/ui/charts";
+import { BarListChart, TrendBarChart } from "@/components/ui/charts";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { SOURCE_LABELS } from "@/app/dashboard/contacts/constants";
 
@@ -15,6 +15,8 @@ type DealRow = {
   commission_rate: number | null;
   status: string;
   lost_reason: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 function formatHuf(amount: number): string {
@@ -28,7 +30,7 @@ export default async function ReportsPage() {
     await Promise.all([
       supabase
         .from("deals")
-        .select("owner_id, contact_id, stage_id, deal_amount, commission_rate, status, lost_reason"),
+        .select("owner_id, contact_id, stage_id, deal_amount, commission_rate, status, lost_reason, created_at, updated_at"),
       supabase.from("pipeline_stages").select("id, name, position").order("position"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
       supabase.from("contacts").select("id, source"),
@@ -165,12 +167,118 @@ export default async function ReportsPage() {
     }))
     .filter((row) => row.raw > 0);
 
+  // Insights-stílusú áttekintés. Nincs külön "lezárás dátuma" oszlop, ezért
+  // egy lezárt deal záró időpontjának a legutolsó módosítását (updated_at)
+  // vesszük -- a szakaszváltás frissíti, tehát jó közelítés.
+  const allDeals = (deals ?? []) as DealRow[];
+  const wonDeals = allDeals.filter(
+    (d) => d.status !== "lost" && lastStageId && d.stage_id === lastStageId,
+  );
+  const lostCount = allDeals.filter((d) => d.status === "lost").length;
+  const winRate =
+    wonDeals.length + lostCount > 0
+      ? Math.round((wonDeals.length / (wonDeals.length + lostCount)) * 100)
+      : null;
+  const avgCycleDays =
+    wonDeals.length > 0
+      ? Math.round(
+          wonDeals.reduce(
+            (sum, d) =>
+              sum + (new Date(d.updated_at).getTime() - new Date(d.created_at).getTime()),
+            0,
+          ) /
+            wonDeals.length /
+            (24 * 60 * 60 * 1000),
+        )
+      : null;
+
+  const now = new Date();
+  const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return {
+      key: monthKey(d),
+      label: d.toLocaleDateString("hu-HU", { month: "short" }),
+      revenue: 0,
+    };
+  });
+  for (const deal of wonDeals) {
+    const bucket = months.find((m) => m.key === monthKey(new Date(deal.updated_at)));
+    if (bucket) bucket.revenue += deal.deal_amount ?? 0;
+  }
+  const revenueThisMonth = months[months.length - 1].revenue;
+  const revenueTrend = months.map((m) => ({
+    label: m.label,
+    count: Math.round(m.revenue / 1_000_000),
+  }));
+
+  const openDeals = allDeals.filter((d) => d.status !== "lost");
+  const funnelData = (stages ?? []).map((stage) => ({
+    label: stage.name,
+    count: openDeals.filter((d) => d.stage_id === stage.id).length,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Riportok"
         description="Csapat-teljesítmény a pipeline dealek alapján."
       />
+
+      {allDeals.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card className="p-5">
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {winRate != null ? `${winRate}%` : "—"}
+              </div>
+              <div className="text-sm text-muted">Nyerési arány</div>
+              <div className="mt-1 text-xs text-muted-subtle">
+                {wonDeals.length} lezárt / {lostCount} elveszett
+              </div>
+            </Card>
+            <Card className="p-5">
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {avgCycleDays != null ? `${avgCycleDays} nap` : "—"}
+              </div>
+              <div className="text-sm text-muted">Átlagos lezárási idő</div>
+              <div className="mt-1 text-xs text-muted-subtle">létrehozástól a lezárásig (becsült)</div>
+            </Card>
+            <Card className="p-5">
+              <div className="text-2xl font-semibold tracking-tight text-foreground">
+                {revenueThisMonth > 0 ? formatHuf(revenueThisMonth) : "—"}
+              </div>
+              <div className="text-sm text-muted">Ebben a hónapban lezárt</div>
+              <div className="mt-1 text-xs text-muted-subtle">
+                {wonDeals.length} lezárt deal összesen
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card className="p-5">
+              <div className="mb-3 text-sm font-semibold text-foreground">
+                Nyitott dealek szakaszonként
+              </div>
+              <BarListChart items={funnelData} />
+            </Card>
+            <Card className="p-5">
+              <div className="mb-1 text-sm font-semibold text-foreground">
+                Lezárt bevétel, utolsó 6 hónap
+              </div>
+              <p className="mb-3 text-xs text-muted">Millió Ft, a lezárás becsült időpontja szerint.</p>
+              <TrendBarChart points={revenueTrend} />
+              <div className="mt-1 flex gap-1 text-[10px] text-muted-subtle">
+                {months.map((m) => (
+                  <span key={m.key} className="flex-1 text-center">
+                    {m.label}
+                  </span>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
 
       {forecastRows.length > 0 && (
         <Card className="p-5">
