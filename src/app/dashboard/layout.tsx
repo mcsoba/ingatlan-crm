@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
+import { createClient } from "@/lib/supabase/server";
 import { SidebarNav } from "./sidebar-nav";
 import { SignOutButton } from "./sign-out-button";
 import { SearchTrigger } from "./search-trigger";
@@ -20,6 +21,14 @@ export default async function DashboardLayout({
 }) {
   const { profile } = await ensureCurrentUserProfile();
 
+  // Unprocessed-lead count for the sidebar badge (RLS scopes it to the
+  // agency and hides soft-deleted contacts).
+  const supabase = await createClient();
+  const { count: newLeadCount } = await supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "new");
+
   return (
     <>
       <CommandPalette />
@@ -36,7 +45,7 @@ export default async function DashboardLayout({
                 </span>
               </div>
               <SearchTrigger />
-              <SidebarNav />
+              <SidebarNav badges={{ "/dashboard/leads": newLeadCount ?? 0 }} />
             </div>
 
             <div>

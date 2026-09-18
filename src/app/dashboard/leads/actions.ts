@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 
 function revalidateLeadViews() {
+  // The sidebar badge lives in the dashboard layout.
+  revalidatePath("/dashboard", "layout");
   revalidatePath("/dashboard/leads");
   revalidatePath("/dashboard/contacts");
   revalidatePath("/dashboard/pipeline");

@@ -43,7 +43,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/whats-new", label: "Újdonságok", icon: Sparkles },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
 
   return (
@@ -66,6 +66,11 @@ export function SidebarNav() {
           >
             <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
             {label}
+            {badges[href] > 0 && (
+              <span className="ml-auto rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                {badges[href] > 99 ? "99+" : badges[href]}
+              </span>
+            )}
           </Link>
         );
       })}
