@@ -9,6 +9,8 @@ import {
   UserRound,
   Building2,
   Link2,
+  Webhook,
+  Download,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
@@ -16,13 +18,14 @@ import {
   disconnectGoogleCalendar,
   updateAgencyBranding,
   updateAgencyPublicSlug,
+  updateAgencyWebhook,
   updateMyName,
 } from "./actions";
 import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 
 type Integration = {
@@ -53,7 +56,7 @@ export default async function SettingsPage({
       .maybeSingle(),
     supabase
       .from("agencies")
-      .select("logo_path, accent_preset, slug")
+      .select("logo_path, accent_preset, slug, lead_webhook_url")
       .eq("id", profile.agency_id)
       .single(),
   ]);
@@ -285,6 +288,75 @@ export default async function SettingsPage({
             ) : (
               <p className="mt-1 text-sm text-muted">
                 A link szerkesztését csak az iroda tulajdonosa végezheti.
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Webhook érdeklődőkhöz</div>
+          <p className="text-xs text-muted">
+            Minden új, publikus lead-űrlapról érkező érdeklődőnél a rendszer POST kérést küld erre
+            a címre (az email/SMS-értesítés MELLETT, nem helyette) — pl. Zapier/Make automatizáláshoz.
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <Webhook className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            {profile.role === "owner" || profile.role === "admin" ? (
+              <form action={updateAgencyWebhook} className="flex flex-col gap-1.5">
+                <span className={labelClass}>Webhook URL</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    name="webhook_url"
+                    type="url"
+                    placeholder="https://..."
+                    defaultValue={agencyBranding?.lead_webhook_url ?? ""}
+                    className={`${inputClass} max-w-sm`}
+                  />
+                  <Button type="submit" variant="secondary" size="sm">
+                    Mentés
+                  </Button>
+                </div>
+                <span className="text-xs text-muted-subtle">
+                  Csak nyilvánosan elérhető http(s) cím adható meg — localhost/belső hálózati cím nem
+                  fogadható el. Üresen hagyva kikapcsolja a webhookot.
+                </span>
+              </form>
+            ) : (
+              <p className="text-sm text-muted">
+                A webhook beállítását csak az iroda tulajdonosa vagy admin tagja végezheti.
+                {agencyBranding?.lead_webhook_url ? " Jelenleg be van kapcsolva." : " Jelenleg nincs beállítva."}
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <div className="mb-2">
+          <div className="text-sm font-medium text-foreground">Adataim exportálása</div>
+          <p className="text-xs text-muted">
+            Az iroda összes kontaktja, ingatlana, dealje és aktivitása egy letölthető JSON-fájlban
+            (adathordozhatósághoz, biztonsági mentéshez).
+          </p>
+        </div>
+        <Card className="flex items-start gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <Download className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            {profile.role === "owner" || profile.role === "admin" ? (
+              <a href="/dashboard/export" className={buttonVariants("secondary", "sm")}>
+                Exportálás JSON-ba
+              </a>
+            ) : (
+              <p className="text-sm text-muted">
+                Az adatexportálást csak az iroda tulajdonosa vagy admin tagja végezheti.
               </p>
             )}
           </div>

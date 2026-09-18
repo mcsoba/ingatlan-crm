@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Kanban, ListChecks, Circle, CheckCircle2 } from "lucide-react";
+import { Users, Building2, Kanban, ListChecks, Circle, CheckCircle2, Flame } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { BarListChart, TrendBarChart } from "@/components/ui/charts";
+import { STATUS_LABELS, STATUS_VARIANTS } from "@/app/dashboard/contacts/constants";
 
 type ChecklistItem = { label: string; done: boolean; href: string };
 
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
     { data: stages },
     { data: dealStages },
     { data: recentContacts },
+    { data: hotLeads },
   ] = await Promise.all([
     supabase.from("contacts").select("id", { count: "exact", head: true }),
     supabase.from("properties").select("id", { count: "exact", head: true }),
@@ -63,6 +65,13 @@ export default async function DashboardPage() {
       .from("contacts")
       .select("created_at")
       .gte("created_at", trendStart.toISOString()),
+    supabase
+      .from("contacts")
+      .select("id, name, status, lead_score")
+      .gte("lead_score", 40)
+      .neq("status", "inactive")
+      .order("lead_score", { ascending: false })
+      .limit(5),
   ]);
 
   if (upcomingError) throw upcomingError;
@@ -183,6 +192,36 @@ export default async function DashboardPage() {
             </div>
             <TrendBarChart points={trendData} />
           </Card>
+        </div>
+      )}
+
+      {hotLeads && hotLeads.length > 0 && (
+        <div>
+          <div className="mb-3 flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-foreground">Forró lead-ek</h2>
+            <HelpTooltip text="Az AI lead-pontszám alapján legmagasabbra értékelt, még nyitott (nem inaktív) kontaktok — velük érdemes most foglalkozni." />
+          </div>
+          <div className="flex flex-col gap-2">
+            {hotLeads.map((lead) => (
+              <Card key={lead.id} className="p-3">
+                <Link
+                  href={`/dashboard/contacts/${lead.id}/edit`}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Flame className="h-4 w-4 shrink-0 text-warning" />
+                    <span className="truncate text-sm text-foreground">{lead.name}</span>
+                    <Badge variant={STATUS_VARIANTS[lead.status] ?? "neutral"}>
+                      {STATUS_LABELS[lead.status] ?? lead.status}
+                    </Badge>
+                  </div>
+                  <Badge variant={lead.lead_score! >= 70 ? "success" : "warning"}>
+                    {lead.lead_score}
+                  </Badge>
+                </Link>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

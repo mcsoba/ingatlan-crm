@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { revokeGoogleToken } from "@/lib/google";
 import { ACCENT_PRESET_IDS } from "@/lib/accent-presets";
+import { isSafeWebhookUrl } from "@/lib/webhook";
 
 export async function updateMyName(formData: FormData) {
   const { profile } = await ensureCurrentUserProfile();
@@ -95,6 +96,27 @@ export async function updateAgencyPublicSlug(formData: FormData) {
     const message = error.code === "23505" ? "Ez a link már foglalt, válassz másikat" : error.message;
     redirect(`/dashboard/settings?error=${encodeURIComponent(message)}`);
   }
+
+  revalidatePath("/dashboard/settings");
+}
+
+export async function updateAgencyWebhook(formData: FormData) {
+  const profile = await requireOwnerOrAdmin();
+  const raw = String(formData.get("webhook_url") ?? "").trim();
+
+  if (raw && !isSafeWebhookUrl(raw)) {
+    redirect(
+      `/dashboard/settings?error=${encodeURIComponent("Érvénytelen webhook URL — csak nyilvános http(s) cím adható meg, belső/localhost cím nem")}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("agencies")
+    .update({ lead_webhook_url: raw || null })
+    .eq("id", profile.agency_id);
+
+  if (error) throw error;
 
   revalidatePath("/dashboard/settings");
 }

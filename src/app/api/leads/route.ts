@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 import { sendSms } from "@/lib/twilio";
+import { sendLeadWebhook } from "@/lib/webhook";
 
 const MAX_NAME_LENGTH = 200;
 const MAX_CONTACT_FIELD_LENGTH = 200;
@@ -178,7 +179,7 @@ export async function POST(request: Request) {
 
   const { data: agency } = await admin
     .from("agencies")
-    .select("id, name")
+    .select("id, name, lead_webhook_url")
     .eq("id", agencyId)
     .maybeSingle();
 
@@ -269,6 +270,18 @@ export async function POST(request: Request) {
     }),
     notifyAgencySms(admin, agencyId, trimmedName),
     autoEnroll(admin, agencyId, insertedContact.id, Boolean(leadEmail)),
+    agency.lead_webhook_url
+      ? sendLeadWebhook(agency.lead_webhook_url, {
+          agencyId,
+          contactId: insertedContact.id,
+          name: trimmedName,
+          email: leadEmail,
+          phone: leadPhone,
+          message: notes || null,
+          source: "website",
+          createdAt: new Date().toISOString(),
+        })
+      : Promise.resolve(),
   ]);
 
   return NextResponse.json({ ok: true });
