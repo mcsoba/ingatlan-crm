@@ -122,3 +122,42 @@ export async function createCalendarEvent(
   const data = await res.json();
   return data.id as string;
 }
+
+export type CalendarEventPatch = {
+  summary?: string;
+  description?: string;
+};
+
+export async function updateCalendarEvent(
+  accessToken: string,
+  eventId: string,
+  patch: CalendarEventPatch,
+): Promise<void> {
+  const res = await fetch(`${CALENDAR_EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(patch),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Google Naptár esemény frissítése sikertelen: ${text}`);
+  }
+}
+
+export async function deleteCalendarEvent(accessToken: string, eventId: string): Promise<void> {
+  const res = await fetch(`${CALENDAR_EVENTS_URL}/${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  // Google 404-et/410-et ad, ha az esemény már törölve lett kézzel a
+  // naptárban -- ez nálunk nem hiba, a cél állapot (nincs esemény) elérve.
+  if (!res.ok && res.status !== 404 && res.status !== 410) {
+    const text = await res.text();
+    throw new Error(`Google Naptár esemény törlése sikertelen: ${text}`);
+  }
+}

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
+import { syncActivityStatusChange, syncActivityDeletion } from "@/lib/google-calendar-sync";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "jegyzet",
@@ -62,6 +64,14 @@ export async function toggleActivityDone(
 
   if (error) throw error;
 
+  try {
+    await syncActivityStatusChange(createAdminClient(), id, done);
+  } catch (err) {
+    // A Google Naptár szinkron hibája sose akassza el a CRM-műveletet --
+    // ugyanaz a minta, mint a többi 3rd-party integrációnál a projektben.
+    console.error("Google Naptár szinkron sikertelen (aktivitás állapot)", err);
+  }
+
   if (redirectTo) revalidatePath(redirectTo);
   revalidatePath("/dashboard");
 }
@@ -110,6 +120,14 @@ export async function deleteActivity(formData: FormData) {
   await ensureCurrentUserProfile();
   const id = String(formData.get("id"));
   const redirectTo = String(formData.get("redirect_to") ?? "");
+
+  try {
+    // A törlés előtt kell meghívni -- az activity_google_events sorok
+    // on delete cascade-del automatikusan eltűnnek az aktivitással együtt.
+    await syncActivityDeletion(createAdminClient(), id);
+  } catch (err) {
+    console.error("Google Naptár szinkron sikertelen (aktivitás törlés)", err);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.from("activities").delete().eq("id", id);
