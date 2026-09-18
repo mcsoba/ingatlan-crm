@@ -77,6 +77,44 @@ export async function scheduleDealFollowUp(dealId: string, days: number) {
   revalidatePath("/dashboard");
 }
 
+// Quick note/call log straight from the board. Logging counts as movement on
+// the deal, so it also refreshes updated_at (clears the "stale" warning).
+export async function logDealActivity(
+  dealId: string,
+  type: "note" | "call",
+  content: string,
+) {
+  const { profile } = await ensureCurrentUserProfile();
+  const text = content.trim();
+  if (!text) throw new Error("A tartalom megadása kötelező");
+  if (type !== "note" && type !== "call") throw new Error("Érvénytelen típus");
+  const supabase = await createClient();
+
+  const { data: deal, error: dealError } = await supabase
+    .from("deals")
+    .select("contact_id")
+    .eq("id", dealId)
+    .single();
+  if (dealError) throw dealError;
+
+  const { error } = await supabase.from("activities").insert({
+    agency_id: profile.agency_id,
+    contact_id: deal.contact_id,
+    deal_id: dealId,
+    type,
+    content: text,
+  });
+  if (error) throw error;
+
+  await supabase
+    .from("deals")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", dealId);
+
+  revalidatePath("/dashboard/pipeline");
+  revalidatePath("/dashboard");
+}
+
 export async function moveDeal(dealId: string, stageId: string) {
   await ensureCurrentUserProfile();
   const supabase = await createClient();

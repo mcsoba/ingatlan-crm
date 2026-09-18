@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Building2, Clock } from "lucide-react";
-import { moveDeal, scheduleDealFollowUp } from "./actions";
+import { ArrowUpRight, Building2, Clock, MessageSquarePlus } from "lucide-react";
+import { logDealActivity, moveDeal, scheduleDealFollowUp } from "./actions";
 import { Card } from "@/components/ui/card";
 
 export type DealCard = {
@@ -46,6 +46,66 @@ const ACTIVITY_INDICATOR = {
   scheduled: { label: "Teendő ütemezve", className: "bg-success" },
   none: { label: "Nincs tervezett teendő", className: "bg-muted-subtle" },
 } as const;
+
+function QuickLog({ onLog }: { onLog: (type: "note" | "call", text: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<"note" | "call">("call");
+  const [text, setText] = useState("");
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        title="Jegyzet / hívás rögzítése"
+        aria-label="Jegyzet vagy hívás rögzítése"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => setOpen(true)}
+        className="text-muted-subtle hover:text-accent"
+      >
+        <MessageSquarePlus className="h-3.5 w-3.5" strokeWidth={1.75} />
+      </button>
+    );
+  }
+
+  return (
+    <form
+      onPointerDown={(e) => e.stopPropagation()}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!text.trim()) return;
+        onLog(type, text);
+        setText("");
+        setOpen(false);
+      }}
+      className="mt-2 flex w-full flex-col gap-1.5"
+    >
+      <div className="flex gap-1">
+        {(["call", "note"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setType(t)}
+            className={`rounded-full border px-2 py-0.5 text-[11px] ${
+              type === t
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-border text-muted"
+            }`}
+          >
+            {t === "call" ? "Hívás" : "Jegyzet"}
+          </button>
+        ))}
+      </div>
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+        placeholder="Mi történt? (Enter = mentés)"
+        className="w-full rounded-md border border-border bg-surface px-2 py-1 text-xs outline-none focus:border-accent"
+      />
+    </form>
+  );
+}
 
 export type Stage = {
   id: string;
@@ -117,6 +177,17 @@ export function PipelineBoard({
       window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [draggingId]);
+
+  function logActivity(dealId: string, type: "note" | "call", text: string) {
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === dealId ? { ...card, isStale: false, daysSinceUpdate: 0 } : card,
+      ),
+    );
+    logDealActivity(dealId, type, text).catch(() => {
+      // Optimistic; a reload re-syncs on failure.
+    });
+  }
 
   function scheduleFollowUp(dealId: string, days: number) {
     setCards((prev) =>
@@ -329,6 +400,9 @@ export function PipelineBoard({
                       )}
                     </div>
                   )}
+                  <div className="flex justify-end pt-1">
+                    <QuickLog onLog={(type, text) => logActivity(card.id, type, text)} />
+                  </div>
                 </Card>
               ))}
           </div>
