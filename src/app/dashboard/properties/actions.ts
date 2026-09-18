@@ -337,6 +337,32 @@ export async function compareProperties(
   };
 }
 
+export async function shareComparison(
+  propertyIds: string[],
+  analysis: PropertyComparison,
+): Promise<string> {
+  const { profile } = await ensureCurrentUserProfile();
+
+  if (propertyIds.length < 2 || propertyIds.length > 4) {
+    throw new Error("2 és 4 közötti számú ingatlant válassz a megosztáshoz");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("property_comparisons")
+    .insert({
+      agency_id: profile.agency_id,
+      created_by: profile.id,
+      property_ids: propertyIds,
+      analysis,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  return data.id as string;
+}
+
 export type ImportResult = { imported: number; skipped: number };
 
 export async function importPropertiesCsv(formData: FormData): Promise<ImportResult> {

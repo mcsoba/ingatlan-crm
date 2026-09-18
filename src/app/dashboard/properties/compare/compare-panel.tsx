@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Sparkles, Loader2, Check, X } from "lucide-react";
-import { compareProperties, type PropertyComparison } from "../actions";
+import { Sparkles, Loader2, Check, X, Share2, Copy, CheckCheck } from "lucide-react";
+import { compareProperties, shareComparison, type PropertyComparison } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -18,8 +18,15 @@ export function ComparePanel({ properties }: { properties: PropertySummary[] }) 
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
 
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isSharing, startSharing] = useTransition();
+
   function handleGenerate() {
     setError(null);
+    setShareUrl(null);
+    setCopied(false);
     startGenerating(async () => {
       try {
         const ids = properties.map((p) => p.id);
@@ -29,6 +36,30 @@ export function ComparePanel({ properties }: { properties: PropertySummary[] }) 
         setError(err instanceof Error ? err.message : "Hiba történt");
       }
     });
+  }
+
+  function handleShare() {
+    if (!result) return;
+    setShareError(null);
+    startSharing(async () => {
+      try {
+        const ids = properties.map((p) => p.id);
+        const id = await shareComparison(ids, result);
+        setShareUrl(`${window.location.origin}/c/${id}`);
+      } catch (err) {
+        setShareError(err instanceof Error ? err.message : "Hiba történt");
+      }
+    });
+  }
+
+  async function handleCopy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+    } catch {
+      setShareError("A vágólapra másolás nem sikerült, jelöld ki kézzel");
+    }
   }
 
   const byId = new Map(properties.map((p) => [p.id, p]));
@@ -111,6 +142,45 @@ export function ComparePanel({ properties }: { properties: PropertySummary[] }) 
               <p className="text-foreground">{result.recommendation}</p>
             </Card>
           )}
+
+          <div className="flex flex-col gap-2">
+            {!shareUrl ? (
+              <Button
+                variant="secondary"
+                onClick={handleShare}
+                disabled={isSharing}
+                className="self-start"
+              >
+                {isSharing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Share2 className="h-4 w-4" />
+                )}
+                Megosztás ügyféllel
+              </Button>
+            ) : (
+              <Card className="flex flex-wrap items-center gap-2 p-3 text-sm">
+                <span className="text-muted">Publikus link:</span>
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate text-accent hover:underline"
+                >
+                  {shareUrl}
+                </a>
+                <Button variant="ghost" onClick={handleCopy} className="ml-auto">
+                  {copied ? (
+                    <CheckCheck className="h-4 w-4 text-success" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {copied ? "Másolva" : "Másolás"}
+                </Button>
+              </Card>
+            )}
+            {shareError && <span className="text-sm text-danger">{shareError}</span>}
+          </div>
         </div>
       )}
     </div>
