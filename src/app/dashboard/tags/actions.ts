@@ -52,6 +52,60 @@ export async function deleteTag(tagId: string) {
   if (error) throw error;
   revalidatePath("/dashboard/contacts");
   revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/tags");
+}
+
+export async function updateTag(tagId: string, name: string, color: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("A címke neve nem lehet üres");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tags")
+    .update({ name: trimmed, color })
+    .eq("id", tagId)
+    .eq("agency_id", profile.agency_id);
+
+  if (error) throw error;
+  revalidatePath("/dashboard/contacts");
+  revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/tags");
+}
+
+export type TagWithUsage = TagRow & { contactCount: number; propertyCount: number };
+
+export async function listAgencyTagsWithUsage(): Promise<TagWithUsage[]> {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const { data: tags, error } = await supabase
+    .from("tags")
+    .select("id, name, color")
+    .eq("agency_id", profile.agency_id)
+    .order("name");
+  if (error) throw error;
+  if (!tags || tags.length === 0) return [];
+
+  const [{ data: contactLinks }, { data: propertyLinks }] = await Promise.all([
+    supabase.from("contact_tags").select("tag_id").in("tag_id", tags.map((t) => t.id)),
+    supabase.from("property_tags").select("tag_id").in("tag_id", tags.map((t) => t.id)),
+  ]);
+
+  const contactCounts = new Map<string, number>();
+  for (const row of contactLinks ?? []) {
+    contactCounts.set(row.tag_id, (contactCounts.get(row.tag_id) ?? 0) + 1);
+  }
+  const propertyCounts = new Map<string, number>();
+  for (const row of propertyLinks ?? []) {
+    propertyCounts.set(row.tag_id, (propertyCounts.get(row.tag_id) ?? 0) + 1);
+  }
+
+  return tags.map((tag) => ({
+    ...tag,
+    contactCount: contactCounts.get(tag.id) ?? 0,
+    propertyCount: propertyCounts.get(tag.id) ?? 0,
+  }));
 }
 
 export async function setContactTag(

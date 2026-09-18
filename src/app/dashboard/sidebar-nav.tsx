@@ -15,6 +15,7 @@ import {
   CalendarDays,
   ListChecks,
   History,
+  Tag,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
   { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
+  { href: "/dashboard/tags", label: "Címkék", icon: Tag },
   { href: "/dashboard/campaigns", label: "Kampányok", icon: Mail },
   { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
   { href: "/dashboard/reports", label: "Riportok", icon: BarChart3 },

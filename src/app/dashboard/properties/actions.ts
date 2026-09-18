@@ -150,6 +150,40 @@ export async function deletePropertyPhoto(formData: FormData) {
   revalidatePath("/dashboard/properties");
 }
 
+export async function reorderPropertyPhotos(
+  propertyId: string,
+  orderedPhotoIds: string[],
+) {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  // A property_photos sorok nem tárolják közvetlenül az agency_id-t a
+  // policy-kban használt módon minden lekérdezésnél, ezért itt explicit
+  // ellenőrizzük, hogy a fotók tényleg a hívó irodájához tartozó
+  // ingatlanhoz kapcsolódnak, mielőtt bármit módosítanánk.
+  const { data: property } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("id", propertyId)
+    .eq("agency_id", profile.agency_id)
+    .maybeSingle();
+  if (!property) throw new Error("Nincs jogosultságod ehhez az ingatlanhoz");
+
+  await Promise.all(
+    orderedPhotoIds.map((photoId, index) =>
+      supabase
+        .from("property_photos")
+        .update({ position: index })
+        .eq("id", photoId)
+        .eq("property_id", propertyId),
+    ),
+  );
+
+  revalidatePath(`/dashboard/properties/${propertyId}/edit`);
+  revalidatePath("/dashboard/properties");
+  revalidatePath(`/p/${propertyId}`);
+}
+
 export async function generateDescription(input: {
   address: string;
   price: number | null;
