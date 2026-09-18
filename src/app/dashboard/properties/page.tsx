@@ -171,6 +171,7 @@ export default async function PropertiesPage({
         />
       ) : (
         <PropertiesGrid
+          allTags={allTags}
           properties={properties.map((property) => {
             const coverPath = coverPhotoByProperty.get(property.id);
             return {

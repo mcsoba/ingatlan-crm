@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { deleteContact, bulkDeleteContacts, bulkUpdateContactStatus } from "./actions";
+import { bulkAssignContactTag, type TagRow } from "../tags/actions";
 import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 
 type ContactRow = {
@@ -28,10 +29,17 @@ const tagVariant = (color: string) =>
     ? color
     : "neutral") as "neutral" | "accent" | "success" | "warning" | "danger";
 
-export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
+export function ContactsTable({
+  contacts,
+  allTags,
+}: {
+  contacts: ContactRow[];
+  allTags: TagRow[];
+}) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [bulkStatus, setBulkStatus] = useState("");
+  const [bulkTag, setBulkTag] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const allSelected = contacts.length > 0 && selected.size === contacts.length;
@@ -53,6 +61,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
     setSelected(new Set());
     setConfirmDelete(false);
     setBulkStatus("");
+    setBulkTag("");
   }
 
   function handleBulkDelete() {
@@ -72,6 +81,15 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
     const ids = Array.from(selected);
     startTransition(async () => {
       await bulkUpdateContactStatus(ids, bulkStatus);
+      clearSelection();
+    });
+  }
+
+  function handleBulkTag() {
+    if (!bulkTag) return;
+    const ids = Array.from(selected);
+    startTransition(async () => {
+      await bulkAssignContactTag(ids, bulkTag);
       clearSelection();
     });
   }
@@ -104,6 +122,31 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
           >
             Alkalmaz
           </button>
+          {allTags.length > 0 && (
+            <>
+              <select
+                value={bulkTag}
+                onChange={(e) => setBulkTag(e.target.value)}
+                disabled={isPending}
+                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-foreground"
+              >
+                <option value="">Címke hozzáadása…</option>
+                {allTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleBulkTag}
+                disabled={!bulkTag || isPending}
+                className={buttonVariants("secondary", "sm")}
+              >
+                Alkalmaz
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={handleBulkDelete}

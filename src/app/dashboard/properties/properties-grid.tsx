@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { deleteProperty, bulkDeleteProperties } from "./actions";
+import { bulkAssignPropertyTag, type TagRow } from "../tags/actions";
 import { STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 
 type PropertyRow = {
@@ -26,10 +27,17 @@ const tagVariant = (color: string) =>
     ? color
     : "neutral") as "neutral" | "accent" | "success" | "warning" | "danger";
 
-export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
+export function PropertiesGrid({
+  properties,
+  allTags,
+}: {
+  properties: PropertyRow[];
+  allTags: TagRow[];
+}) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [bulkTag, setBulkTag] = useState("");
   const [isPending, startTransition] = useTransition();
 
   function toggleOne(id: string) {
@@ -44,6 +52,7 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
   function clearSelection() {
     setSelected(new Set());
     setConfirmDelete(false);
+    setBulkTag("");
   }
 
   function handleBulkDelete() {
@@ -54,6 +63,15 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
     const ids = Array.from(selected);
     startTransition(async () => {
       await bulkDeleteProperties(ids);
+      clearSelection();
+    });
+  }
+
+  function handleBulkTag() {
+    if (!bulkTag) return;
+    const ids = Array.from(selected);
+    startTransition(async () => {
+      await bulkAssignPropertyTag(ids, bulkTag);
       clearSelection();
     });
   }
@@ -76,6 +94,31 @@ export function PropertiesGrid({ properties }: { properties: PropertyRow[] }) {
               <Scale className="h-3.5 w-3.5" strokeWidth={1.75} />
               Összehasonlítás
             </button>
+          )}
+          {allTags.length > 0 && (
+            <>
+              <select
+                value={bulkTag}
+                onChange={(e) => setBulkTag(e.target.value)}
+                disabled={isPending}
+                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-foreground"
+              >
+                <option value="">Címke hozzáadása…</option>
+                {allTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleBulkTag}
+                disabled={!bulkTag || isPending}
+                className={buttonVariants("secondary", "sm")}
+              >
+                Alkalmaz
+              </button>
+            </>
           )}
           <button
             type="button"

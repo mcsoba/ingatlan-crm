@@ -134,6 +134,38 @@ export async function setContactTag(
   revalidatePath("/dashboard/contacts");
 }
 
+export async function bulkAssignContactTag(contactIds: string[], tagId: string) {
+  await ensureCurrentUserProfile();
+  if (contactIds.length === 0) return;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("contact_tags")
+    .upsert(
+      contactIds.map((contact_id) => ({ contact_id, tag_id: tagId })),
+      { onConflict: "contact_id,tag_id", ignoreDuplicates: true },
+    );
+  if (error) throw error;
+
+  revalidatePath("/dashboard/contacts");
+}
+
+export async function bulkAssignPropertyTag(propertyIds: string[], tagId: string) {
+  await ensureCurrentUserProfile();
+  if (propertyIds.length === 0) return;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("property_tags")
+    .upsert(
+      propertyIds.map((property_id) => ({ property_id, tag_id: tagId })),
+      { onConflict: "property_id,tag_id", ignoreDuplicates: true },
+    );
+  if (error) throw error;
+
+  revalidatePath("/dashboard/properties");
+}
+
 export async function setPropertyTag(
   propertyId: string,
   tagId: string,

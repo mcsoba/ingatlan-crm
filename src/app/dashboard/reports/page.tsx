@@ -14,6 +14,7 @@ type DealRow = {
   deal_amount: number | null;
   commission_rate: number | null;
   status: string;
+  lost_reason: string | null;
 };
 
 function formatHuf(amount: number): string {
@@ -27,7 +28,7 @@ export default async function ReportsPage() {
     await Promise.all([
       supabase
         .from("deals")
-        .select("owner_id, contact_id, stage_id, deal_amount, commission_rate, status"),
+        .select("owner_id, contact_id, stage_id, deal_amount, commission_rate, status, lost_reason"),
       supabase.from("pipeline_stages").select("id, name, position").order("position"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
       supabase.from("contacts").select("id, source"),
@@ -110,6 +111,19 @@ export default async function ReportsPage() {
     .sort((a, b) => b.total - a.total);
 
   const sourceChartData = sourceRows.map((row) => ({ label: row.label, count: row.rate }));
+
+  // Elveszett-deal indoklás elemzés: melyik ok fordul elő leggyakrabban,
+  // hogy az ügynök mintázatot ismerjen fel ("miért veszítjük a dealeket").
+  const lostReasonCounts = new Map<string, number>();
+  for (const deal of (deals ?? []) as DealRow[]) {
+    if (deal.status !== "lost") continue;
+    const reason = deal.lost_reason?.trim() || "Nincs megadva indok";
+    lostReasonCounts.set(reason, (lostReasonCounts.get(reason) ?? 0) + 1);
+  }
+  const lostReasonChartData = Array.from(lostReasonCounts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
 
   // Súlyozott pipeline-előrejelzés: minél közelebb van egy deal a záró
   // szakaszhoz, annál valószínűbb, hogy megvalósul a bevétele. Egyszerű,
@@ -212,6 +226,19 @@ export default async function ReportsPage() {
             A kontaktok hány százaléka jutott el lezárt dealig, forrásonként.
           </p>
           <BarListChart items={sourceChartData} format={(n) => `${n}%`} />
+        </Card>
+      )}
+
+      {lostReasonChartData.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            Elveszett dealek — leggyakoribb okok
+            <HelpTooltip text="Az elveszettnek jelölt dealeknél megadott indokok gyakorisága, a leggyakoribbal kezdve." />
+          </div>
+          <p className="mb-3 text-xs text-muted">
+            Segít felismerni, mi miatt veszítjük a legtöbb dealt.
+          </p>
+          <BarListChart items={lostReasonChartData} />
         </Card>
       )}
 

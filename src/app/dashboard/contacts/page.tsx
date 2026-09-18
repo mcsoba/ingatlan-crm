@@ -159,6 +159,7 @@ export default async function ContactsPage({
         />
       ) : (
         <ContactsTable
+          allTags={allTags}
           contacts={contacts.map((c) => {
             const lastActivityAt = lastActivityByContact.get(c.id) ?? c.created_at;
             const daysSinceActivity = Math.floor(
