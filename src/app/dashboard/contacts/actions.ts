@@ -526,7 +526,7 @@ export async function checkDuplicateContact(input: {
 // duplicate's enrollment in a sequence the kept contact is already in gets
 // dropped instead of reassigned (can't have both).
 export async function mergeContacts(keepId: string, duplicateId: string) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   if (keepId === duplicateId) throw new Error("Nem lehet önmagával összevonni egy kontaktot");
 
   const supabase = await createClient();
@@ -590,11 +590,23 @@ export async function mergeContacts(keepId: string, duplicateId: string) {
     }
   }
 
-  const { error: deleteError } = await supabase.from("contacts").delete().eq("id", duplicateId);
-  if (deleteError) throw deleteError;
+  await softDeleteContacts(profile.agency_id, [duplicateId]);
 
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${keepId}/edit`);
+}
+
+// Merges an entire duplicate cluster (from /dashboard/contacts/duplicates)
+// into one kept contact, by calling mergeContacts once per other member.
+// Sequential, not parallel -- each merge reassigns rows by contact_id, and
+// running them concurrently against the same keepId risks interleaved
+// reads of `keep` (email/phone/notes) between calls.
+export async function mergeClusterContacts(keepId: string, otherIds: string[]) {
+  for (const id of otherIds) {
+    if (id === keepId) continue;
+    await mergeContacts(keepId, id);
+  }
+  revalidatePath("/dashboard/contacts/duplicates");
 }
 
 const VALID_SOURCES = ["website", "referral", "phone", "walk_in", "other"];

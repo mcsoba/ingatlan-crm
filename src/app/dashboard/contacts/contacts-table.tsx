@@ -10,6 +10,7 @@ import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { deleteContact, bulkDeleteContacts, bulkUpdateContactStatus } from "./actions";
 import { bulkAssignContactTag, type TagRow } from "../tags/actions";
 import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
+import { ColumnPicker, useVisibleColumns } from "./column-picker";
 
 type ContactRow = {
   id: string;
@@ -23,6 +24,7 @@ type ContactRow = {
   tags: { id: string; name: string; color: string }[];
   isNeglected: boolean;
   daysSinceActivity: number;
+  created_at: string;
 };
 
 const tagVariant = (color: string) =>
@@ -42,6 +44,7 @@ export function ContactsTable({
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkTag, setBulkTag] = useState("");
   const [isPending, startTransition] = useTransition();
+  const visible = useVisibleColumns();
 
   const allSelected = contacts.length > 0 && selected.size === contacts.length;
 
@@ -168,6 +171,10 @@ export function ContactsTable({
         </div>
       )}
 
+      <div className="flex justify-end">
+        <ColumnPicker />
+      </div>
+
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -188,22 +195,30 @@ export function ContactsTable({
                   <HelpTooltip text="Az óra-ikon azt jelzi, hogy egy felvett/minősített kontaktnak 14+ napja nem volt aktivitása (jegyzet, hívás, megtekintés) — érdemes utánanézni, mielőtt kihűl." />
                 </span>
               </th>
-              <th className="px-4 py-3 font-medium">Elérhetőség</th>
-              <th className="px-4 py-3 font-medium">Címkék</th>
-              <th className="px-4 py-3 font-medium">Forrás</th>
-              <th className="px-4 py-3 font-medium">
-                <span className="inline-flex items-center gap-1">
-                  Ügynök
-                  <HelpTooltip text="Automatikus lead-kiosztás esetén az a csapattag, akihez a kontakt körbeosztással került. Kikapcsolt kiosztásnál, vagy kézzel felvett kontaktnál üres." />
-                </span>
-              </th>
-              <th className="px-4 py-3 font-medium">Státusz</th>
-              <th className="px-4 py-3 font-medium">
-                <span className="inline-flex items-center gap-1">
-                  Pontszám
-                  <HelpTooltip text="AI-alapú becslés 0-100 között arra, mennyire valószínű, hogy ez a kontakt hamarosan vásárol/elad. A kontakt oldalán a 'Pontozás frissítése' gombbal számolható újra." />
-                </span>
-              </th>
+              {visible.has("email") && <th className="px-4 py-3 font-medium">Elérhetőség</th>}
+              {visible.has("tags") && <th className="px-4 py-3 font-medium">Címkék</th>}
+              {visible.has("source") && <th className="px-4 py-3 font-medium">Forrás</th>}
+              {visible.has("owner") && (
+                <th className="px-4 py-3 font-medium">
+                  <span className="inline-flex items-center gap-1">
+                    Ügynök
+                    <HelpTooltip text="Automatikus lead-kiosztás esetén az a csapattag, akihez a kontakt körbeosztással került. Kikapcsolt kiosztásnál, vagy kézzel felvett kontaktnál üres." />
+                  </span>
+                </th>
+              )}
+              {visible.has("status") && <th className="px-4 py-3 font-medium">Státusz</th>}
+              {visible.has("score") && (
+                <th className="px-4 py-3 font-medium">
+                  <span className="inline-flex items-center gap-1">
+                    Pontszám
+                    <HelpTooltip text="AI-alapú becslés 0-100 között arra, mennyire valószínű, hogy ez a kontakt hamarosan vásárol/elad. A kontakt oldalán a 'Pontozás frissítése' gombbal számolható újra." />
+                  </span>
+                </th>
+              )}
+              {visible.has("created") && <th className="px-4 py-3 font-medium">Létrehozva</th>}
+              {visible.has("lastActivity") && (
+                <th className="px-4 py-3 font-medium">Utolsó aktivitás</th>
+              )}
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -240,50 +255,74 @@ export function ContactsTable({
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-muted">
-                  {contact.email || contact.phone || "—"}
-                </td>
-                <td className="px-4 py-3">
-                  {contact.tags.length === 0 ? (
-                    <span className="text-muted-subtle">—</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {contact.tags.map((t) => (
-                        <Badge key={t.id} variant={tagVariant(t.color)}>
-                          {t.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {SOURCE_LABELS[contact.source] ?? contact.source}
-                </td>
-                <td className="px-4 py-3 text-muted">
-                  {contact.ownerName ?? <span className="text-muted-subtle">—</span>}
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANTS[contact.status] ?? "neutral"}>
-                    {STATUS_LABELS[contact.status] ?? contact.status}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3">
-                  {contact.lead_score != null ? (
-                    <Badge
-                      variant={
-                        contact.lead_score >= 70
-                          ? "success"
-                          : contact.lead_score >= 40
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {contact.lead_score}
+                {visible.has("email") && (
+                  <td className="px-4 py-3 text-muted">
+                    {contact.email || contact.phone || "—"}
+                  </td>
+                )}
+                {visible.has("tags") && (
+                  <td className="px-4 py-3">
+                    {contact.tags.length === 0 ? (
+                      <span className="text-muted-subtle">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {contact.tags.map((t) => (
+                          <Badge key={t.id} variant={tagVariant(t.color)}>
+                            {t.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                )}
+                {visible.has("source") && (
+                  <td className="px-4 py-3 text-muted">
+                    {SOURCE_LABELS[contact.source] ?? contact.source}
+                  </td>
+                )}
+                {visible.has("owner") && (
+                  <td className="px-4 py-3 text-muted">
+                    {contact.ownerName ?? <span className="text-muted-subtle">—</span>}
+                  </td>
+                )}
+                {visible.has("status") && (
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_VARIANTS[contact.status] ?? "neutral"}>
+                      {STATUS_LABELS[contact.status] ?? contact.status}
                     </Badge>
-                  ) : (
-                    <span className="text-muted-subtle">—</span>
-                  )}
-                </td>
+                  </td>
+                )}
+                {visible.has("score") && (
+                  <td className="px-4 py-3">
+                    {contact.lead_score != null ? (
+                      <Badge
+                        variant={
+                          contact.lead_score >= 70
+                            ? "success"
+                            : contact.lead_score >= 40
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {contact.lead_score}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-subtle">—</span>
+                    )}
+                  </td>
+                )}
+                {visible.has("created") && (
+                  <td className="px-4 py-3 text-muted">
+                    {new Date(contact.created_at).toLocaleDateString("hu-HU")}
+                  </td>
+                )}
+                {visible.has("lastActivity") && (
+                  <td className="px-4 py-3 text-muted">
+                    {contact.daysSinceActivity === 0
+                      ? "Ma"
+                      : `${contact.daysSinceActivity} napja`}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-right">
                   <form action={deleteContact}>
                     <input type="hidden" name="id" value={contact.id} />

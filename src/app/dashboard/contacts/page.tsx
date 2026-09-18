@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search, Users, Download } from "lucide-react";
+import { Plus, Search, Users, Download, Users2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ImportContactsButton } from "./import-button";
 import { ContactsTable } from "./contacts-table";
@@ -88,6 +88,10 @@ export default async function ContactsPage({
         description="Érdeklődők és ügyfelek egy helyen."
         action={
           <div className="flex items-center gap-2">
+            <Link href="/dashboard/contacts/duplicates" className={buttonVariants("secondary")}>
+              <Users2 className="h-4 w-4" strokeWidth={1.75} />
+              Duplikátumok
+            </Link>
             <a href="/dashboard/contacts/export" className={buttonVariants("secondary")}>
               <Download className="h-4 w-4" strokeWidth={1.75} />
               Export CSV
