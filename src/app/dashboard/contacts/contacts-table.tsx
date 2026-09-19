@@ -257,7 +257,22 @@ export function ContactsTable({
                 </td>
                 {visible.has("email") && (
                   <td className="px-4 py-3 text-muted">
-                    {contact.email || contact.phone || "—"}
+                    {contact.email || contact.phone ? (
+                      <div className="flex flex-col gap-0.5">
+                        {contact.email && (
+                          <a href={`mailto:${contact.email}`} className="hover:text-accent">
+                            {contact.email}
+                          </a>
+                        )}
+                        {contact.phone && (
+                          <a href={`tel:${contact.phone}`} className="hover:text-accent">
+                            {contact.phone}
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 )}
                 {visible.has("tags") && (
