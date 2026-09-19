@@ -15,6 +15,7 @@ import {
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
 import { LostDealPanel } from "./lost-deal-panel";
+import { StageProgress } from "./stage-progress";
 import { ActivityPanel } from "../../activities/activity-panel";
 import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -125,6 +126,15 @@ export default async function DealDetailPage({
       />
 
       <div className="mt-6 flex flex-col gap-4">
+        {stages && stages.length > 0 && (
+          <StageProgress
+            dealId={dealRow.id}
+            stages={stages}
+            currentStageId={dealRow.stage_id}
+            disabled={dealRow.status === "lost"}
+          />
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-3 text-sm">
             <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
