@@ -124,7 +124,7 @@ export default async function PipelinePage() {
         description="Húzd a kártyákat a szakaszok között."
         helpText="A pipeline minden folyamatban lévő üzletet (deal-t) mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
         action={
-          <div className="flex items-center gap-2">
+          <>
             {/* Plain <a>, not <Link> — this must be a full browser navigation
                 for the CSV Content-Disposition download to work. The lint
                 rule below false-positives because /export collides in its
@@ -150,7 +150,7 @@ export default async function PipelinePage() {
               <Plus className="h-4 w-4" strokeWidth={2} />
               Új deal
             </Link>
-          </div>
+          </>
         }
       />
 

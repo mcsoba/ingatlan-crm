@@ -83,7 +83,7 @@ export default async function PropertiesPage({
         title="Ingatlanok"
         description="Az iroda aktuális kínálata."
         action={
-          <div className="flex items-center gap-2">
+          <>
             <a
               href="/dashboard/properties/export"
               className={buttonVariants("secondary")}
@@ -99,7 +99,7 @@ export default async function PropertiesPage({
               <Plus className="h-4 w-4" strokeWidth={2} />
               Új ingatlan
             </Link>
-          </div>
+          </>
         }
       />
 

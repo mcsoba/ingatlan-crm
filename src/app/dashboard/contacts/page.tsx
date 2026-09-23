@@ -87,7 +87,7 @@ export default async function ContactsPage({
         title="Kontaktok"
         description="Érdeklődők és ügyfelek egy helyen."
         action={
-          <div className="flex items-center gap-2">
+          <>
             <Link href="/dashboard/contacts/duplicates" className={buttonVariants("secondary")}>
               <Users2 className="h-4 w-4" strokeWidth={1.75} />
               Duplikátumok
@@ -104,7 +104,7 @@ export default async function ContactsPage({
               <Plus className="h-4 w-4" strokeWidth={2} />
               Új kontakt
             </Link>
-          </div>
+          </>
         }
       />
 
