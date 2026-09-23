@@ -4,6 +4,7 @@ import { Kanban } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
+import { ContactCommsPanel } from "../../contact-comms-panel";
 import { ActivityPanel } from "../../../activities/activity-panel";
 import { PropertyMatchPanel } from "../../property-match-panel";
 import { LeadScorePanel } from "../../lead-score-panel";
@@ -21,12 +22,23 @@ type ContactDealRow = {
   properties: { address: string } | null;
 };
 
+const TABS = [
+  { id: "adatlap", label: "Adatlap" },
+  { id: "kommunikacio", label: "Kommunikáció" },
+  { id: "kapcsolodo", label: "Kapcsolódó" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
 export default async function EditContactPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab } = await searchParams;
+  const activeTab: TabId = TABS.some((t) => t.id === tab) ? (tab as TabId) : "adatlap";
   const supabase = await createClient();
 
   const [
@@ -84,77 +96,115 @@ export default async function EditContactPage({
         }
       />
 
-      <TagPicker
-        entityType="contact"
-        entityId={contact.id}
-        allTags={allTags}
-        initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
-      />
-
-      <div className="max-w-md">
-        <LeadScorePanel
-          contactId={contact.id}
-          initialScore={contact.lead_score}
-          initialReason={contact.lead_score_reason}
-        />
+      <div className="flex gap-1 border-b border-border">
+        {TABS.map((t) => (
+          <Link
+            key={t.id}
+            href={`/dashboard/contacts/${contact.id}/edit?tab=${t.id}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === t.id
+                ? "border-accent text-accent"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
       </div>
 
-      <ContactForm
-        action={updateWithId}
-        contactId={contact.id}
-        defaultValues={contact}
-        submitLabel="Mentés"
-      />
+      {activeTab === "adatlap" && (
+        <>
+          <TagPicker
+            entityType="contact"
+            entityId={contact.id}
+            allTags={allTags}
+            initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
+          />
 
-      <div className="max-w-md">
-        <CampaignPanel contactId={contact.id} hasEmail={Boolean(contact.email)} />
-      </div>
-
-      <div className="max-w-md">
-        <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>
-        <PropertyMatchPanel contactId={contact.id} />
-      </div>
-
-      <div className="max-w-md">
-        <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
-        {contactDeals.length === 0 ? (
-          <p className="text-sm text-muted">
-            Ehhez a kontakthoz még nincs deal.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {contactDeals.map((deal) => (
-              <Link key={deal.id} href={`/dashboard/pipeline/${deal.id}`}>
-                <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
-                  <Kanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
-                  <div>
-                    <div className="font-medium text-foreground">
-                      {stageNames.get(deal.stage_id) ?? "—"}
-                    </div>
-                    {deal.properties && (
-                      <div className="text-muted">{deal.properties.address}</div>
-                    )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
+          <div className="max-w-md">
+            <LeadScorePanel
+              contactId={contact.id}
+              initialScore={contact.lead_score}
+              initialReason={contact.lead_score_reason}
+            />
           </div>
-        )}
-      </div>
 
-      <div className="max-w-md">
-        <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
-        <ActivityPanel
-          contactId={contact.id}
-          activities={activities ?? []}
-          redirectTo={`/dashboard/contacts/${contact.id}/edit`}
-        />
-      </div>
+          <ContactForm
+            action={updateWithId}
+            contactId={contact.id}
+            defaultValues={contact}
+            submitLabel="Mentés"
+          />
+        </>
+      )}
 
-      <div className="max-w-md">
-        <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
-        <AttachmentsPanel contactId={contact.id} />
-      </div>
+      {activeTab === "kommunikacio" && (
+        <>
+          <ContactCommsPanel
+            contactId={contact.id}
+            name={contact.name}
+            email={contact.email}
+            phone={contact.phone}
+            source={contact.source}
+            status={contact.status}
+            notes={contact.notes}
+          />
+
+          <div className="max-w-md">
+            <CampaignPanel contactId={contact.id} hasEmail={Boolean(contact.email)} />
+          </div>
+        </>
+      )}
+
+      {activeTab === "kapcsolodo" && (
+        <>
+          <div className="max-w-md">
+            <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>
+            <PropertyMatchPanel contactId={contact.id} />
+          </div>
+
+          <div className="max-w-md">
+            <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
+            {contactDeals.length === 0 ? (
+              <p className="text-sm text-muted">
+                Ehhez a kontakthoz még nincs deal.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {contactDeals.map((deal) => (
+                  <Link key={deal.id} href={`/dashboard/pipeline/${deal.id}`}>
+                    <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
+                      <Kanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {stageNames.get(deal.stage_id) ?? "—"}
+                        </div>
+                        {deal.properties && (
+                          <div className="text-muted">{deal.properties.address}</div>
+                        )}
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="max-w-md">
+            <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
+            <ActivityPanel
+              contactId={contact.id}
+              activities={activities ?? []}
+              redirectTo={`/dashboard/contacts/${contact.id}/edit?tab=kapcsolodo`}
+            />
+          </div>
+
+          <div className="max-w-md">
+            <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
+            <AttachmentsPanel contactId={contact.id} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
