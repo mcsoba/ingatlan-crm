@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ImportContactsButton } from "./import-button";
 import { ContactsTable } from "./contacts-table";
 import { listAgencyTags } from "../tags/actions";
+import { listSavedViews } from "../saved-views/actions";
+import { SavedViewsBar } from "../saved-views/saved-views-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -36,10 +38,11 @@ export default async function ContactsPage({
     query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const [{ data: contacts, error }, allTags, { data: members }] = await Promise.all([
+  const [{ data: contacts, error }, allTags, { data: members }, savedViews] = await Promise.all([
     query,
     listAgencyTags(),
     supabase.from("profiles").select("id, full_name"),
+    listSavedViews("contacts"),
   ]);
 
   if (error) throw error;
@@ -171,6 +174,8 @@ export default async function ContactsPage({
           </Link>
         )}
       </form>
+
+      <SavedViewsBar entityType="contacts" views={savedViews} currentFilters={{ q, status, source, tag }} />
 
       {contacts.length === 0 ? (
         <EmptyState

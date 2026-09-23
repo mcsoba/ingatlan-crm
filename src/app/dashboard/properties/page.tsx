@@ -5,6 +5,8 @@ import { PropertiesGrid } from "./properties-grid";
 import { ImportPropertiesButton } from "./import-button";
 import { STATUS_LABELS } from "./constants";
 import { listAgencyTags } from "../tags/actions";
+import { listSavedViews } from "../saved-views/actions";
+import { SavedViewsBar } from "../saved-views/saved-views-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -37,9 +39,10 @@ export default async function PropertiesPage({
     query = query.in("id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
 
-  const [{ data: properties, error }, allTags] = await Promise.all([
+  const [{ data: properties, error }, allTags, savedViews] = await Promise.all([
     query,
     listAgencyTags(),
+    listSavedViews("properties"),
   ]);
 
   if (error) throw error;
@@ -158,6 +161,12 @@ export default async function PropertiesPage({
           </Link>
         )}
       </form>
+
+      <SavedViewsBar
+        entityType="properties"
+        views={savedViews}
+        currentFilters={{ q, priceMin, priceMax, status, tag }}
+      />
 
       {properties.length === 0 ? (
         <EmptyState
