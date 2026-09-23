@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building2, MailCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/auth-errors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
@@ -36,7 +37,7 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
 

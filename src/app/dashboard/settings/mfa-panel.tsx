@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, ShieldOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/auth-errors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
@@ -36,7 +37,7 @@ export function MfaPanel({ initialFactor }: { initialFactor: Factor | null }) {
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
     setEnrollment({

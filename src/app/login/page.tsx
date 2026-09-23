@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { translateAuthError } from "@/lib/auth-errors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
@@ -31,7 +32,7 @@ export default function LoginPage() {
 
     if (error) {
       setLoading(false);
-      setError(error.message);
+      setError(translateAuthError(error.message));
       return;
     }
 
@@ -131,7 +132,12 @@ export default function LoginPage() {
           </div>
 
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Jelszó</span>
+            <div className="flex items-center justify-between">
+              <span className={labelClass}>Jelszó</span>
+              <Link href="/forgot-password" className="text-xs text-muted hover:text-accent">
+                Elfelejtett jelszó?
+              </Link>
+            </div>
             <input
               type="password"
               required

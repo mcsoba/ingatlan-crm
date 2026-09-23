@@ -25,6 +25,7 @@ import {
 } from "./actions";
 import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { MfaPanel } from "./mfa-panel";
+import { PasswordPanel } from "./password-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -180,6 +181,7 @@ export default async function SettingsPage({
                 Mentés
               </Button>
             </form>
+            <PasswordPanel email={user.email ?? ""} />
             <MfaPanel initialFactor={verifiedMfaFactor} />
           </div>
         </Card>
