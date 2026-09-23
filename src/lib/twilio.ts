@@ -18,6 +18,14 @@ function getTwilioClient(): ReturnType<typeof twilioLib> {
   return twilioInstance;
 }
 
+// Phone numbers are stored (and shown to the user, e.g. as a placeholder
+// hint) in a human-readable spaced format like "+36 30 123 4567" — Twilio's
+// API expects strict E.164 (no spaces/dashes), so normalize right before
+// the call rather than pushing this onto every caller/input.
+function toE164(phone: string): string {
+  return phone.replace(/[^\d+]/g, "");
+}
+
 export async function sendSms(to: string, body: string) {
   const from = process.env.TWILIO_FROM_NUMBER;
   if (!from) {
@@ -25,5 +33,5 @@ export async function sendSms(to: string, body: string) {
       "TWILIO_FROM_NUMBER nincs beállítva — add meg a .env.local-ban az SMS-küldéshez",
     );
   }
-  return getTwilioClient().messages.create({ to, from, body });
+  return getTwilioClient().messages.create({ to: toE164(to), from, body });
 }

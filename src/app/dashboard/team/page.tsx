@@ -81,7 +81,7 @@ export default async function TeamPage() {
                   <input
                     name="phone"
                     defaultValue={member.phone ?? ""}
-                    placeholder="+36301234567 (SMS-értesítésekhez)"
+                    placeholder="+36 30 123 4567 (SMS-értesítésekhez)"
                     className={`${inputClass} flex-1 py-1 text-xs`}
                   />
                   <button

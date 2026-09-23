@@ -86,7 +86,7 @@ export function LeadForm({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Email</span>
+            <span className={labelClass}>Email (opcionális)</span>
             <input
               type="email"
               value={email}
@@ -95,8 +95,9 @@ export function LeadForm({
             />
           </div>
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Telefon</span>
+            <span className={labelClass}>Telefon (opcionális)</span>
             <input
+              placeholder="+36 30 123 4567"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={inputClass}

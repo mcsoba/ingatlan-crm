@@ -90,7 +90,7 @@ export function PropertyForm({
         </div>
 
         <div className={fieldGroupClass}>
-          <span className={labelClass}>Ár (Ft)</span>
+          <span className={labelClass}>Ár (Ft, opcionális)</span>
           <input
             name="price"
             type="text"
@@ -102,7 +102,7 @@ export function PropertyForm({
         </div>
 
         <div className={fieldGroupClass}>
-          <span className={labelClass}>Alapterület (m²)</span>
+          <span className={labelClass}>Alapterület (m², opcionális)</span>
           <input
             name="size_sqm"
             type="number"
@@ -129,7 +129,7 @@ export function PropertyForm({
         </div>
 
         <div className={fieldGroupClass}>
-          <span className={labelClass}>Jellemzők / jegyzet</span>
+          <span className={labelClass}>Jellemzők / jegyzet (opcionális)</span>
           <textarea
             name="notes"
             rows={3}
@@ -140,7 +140,7 @@ export function PropertyForm({
         </div>
 
         <div className={fieldGroupClass}>
-          <span className={labelClass}>Fotó hozzáadása</span>
+          <span className={labelClass}>Fotó hozzáadása (opcionális)</span>
           <input
             name="photo"
             type="file"
@@ -151,7 +151,7 @@ export function PropertyForm({
 
         <div className={fieldGroupClass}>
           <div className="flex items-center justify-between">
-            <span className={labelClass}>Hirdetési leírás</span>
+            <span className={labelClass}>Hirdetési leírás (opcionális)</span>
             <Button
               type="button"
               variant="secondary"

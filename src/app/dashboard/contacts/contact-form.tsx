@@ -197,7 +197,7 @@ export function ContactForm({
           </div>
 
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Email</span>
+            <span className={labelClass}>Email (opcionális)</span>
             <input
               type="email"
               name="email"
@@ -208,9 +208,10 @@ export function ContactForm({
           </div>
 
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Telefon</span>
+            <span className={labelClass}>Telefon (opcionális)</span>
             <input
               name="phone"
+              placeholder="+36 30 123 4567"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={inputClass}
@@ -284,7 +285,7 @@ export function ContactForm({
           </div>
 
           <div className={fieldGroupClass}>
-            <span className={labelClass}>Jegyzet</span>
+            <span className={labelClass}>Jegyzet (opcionális)</span>
             <textarea
               name="notes"
               rows={3}
