@@ -1,0 +1,10 @@
+import { SkeletonForm, SkeletonPageHeader } from "@/components/ui/skeleton";
+
+export default function EditContactLoading() {
+  return (
+    <div className="flex flex-col gap-6">
+      <SkeletonPageHeader />
+      <SkeletonForm fields={5} />
+    </div>
+  );
+}
