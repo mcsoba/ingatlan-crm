@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
+import { queueToast } from "@/components/ui/toast";
 
 type ContactFormProps = {
   action: (formData: FormData) => void;
@@ -42,6 +43,21 @@ export function ContactForm({
   const [source, setSource] = useState(defaultValues?.source ?? "other");
   const [status, setStatus] = useState(defaultValues?.status ?? "new");
   const [notes, setNotes] = useState(defaultValues?.notes ?? "");
+
+  const [isSaving, startSaving] = useTransition();
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    // Queued before the call: create/update redirect server-side, so this
+    // component unmounts before any code after the call would run.
+    queueToast({
+      title: contactId ? "Kontakt elmentve" : "Kontakt létrehozva",
+      variant: "success",
+    });
+    startSaving(() => {
+      action(formData);
+    });
+  }
 
   const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,7 +184,7 @@ export function ContactForm({
   return (
     <div className="flex max-w-md flex-col gap-6">
       <Card className="p-5">
-        <form action={action} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className={fieldGroupClass}>
             <span className={labelClass}>Név</span>
             <input
@@ -278,7 +294,7 @@ export function ContactForm({
             />
           </div>
 
-          <Button type="submit" className="mt-1">
+          <Button type="submit" className="mt-1" disabled={isSaving}>
             {submitLabel}
           </Button>
         </form>

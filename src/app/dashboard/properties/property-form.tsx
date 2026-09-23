@@ -7,6 +7,7 @@ import { STATUS_LABELS } from "./constants";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
+import { queueToast } from "@/components/ui/toast";
 
 type PropertyFormProps = {
   action: (formData: FormData) => void;
@@ -40,6 +41,22 @@ export function PropertyForm({
   const [aiError, setAiError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
 
+  const isEditing = Boolean(defaultValues?.address);
+  const [isSaving, startSaving] = useTransition();
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    // Queued before the call: create/update redirect server-side, so this
+    // component unmounts before any code after the call would run.
+    queueToast({
+      title: isEditing ? "Ingatlan elmentve" : "Ingatlan létrehozva",
+      variant: "success",
+    });
+    startSaving(() => {
+      action(formData);
+    });
+  }
+
   function handleGenerate() {
     setAiError(null);
     startGenerating(async () => {
@@ -59,7 +76,7 @@ export function PropertyForm({
 
   return (
     <Card className="max-w-md p-5">
-      <form action={action} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className={fieldGroupClass}>
           <span className={labelClass}>Cím</span>
           <input
@@ -160,7 +177,7 @@ export function PropertyForm({
           {aiError && <span className="text-xs text-danger">{aiError}</span>}
         </div>
 
-        <Button type="submit" className="mt-1">
+        <Button type="submit" className="mt-1" disabled={isSaving}>
           {submitLabel}
         </Button>
       </form>
