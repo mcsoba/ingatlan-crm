@@ -16,6 +16,7 @@ type DealRow = {
   updated_at: string;
   deal_amount: number | null;
   owner_id: string | null;
+  deal_type: string;
   status: string;
   lost_reason: string | null;
   lost_at: string | null;
@@ -42,7 +43,7 @@ export default async function PipelinePage() {
     supabase
       .from("deals")
       .select(
-        "id, stage_id, updated_at, deal_amount, owner_id, status, lost_reason, lost_at, contacts(name), properties(address)",
+        "id, stage_id, updated_at, deal_amount, owner_id, deal_type, status, lost_reason, lost_at, contacts(name), properties(address)",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -105,6 +106,7 @@ export default async function PipelinePage() {
         dealAmount: deal.deal_amount,
         ownerId: deal.owner_id,
         ownerName: deal.owner_id ? (ownerNameById.get(deal.owner_id) ?? null) : null,
+        dealType: deal.deal_type === "rent" ? "rent" : "sale",
         activityStatus: isClosed ? "none" : activityStatus(deal.id),
         isClosed,
         isStale: !isClosed && daysSinceUpdate >= STALE_AFTER_DAYS,

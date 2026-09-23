@@ -91,6 +91,14 @@ export default async function NewDealPage() {
           </div>
 
           <div className={fieldGroupClass}>
+            <span className={labelClass}>Típus</span>
+            <select name="deal_type" defaultValue="sale" className={inputClass}>
+              <option value="sale">Eladás</option>
+              <option value="rent">Bérlés</option>
+            </select>
+          </div>
+
+          <div className={fieldGroupClass}>
             <span className={labelClass}>Felelős ügynök</span>
             <select name="owner_id" defaultValue={profile.id} className={inputClass}>
               {(members ?? []).map((member) => (

@@ -14,6 +14,7 @@ export type DealCard = {
   dealAmount: number | null;
   ownerId: string | null;
   ownerName: string | null;
+  dealType: "sale" | "rent";
   activityStatus: "overdue" | "today" | "scheduled" | "none";
   isClosed: boolean;
   isStale: boolean;
@@ -128,6 +129,7 @@ export function PipelineBoard({
   const [query, setQuery] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
   const [onlyAttention, setOnlyAttention] = useState(false);
+  const [onlyRent, setOnlyRent] = useState(false);
   const columnRefs = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
@@ -216,6 +218,7 @@ export function PipelineBoard({
   const needle = query.trim().toLowerCase();
   const visibleCards = cards.filter((c) => {
     if (onlyMine && c.ownerId !== currentUserId) return false;
+    if (onlyRent && c.dealType !== "rent") return false;
     if (
       onlyAttention &&
       (c.isClosed || (c.activityStatus !== "overdue" && c.activityStatus !== "none"))
@@ -247,6 +250,7 @@ export function PipelineBoard({
           [
             ["Csak az enyéim", onlyMine, setOnlyMine],
             ["Figyelmet igényel", onlyAttention, setOnlyAttention],
+            ["Csak bérlés", onlyRent, setOnlyRent],
           ] as const
         ).map(([label, active, set]) => (
           <button
@@ -327,6 +331,11 @@ export function PipelineBoard({
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-foreground">
                       {card.contactName}
+                      {card.dealType === "rent" && (
+                        <span className="ml-1.5 rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent align-middle">
+                          Bérlés
+                        </span>
+                      )}
                     </div>
                     <Link
                       href={`/dashboard/pipeline/${card.id}`}

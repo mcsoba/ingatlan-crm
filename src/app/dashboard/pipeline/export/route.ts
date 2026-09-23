@@ -4,6 +4,7 @@ import { toCsv } from "@/lib/csv";
 
 type DealExportRow = {
   status: string;
+  deal_type: string;
   deal_amount: number | null;
   commission_rate: number | null;
   lost_reason: string | null;
@@ -21,7 +22,7 @@ export async function GET() {
   const { data: deals, error } = await supabase
     .from("deals")
     .select(
-      "status, deal_amount, commission_rate, lost_reason, created_at, contacts(name), properties(address), pipeline_stages(name), profiles(full_name)",
+      "status, deal_type, deal_amount, commission_rate, lost_reason, created_at, contacts(name), properties(address), pipeline_stages(name), profiles(full_name)",
     )
     .order("created_at", { ascending: false });
 
@@ -35,6 +36,7 @@ export async function GET() {
       "property",
       "stage",
       "status",
+      "deal_type",
       "owner",
       "deal_amount",
       "commission_rate",
@@ -47,6 +49,7 @@ export async function GET() {
       deal.properties?.address ?? "",
       deal.pipeline_stages?.name ?? "",
       deal.status,
+      deal.deal_type,
       deal.profiles?.full_name ?? "",
       deal.deal_amount,
       deal.commission_rate,

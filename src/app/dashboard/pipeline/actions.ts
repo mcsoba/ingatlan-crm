@@ -13,6 +13,8 @@ export async function createDeal(formData: FormData) {
   const contactId = String(formData.get("contact_id") ?? "");
   const propertyId = String(formData.get("property_id") ?? "");
   const ownerId = String(formData.get("owner_id") ?? "") || profile.id;
+  const dealTypeRaw = String(formData.get("deal_type") ?? "");
+  const dealType = dealTypeRaw === "rent" ? "rent" : "sale";
 
   if (!contactId) {
     throw new Error("A kontakt kiválasztása kötelező");
@@ -33,6 +35,7 @@ export async function createDeal(formData: FormData) {
     property_id: propertyId || null,
     stage_id: firstStage.id,
     owner_id: ownerId,
+    deal_type: dealType,
   });
 
   if (error) throw error;
@@ -150,6 +153,24 @@ export async function updateDealOwner(dealId: string, formData: FormData) {
   if (error) throw error;
 
   revalidatePath(`/dashboard/pipeline/${dealId}`);
+}
+
+export async function updateDealType(dealId: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+
+  const dealTypeRaw = String(formData.get("deal_type") ?? "");
+  const dealType = dealTypeRaw === "rent" ? "rent" : "sale";
+
+  const { error } = await supabase
+    .from("deals")
+    .update({ deal_type: dealType, updated_at: new Date().toISOString() })
+    .eq("id", dealId);
+
+  if (error) throw error;
+
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+  revalidatePath("/dashboard/pipeline");
 }
 
 export async function updateDealNotes(dealId: string, formData: FormData) {

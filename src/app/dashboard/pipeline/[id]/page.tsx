@@ -10,6 +10,7 @@ import {
   updateDealNotes,
   updateDealOwner,
   updateDealStage,
+  updateDealType,
 } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
@@ -33,6 +34,7 @@ type DealDetailRow = {
   id: string;
   stage_id: string;
   owner_id: string | null;
+  deal_type: string;
   notes: string | null;
   deal_amount: number | null;
   commission_rate: number | null;
@@ -56,7 +58,7 @@ export default async function DealDetailPage({
       supabase
         .from("deals")
         .select(
-          "id, stage_id, owner_id, notes, deal_amount, commission_rate, status, lost_reason, lost_at, contacts(id, name, email, phone), properties(id, address, price)",
+          "id, stage_id, owner_id, deal_type, notes, deal_amount, commission_rate, status, lost_reason, lost_at, contacts(id, name, email, phone), properties(id, address, price)",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -80,6 +82,7 @@ export default async function DealDetailPage({
   const stageName = stages?.find((s) => s.id === dealRow.stage_id)?.name ?? "—";
   const updateStageWithId = updateDealStage.bind(null, dealRow.id);
   const updateOwnerWithId = updateDealOwner.bind(null, dealRow.id);
+  const updateTypeWithId = updateDealType.bind(null, dealRow.id);
   const updateNotesWithId = updateDealNotes.bind(null, dealRow.id);
   const updateCommissionWithId = updateDealCommission.bind(null, dealRow.id);
   const seedChecklistWithId = seedTransactionChecklist.bind(null, dealRow.id);
@@ -252,6 +255,23 @@ export default async function DealDetailPage({
                     {member.full_name || memberEmailById.get(member.id) || "Ismeretlen"}
                   </option>
                 ))}
+              </select>
+              <Button type="submit" variant="secondary">
+                Mentés
+              </Button>
+            </div>
+          </form>
+
+          <form action={updateTypeWithId} className="flex flex-col gap-1.5">
+            <span className={labelClass}>Típus</span>
+            <div className="flex gap-2">
+              <select
+                name="deal_type"
+                defaultValue={dealRow.deal_type}
+                className={`${inputClass} flex-1`}
+              >
+                <option value="sale">Eladás</option>
+                <option value="rent">Bérlés</option>
               </select>
               <Button type="submit" variant="secondary">
                 Mentés
