@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { User, Building2, Trash2, ClipboardCheck, Percent, Printer, CheckCircle2 } from "lucide-react";
+import { User, Building2, ClipboardCheck, Percent, Printer, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  deleteDeal,
   markDealWon,
   seedTransactionChecklist,
   updateDealCommission,
@@ -16,6 +15,7 @@ import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
 import { LostDealPanel } from "./lost-deal-panel";
 import { StageProgress } from "./stage-progress";
+import { DeleteDealButton } from "./delete-deal-button";
 import { ActivityPanel } from "../../activities/activity-panel";
 import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -355,16 +355,10 @@ export default async function DealDetailPage({
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-          <form action={deleteDeal}>
-            <input type="hidden" name="id" value={dealRow.id} />
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 text-sm text-muted hover:text-danger"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Deal törlése
-            </button>
-          </form>
+          <DeleteDealButton
+            dealId={dealRow.id}
+            dealTitle={contact?.name ?? "Ismeretlen kontakt"}
+          />
         </div>
       </div>
     </div>

@@ -9,8 +9,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { deleteContact, bulkDeleteContacts, bulkUpdateContactStatus } from "./actions";
 import { bulkAssignContactTag, type TagRow } from "../tags/actions";
+import { restoreRecord } from "../trash/actions";
 import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 import { ColumnPicker, useVisibleColumns } from "./column-picker";
+import { useToast } from "@/components/ui/toast";
 
 type ContactRow = {
   id: string;
@@ -45,6 +47,7 @@ export function ContactsTable({
   const [bulkTag, setBulkTag] = useState("");
   const [isPending, startTransition] = useTransition();
   const visible = useVisibleColumns();
+  const toast = useToast();
 
   const allSelected = contacts.length > 0 && selected.size === contacts.length;
 
@@ -77,6 +80,33 @@ export function ContactsTable({
     startTransition(async () => {
       await bulkDeleteContacts(ids);
       clearSelection();
+      toast({
+        title: `${ids.length} kontakt törölve`,
+        variant: "success",
+        action: {
+          label: "Visszavonás",
+          onClick: () =>
+            startTransition(() => {
+              ids.forEach((id) => restoreRecord("contacts", id));
+            }),
+        },
+      });
+    });
+  }
+
+  function handleSingleDelete(id: string, name: string) {
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      await deleteContact(fd);
+      toast({
+        title: `${name} törölve`,
+        variant: "success",
+        action: {
+          label: "Visszavonás",
+          onClick: () => startTransition(() => restoreRecord("contacts", id)),
+        },
+      });
     });
   }
 
@@ -339,15 +369,14 @@ export function ContactsTable({
                   </td>
                 )}
                 <td className="px-4 py-3 text-right">
-                  <form action={deleteContact}>
-                    <input type="hidden" name="id" value={contact.id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-muted hover:text-danger"
-                    >
-                      Törlés
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleSingleDelete(contact.id, contact.name)}
+                    className="text-xs text-muted hover:text-danger disabled:opacity-50"
+                  >
+                    Törlés
+                  </button>
                 </td>
               </tr>
             ))}

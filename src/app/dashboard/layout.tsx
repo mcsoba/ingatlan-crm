@@ -8,6 +8,7 @@ import { CommandPalette } from "./command-palette";
 import { NotificationsPanel } from "./notifications-panel";
 import { MobileNavShell } from "./mobile-nav-shell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ToastProvider } from "@/components/ui/toast";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -30,7 +31,7 @@ export default async function DashboardLayout({
     .eq("status", "new");
 
   return (
-    <>
+    <ToastProvider>
       <CommandPalette />
       <MobileNavShell
         sidebar={
@@ -70,6 +71,6 @@ export default async function DashboardLayout({
       >
         {children}
       </MobileNavShell>
-    </>
+    </ToastProvider>
   );
 }

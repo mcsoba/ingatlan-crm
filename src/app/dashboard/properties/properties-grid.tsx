@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { deleteProperty, bulkDeleteProperties } from "./actions";
 import { bulkAssignPropertyTag, type TagRow } from "../tags/actions";
+import { restoreRecord } from "../trash/actions";
 import { STATUS_LABELS, STATUS_VARIANTS } from "./constants";
+import { useToast } from "@/components/ui/toast";
 
 type PropertyRow = {
   id: string;
@@ -39,6 +41,7 @@ export function PropertiesGrid({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [bulkTag, setBulkTag] = useState("");
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -64,6 +67,33 @@ export function PropertiesGrid({
     startTransition(async () => {
       await bulkDeleteProperties(ids);
       clearSelection();
+      toast({
+        title: `${ids.length} ingatlan törölve`,
+        variant: "success",
+        action: {
+          label: "Visszavonás",
+          onClick: () =>
+            startTransition(() => {
+              ids.forEach((id) => restoreRecord("properties", id));
+            }),
+        },
+      });
+    });
+  }
+
+  function handleSingleDelete(id: string, address: string) {
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      await deleteProperty(fd);
+      toast({
+        title: `${address} törölve`,
+        variant: "success",
+        action: {
+          label: "Visszavonás",
+          onClick: () => startTransition(() => restoreRecord("properties", id)),
+        },
+      });
     });
   }
 
@@ -198,15 +228,14 @@ export function PropertiesGrid({
                 ))}
               </div>
             )}
-            <form action={deleteProperty} className="mt-2">
-              <input type="hidden" name="id" value={property.id} />
-              <button
-                type="submit"
-                className="text-xs text-muted hover:text-danger"
-              >
-                Törlés
-              </button>
-            </form>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => handleSingleDelete(property.id, property.address)}
+              className="mt-2 text-xs text-muted hover:text-danger disabled:opacity-50"
+            >
+              Törlés
+            </button>
           </Card>
         ))}
       </div>
