@@ -38,3 +38,26 @@ export async function restoreRecord(table: string, id: string) {
   revalidatePath("/dashboard/trash");
   revalidatePath(REVALIDATE_PATH[table]);
 }
+
+export async function purgeRecord(table: string, id: string) {
+  await ensureCurrentUserProfile();
+  if (!(table in REVALIDATE_PATH)) {
+    throw new Error("Érvénytelen tábla");
+  }
+
+  // purge_soft_deleted RPC (security definer, 0036): permanently deletes a
+  // record on demand, ahead of the 30-day purge-trash cron. Same RLS-scoped
+  // client + security-definer pattern as restoreRecord above, for the same
+  // reason (correct auth.uid() attribution in the audit_log trigger) --
+  // plus the RPC itself only ever touches rows where deleted_at is already
+  // set, so this can't be used to delete a live record.
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("purge_soft_deleted", {
+    p_table: table,
+    p_id: id,
+  });
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/trash");
+}

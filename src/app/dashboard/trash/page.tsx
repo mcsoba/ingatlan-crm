@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { restoreRecord } from "./actions";
+import { PurgeButton } from "./purge-button";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -123,12 +124,15 @@ function TrashSection({
                 <div className="font-medium text-foreground">{row.label}</div>
                 <div className="text-xs text-muted">{daysAgo(row.deletedAt)}</div>
               </div>
-              <form action={restoreWithArgs}>
-                <Button type="submit" variant="secondary" size="sm">
-                  <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  Visszaállítás
-                </Button>
-              </form>
+              <div className="flex items-center gap-2">
+                <form action={restoreWithArgs}>
+                  <Button type="submit" variant="secondary" size="sm">
+                    <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    Visszaállítás
+                  </Button>
+                </form>
+                <PurgeButton table={table} id={row.id} />
+              </div>
             </div>
           );
         })}
