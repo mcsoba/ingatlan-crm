@@ -13,6 +13,7 @@ import {
   Download,
   Shuffle,
 } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import {
@@ -43,12 +44,20 @@ type Integration = {
   setupLabel: string;
 };
 
+const TABS = [
+  { id: "profil", label: "Profil" },
+  { id: "iroda", label: "Iroda" },
+  { id: "integraciok", label: "Integrációk" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; google?: string }>;
+  searchParams: Promise<{ error?: string; google?: string; tab?: string }>;
 }) {
-  const { error, google } = await searchParams;
+  const { error, google, tab } = await searchParams;
+  const activeTab: TabId = TABS.some((t) => t.id === tab) ? (tab as TabId) : "profil";
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
@@ -132,7 +141,7 @@ export default async function SettingsPage({
     <div className="flex max-w-2xl flex-col gap-6">
       <PageHeader
         title="Beállítások"
-        description="Külső szolgáltatások állapota — a kulcsokat a szerver .env.local fájljába kell megadni, itt csak az állapotuk látszik."
+        description="Fiók, iroda és külső szolgáltatások kezelése."
       />
 
       {google === "connected" && (
@@ -157,6 +166,23 @@ export default async function SettingsPage({
         </Card>
       )}
 
+      <div className="flex gap-1 border-b border-border">
+        {TABS.map((t) => (
+          <Link
+            key={t.id}
+            href={`/dashboard/settings?tab=${t.id}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === t.id
+                ? "border-accent text-accent"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
+
+      {activeTab === "profil" && (
       <div>
         <div className="mb-2 text-sm font-medium text-foreground">Saját profil</div>
         <Card className="flex items-start gap-3.5 p-4">
@@ -186,7 +212,10 @@ export default async function SettingsPage({
           </div>
         </Card>
       </div>
+      )}
 
+      {activeTab === "iroda" && (
+      <>
       <div>
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Iroda branding</div>
@@ -413,7 +442,11 @@ export default async function SettingsPage({
           </div>
         </Card>
       </div>
+      </>
+      )}
 
+      {activeTab === "integraciok" && (
+      <>
       <div className="mb-2 text-sm font-medium text-foreground">Külső szolgáltatások</div>
       <div className="flex flex-col gap-3">
         {integrations.map((integration) => (
@@ -452,7 +485,10 @@ export default async function SettingsPage({
           </Card>
         ))}
       </div>
+      </>
+      )}
 
+      {activeTab === "profil" && (
       <div>
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Személyes integrációk</div>
@@ -510,6 +546,7 @@ export default async function SettingsPage({
           </div>
         </Card>
       </div>
+      )}
     </div>
   );
 }

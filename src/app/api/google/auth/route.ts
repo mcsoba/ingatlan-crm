@@ -21,7 +21,7 @@ export async function GET() {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Hiba történt";
     return NextResponse.redirect(
-      `${siteUrl}/dashboard/settings?error=${encodeURIComponent(message)}`,
+      `${siteUrl}/dashboard/settings?tab=profil&error=${encodeURIComponent(message)}`,
     );
   }
 }

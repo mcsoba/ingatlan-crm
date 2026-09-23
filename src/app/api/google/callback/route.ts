@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const cookieState = request.cookies.get("google_oauth_state")?.value;
 
   const redirectWithError = (message: string) =>
-    NextResponse.redirect(`${siteUrl}/dashboard/settings?error=${encodeURIComponent(message)}`);
+    NextResponse.redirect(`${siteUrl}/dashboard/settings?tab=profil&error=${encodeURIComponent(message)}`);
 
   if (!code) {
     return redirectWithError("A Google nem küldött engedélyezési kódot");
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    const response = NextResponse.redirect(`${siteUrl}/dashboard/settings?google=connected`);
+    const response = NextResponse.redirect(`${siteUrl}/dashboard/settings?tab=profil&google=connected`);
     response.cookies.delete("google_oauth_state");
     return response;
   } catch (err) {

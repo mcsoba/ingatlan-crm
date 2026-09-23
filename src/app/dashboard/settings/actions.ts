@@ -67,7 +67,7 @@ export async function updateAgencyBranding(formData: FormData) {
 export async function updateAgencyPublicSlug(formData: FormData) {
   const { profile } = await ensureCurrentUserProfile();
   if (profile.role !== "owner") {
-    redirect("/dashboard/settings?error=Csak%20az%20iroda%20tulajdonosa%20m%C3%B3dos%C3%ADthatja%20a%20nyilv%C3%A1nos%20linket");
+    redirect("/dashboard/settings?tab=iroda&error=Csak%20az%20iroda%20tulajdonosa%20m%C3%B3dos%C3%ADthatja%20a%20nyilv%C3%A1nos%20linket");
   }
 
   const raw = String(formData.get("slug") ?? "").trim().toLowerCase();
@@ -75,7 +75,7 @@ export async function updateAgencyPublicSlug(formData: FormData) {
 
   if (slug.length < 3) {
     redirect(
-      `/dashboard/settings?error=${encodeURIComponent("A nyilvános link legalább 3 karakter legyen (kisbetű, szám, kötőjel)")}`,
+      `/dashboard/settings?tab=iroda&error=${encodeURIComponent("A nyilvános link legalább 3 karakter legyen (kisbetű, szám, kötőjel)")}`,
     );
   }
 
@@ -94,7 +94,7 @@ export async function updateAgencyPublicSlug(formData: FormData) {
     // élesben a Next.js generikus "Something went wrong" hibaoldala
     // jelenne meg a beviteli mező melletti üzenet helyett.
     const message = error.code === "23505" ? "Ez a link már foglalt, válassz másikat" : error.message;
-    redirect(`/dashboard/settings?error=${encodeURIComponent(message)}`);
+    redirect(`/dashboard/settings?tab=iroda&error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/dashboard/settings");
@@ -106,7 +106,7 @@ export async function updateAgencyWebhook(formData: FormData) {
 
   if (raw && !isSafeWebhookUrl(raw)) {
     redirect(
-      `/dashboard/settings?error=${encodeURIComponent("Érvénytelen webhook URL — csak nyilvános http(s) cím adható meg, belső/localhost cím nem")}`,
+      `/dashboard/settings?tab=iroda&error=${encodeURIComponent("Érvénytelen webhook URL — csak nyilvános http(s) cím adható meg, belső/localhost cím nem")}`,
     );
   }
 
