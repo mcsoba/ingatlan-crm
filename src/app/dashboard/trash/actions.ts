@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 const REVALIDATE_PATH: Record<string, string> = {
   contacts: "/dashboard/contacts",
@@ -11,24 +11,27 @@ const REVALIDATE_PATH: Record<string, string> = {
 };
 
 export async function restoreRecord(table: string, id: string) {
-  const { profile } = await ensureCurrentUserProfile();
+  await ensureCurrentUserProfile();
   if (!(table in REVALIDATE_PATH)) {
     throw new Error("Érvénytelen tábla");
   }
 
-  // Admin client, not RLS-scoped: the row is currently hidden by the
-  // SELECT policy (deleted_at is not null), and Postgres applies that same
-  // policy to a plain UPDATE's row-visibility -- under RLS this silently
-  // matches zero rows instead of restoring anything. The explicit
-  // agency_id filter below is what keeps this safe now that RLS isn't
-  // doing that job (same reasoning as softDeleteContacts/softDeleteProperties
+  // Goes through the restore_soft_deleted RPC (security definer, 0035)
+  // rather than a plain client-side UPDATE: the row is currently hidden by
+  // the SELECT policy (deleted_at is not null), and Postgres applies that
+  // same policy to a plain UPDATE's row-visibility -- under RLS this
+  // silently matches zero rows instead of restoring anything. The RPC
+  // bypasses that as the function owner while still running inside the
+  // caller's own request, keeping auth.uid() correct for the audit_log
+  // trigger -- unlike the admin client this used to go through, which has
+  // no user JWT and left every restore attributed to "Rendszer" in
+  // Előzmények (same reasoning as softDeleteContacts/softDeleteProperties
   // and pipeline's deleteDeal).
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from(table)
-    .update({ deleted_at: null })
-    .eq("id", id)
-    .eq("agency_id", profile.agency_id);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("restore_soft_deleted", {
+    p_table: table,
+    p_id: id,
+  });
 
   if (error) throw error;
 

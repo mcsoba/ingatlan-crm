@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
@@ -526,7 +525,7 @@ export async function checkDuplicateContact(input: {
 // duplicate's enrollment in a sequence the kept contact is already in gets
 // dropped instead of reassigned (can't have both).
 export async function mergeContacts(keepId: string, duplicateId: string) {
-  const { profile } = await ensureCurrentUserProfile();
+  await ensureCurrentUserProfile();
   if (keepId === duplicateId) throw new Error("Nem lehet önmagával összevonni egy kontaktot");
 
   const supabase = await createClient();
@@ -590,7 +589,7 @@ export async function mergeContacts(keepId: string, duplicateId: string) {
     }
   }
 
-  await softDeleteContacts(profile.agency_id, [duplicateId]);
+  await softDeleteContacts([duplicateId]);
 
   revalidatePath("/dashboard/contacts");
   revalidatePath(`/dashboard/contacts/${keepId}/edit`);
@@ -682,19 +681,19 @@ export async function importContactsCsv(formData: FormData): Promise<ImportResul
 }
 
 export async function deleteContact(formData: FormData) {
-  const { profile } = await ensureCurrentUserProfile();
+  await ensureCurrentUserProfile();
   const id = String(formData.get("id"));
 
-  await softDeleteContacts(profile.agency_id, [id]);
+  await softDeleteContacts([id]);
 
   revalidatePath("/dashboard/contacts");
 }
 
 export async function bulkDeleteContacts(ids: string[]) {
-  const { profile } = await ensureCurrentUserProfile();
+  await ensureCurrentUserProfile();
   if (ids.length === 0) return;
 
-  await softDeleteContacts(profile.agency_id, ids);
+  await softDeleteContacts(ids);
 
   revalidatePath("/dashboard/contacts");
 }
@@ -704,30 +703,19 @@ export async function bulkDeleteContacts(ids: string[]) {
 // hard-delete used to rely on (deleting a contact used to cascade-delete its
 // deals) by soft-deleting the contact's own open deals alongside it.
 //
-// Uses the admin client, not the RLS-scoped one: the contacts SELECT policy
-// now excludes deleted_at rows, and Postgres applies that same policy to an
-// UPDATE's row-visibility and WITH CHECK -- so under RLS, setting deleted_at
-// away from null fails WITH CHECK, and setting it back to null (restore)
-// silently matches zero rows. The explicit agency_id filter below is what
-// keeps this safe now that RLS isn't doing that job.
-async function softDeleteContacts(agencyId: string, ids: string[]) {
-  const admin = createAdminClient();
-  const now = new Date().toISOString();
-
-  const { error } = await admin
-    .from("contacts")
-    .update({ deleted_at: now })
-    .eq("agency_id", agencyId)
-    .in("id", ids);
+// Goes through the soft_delete_contacts RPC (security definer, 0035) rather
+// than a plain client-side UPDATE: the contacts SELECT policy now excludes
+// deleted_at rows, and Postgres applies that same policy to an UPDATE's
+// WITH CHECK -- so under RLS, setting deleted_at away from null fails WITH
+// CHECK. The RPC bypasses that as the function owner while still running
+// inside the caller's own request, so auth.uid() (and therefore who the
+// audit_log trigger attributes the change to) stays correct -- unlike the
+// admin client this used to go through, which has no user JWT and left
+// every delete/restore mislabeled "Rendszer" in Előzmények.
+async function softDeleteContacts(ids: string[]) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("soft_delete_contacts", { p_ids: ids });
   if (error) throw error;
-
-  const { error: dealsError } = await admin
-    .from("deals")
-    .update({ deleted_at: now })
-    .eq("agency_id", agencyId)
-    .in("contact_id", ids)
-    .is("deleted_at", null);
-  if (dealsError) throw dealsError;
 }
 
 export async function bulkUpdateContactStatus(ids: string[], status: string) {

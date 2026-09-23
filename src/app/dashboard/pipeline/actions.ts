@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 
@@ -297,20 +296,19 @@ export async function reopenDeal(dealId: string) {
 }
 
 export async function deleteDeal(formData: FormData) {
-  const { profile } = await ensureCurrentUserProfile();
+  await ensureCurrentUserProfile();
   const id = String(formData.get("id"));
 
-  // Admin client, not RLS-scoped: the deals SELECT policy excludes
-  // deleted_at rows, and Postgres applies that policy to a plain UPDATE's
-  // row-visibility/WITH CHECK too, so this write would fail (or silently
-  // match nothing, for a restore) under RLS. The explicit agency_id filter
-  // is what keeps this safe now that RLS isn't doing that job.
-  const admin = createAdminClient();
-  const { error } = await admin
-    .from("deals")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("agency_id", profile.agency_id)
-    .eq("id", id);
+  // Goes through the soft_delete_deal RPC (security definer, 0035) rather
+  // than a plain client-side UPDATE: the deals SELECT policy excludes
+  // deleted_at rows, and Postgres applies that policy to an UPDATE's WITH
+  // CHECK too, so this write would fail under RLS. The RPC bypasses that as
+  // the function owner while still running inside the caller's own
+  // request, keeping auth.uid() correct for the audit_log trigger --
+  // unlike the admin client this used to go through, which has no user JWT
+  // and left every delete attributed to "Rendszer" in Előzmények.
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("soft_delete_deal", { p_id: id });
   if (error) throw error;
 
   revalidatePath("/dashboard/pipeline");
