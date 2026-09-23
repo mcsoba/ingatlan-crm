@@ -7,7 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
-import { deleteContact, bulkDeleteContacts, bulkUpdateContactStatus } from "./actions";
+import {
+  deleteContact,
+  bulkDeleteContacts,
+  bulkUpdateContactStatus,
+  bulkUpdateContactOwner,
+} from "./actions";
 import { bulkAssignContactTag, type TagRow } from "../tags/actions";
 import { restoreRecord } from "../trash/actions";
 import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
@@ -37,14 +42,17 @@ const tagVariant = (color: string) =>
 export function ContactsTable({
   contacts,
   allTags,
+  owners,
 }: {
   contacts: ContactRow[];
   allTags: TagRow[];
+  owners: { id: string; label: string }[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkTag, setBulkTag] = useState("");
+  const [bulkOwner, setBulkOwner] = useState("");
   const [isPending, startTransition] = useTransition();
   const visible = useVisibleColumns();
   const toast = useToast();
@@ -69,6 +77,7 @@ export function ContactsTable({
     setConfirmDelete(false);
     setBulkStatus("");
     setBulkTag("");
+    setBulkOwner("");
   }
 
   function handleBulkDelete() {
@@ -128,6 +137,21 @@ export function ContactsTable({
     });
   }
 
+  function handleBulkOwner() {
+    if (!bulkOwner) return;
+    const ids = Array.from(selected);
+    const ownerId = bulkOwner === "__none__" ? "" : bulkOwner;
+    const label =
+      bulkOwner === "__none__"
+        ? "nincs hozzárendelve"
+        : (owners.find((o) => o.id === bulkOwner)?.label ?? "");
+    startTransition(async () => {
+      await bulkUpdateContactOwner(ids, ownerId);
+      clearSelection();
+      toast({ title: `${ids.length} kontakt hozzárendelve: ${label}`, variant: "success" });
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {selected.size > 0 && (
@@ -175,6 +199,32 @@ export function ContactsTable({
                 type="button"
                 onClick={handleBulkTag}
                 disabled={!bulkTag || isPending}
+                className={buttonVariants("secondary", "sm")}
+              >
+                Alkalmaz
+              </button>
+            </>
+          )}
+          {owners.length > 0 && (
+            <>
+              <select
+                value={bulkOwner}
+                onChange={(e) => setBulkOwner(e.target.value)}
+                disabled={isPending}
+                className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-foreground"
+              >
+                <option value="">Ügynök hozzárendelése…</option>
+                <option value="__none__">— nincs hozzárendelve —</option>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleBulkOwner}
+                disabled={!bulkOwner || isPending}
                 className={buttonVariants("secondary", "sm")}
               >
                 Alkalmaz

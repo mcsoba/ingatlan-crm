@@ -252,6 +252,24 @@ export async function bulkDeleteProperties(ids: string[]) {
   revalidatePath("/dashboard/properties");
 }
 
+export async function bulkUpdatePropertyStatus(ids: string[], status: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  if (ids.length === 0) return;
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error("Érvénytelen státusz");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("properties")
+    .update({ status })
+    .eq("agency_id", profile.agency_id)
+    .in("id", ids);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/properties");
+}
+
 // Soft-delete: sets deleted_at instead of removing the row, so it can be
 // restored from /dashboard/trash within 30 days. Mirrors the FK behavior the
 // hard-delete used to rely on (deleting a property used to null out the

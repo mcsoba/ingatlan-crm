@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Search, Users, Download, Users2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ImportContactsButton } from "./import-button";
 import { ContactsTable } from "./contacts-table";
 import { listAgencyTags } from "../tags/actions";
@@ -44,6 +45,23 @@ export default async function ContactsPage({
   if (error) throw error;
 
   const nameByOwnerId = new Map((members ?? []).map((m) => [m.id, m.full_name]));
+
+  // Email fallback for members without a display name set — same pattern
+  // as the "new deal" owner picker (profiles doesn't store email; only
+  // auth.users does, so it needs the admin client).
+  const emailById = new Map<string, string>();
+  if (members && members.length > 0) {
+    const admin = createAdminClient();
+    const { data: usersPage } = await admin.auth.admin.listUsers({ perPage: 200 });
+    const memberIds = new Set(members.map((m) => m.id));
+    for (const user of usersPage?.users ?? []) {
+      if (memberIds.has(user.id)) emailById.set(user.id, user.email ?? "");
+    }
+  }
+  const ownerOptions = (members ?? []).map((m) => ({
+    id: m.id,
+    label: m.full_name || emailById.get(m.id) || "Ismeretlen",
+  }));
 
   const contactIds = (contacts ?? []).map((c) => c.id);
   const tagsByContact = new Map<string, { id: string; name: string; color: string }[]>();
@@ -167,6 +185,7 @@ export default async function ContactsPage({
       ) : (
         <ContactsTable
           allTags={allTags}
+          owners={ownerOptions}
           contacts={contacts.map((c) => {
             const lastActivityAt = lastActivityByContact.get(c.id) ?? c.created_at;
             const daysSinceActivity = Math.floor(

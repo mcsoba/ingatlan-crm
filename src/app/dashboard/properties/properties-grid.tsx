@@ -7,7 +7,7 @@ import { ImageOff, Scale, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { deleteProperty, bulkDeleteProperties } from "./actions";
+import { deleteProperty, bulkDeleteProperties, bulkUpdatePropertyStatus } from "./actions";
 import { bulkAssignPropertyTag, type TagRow } from "../tags/actions";
 import { restoreRecord } from "../trash/actions";
 import { STATUS_LABELS, STATUS_VARIANTS } from "./constants";
@@ -40,6 +40,7 @@ export function PropertiesGrid({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [bulkTag, setBulkTag] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("");
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
 
@@ -56,6 +57,7 @@ export function PropertiesGrid({
     setSelected(new Set());
     setConfirmDelete(false);
     setBulkTag("");
+    setBulkStatus("");
   }
 
   function handleBulkDelete() {
@@ -106,6 +108,19 @@ export function PropertiesGrid({
     });
   }
 
+  function handleBulkStatus() {
+    if (!bulkStatus) return;
+    const ids = Array.from(selected);
+    startTransition(async () => {
+      await bulkUpdatePropertyStatus(ids, bulkStatus);
+      clearSelection();
+      toast({
+        title: `${ids.length} ingatlan státusza módosítva: ${STATUS_LABELS[bulkStatus] ?? bulkStatus}`,
+        variant: "success",
+      });
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {selected.size > 0 && (
@@ -125,6 +140,27 @@ export function PropertiesGrid({
               Összehasonlítás
             </button>
           )}
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            disabled={isPending}
+            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-foreground"
+          >
+            <option value="">Státusz módosítása…</option>
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleBulkStatus}
+            disabled={!bulkStatus || isPending}
+            className={buttonVariants("secondary", "sm")}
+          >
+            Alkalmaz
+          </button>
           {allTags.length > 0 && (
             <>
               <select

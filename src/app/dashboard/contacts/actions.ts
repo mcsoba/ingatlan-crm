@@ -746,3 +746,21 @@ export async function bulkUpdateContactStatus(ids: string[], status: string) {
 
   revalidatePath("/dashboard/contacts");
 }
+
+// Owner is otherwise only ever set once, automatically, by round-robin lead
+// assignment — this is the only way to correct or rebalance it afterward
+// (e.g. an agent leaves, or leads got lopsided).
+export async function bulkUpdateContactOwner(ids: string[], ownerId: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  if (ids.length === 0) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("contacts")
+    .update({ owner_id: ownerId || null })
+    .eq("agency_id", profile.agency_id)
+    .in("id", ids);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/contacts");
+}
