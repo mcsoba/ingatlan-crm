@@ -176,8 +176,12 @@ export async function updateDealCommission(dealId: string, formData: FormData) {
   const amountRaw = String(formData.get("deal_amount") ?? "").trim();
   const rateRaw = String(formData.get("commission_rate") ?? "").trim();
 
-  const dealAmount = amountRaw ? Number(amountRaw.replace(",", ".")) : null;
-  const commissionRate = rateRaw ? Number(rateRaw.replace(",", ".")) : null;
+  const dealAmount = amountRaw
+    ? Number(amountRaw.replace(/[\s ]/g, "").replace(",", "."))
+    : null;
+  const commissionRate = rateRaw
+    ? Number(rateRaw.replace(/[\s ]/g, "").replace(",", "."))
+    : null;
 
   const { error } = await supabase
     .from("deals")

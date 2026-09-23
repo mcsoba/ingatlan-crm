@@ -15,7 +15,7 @@ const VALID_STATUSES = ["available", "reserved", "sold", "rented"];
 
 function parseNumber(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
-  const n = Number(String(value).replace(",", "."));
+  const n = Number(String(value).replace(/[\s ]/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 }
 

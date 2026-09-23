@@ -21,6 +21,7 @@ import { AttachmentsPanel } from "../../attachments/attachments-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   inputClass,
   labelClass,
@@ -285,10 +286,8 @@ export default async function DealDetailPage({
             <div className="grid grid-cols-2 gap-2">
               <div className={fieldGroupClass}>
                 <span className="text-xs text-muted">Végleges ár (Ft)</span>
-                <input
+                <FormattedNumberInput
                   name="deal_amount"
-                  type="number"
-                  step="1"
                   defaultValue={dealRow.deal_amount ?? ""}
                   className={inputClass}
                 />

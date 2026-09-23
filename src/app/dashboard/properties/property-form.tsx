@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 import { queueToast } from "@/components/ui/toast";
+import { formatThousands } from "@/components/ui/formatted-number-input";
 
 type PropertyFormProps = {
   action: (formData: FormData) => void;
@@ -92,10 +93,10 @@ export function PropertyForm({
           <span className={labelClass}>Ár (Ft)</span>
           <input
             name="price"
-            type="number"
-            step="1"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            type="text"
+            inputMode="numeric"
+            value={formatThousands(price)}
+            onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))}
             className={inputClass}
           />
         </div>
