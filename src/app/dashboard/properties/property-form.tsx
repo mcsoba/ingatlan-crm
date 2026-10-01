@@ -401,7 +401,7 @@ export function PropertyForm({
             <NumberField name="balcony_sqm" label="Erkély / terasz (m²)" value={d.balcony_sqm} step="0.1" />
           </div>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <YesNoSelect name="has_lift" label="Lift" value={d.has_lift} />
             <YesNoSelect name="has_air_conditioning" label="Klíma" value={d.has_air_conditioning} />
             <YesNoSelect name="has_garden_access" label="Kertkapcsolatos" value={d.has_garden_access} />

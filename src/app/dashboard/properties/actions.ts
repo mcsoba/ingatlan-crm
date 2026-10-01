@@ -282,7 +282,8 @@ export async function generateDescription(input: {
         role: "user",
         content:
           "Írj egy vonzó, magyar nyelvű ingatlanhirdetés-leírást (3-5 mondat) az alábbi adatok alapján. " +
-          "Ne találj ki olyan adatot, ami nem szerepel az adatok között. Csak a leírás szövegét add vissza, cím vagy egyéb formázás nélkül.\n\n" +
+          "Ne találj ki olyan adatot, ami nem szerepel az adatok között: ne állíts például költözhetőséget, kilátást, csendes környezetet, " +
+          "városrészt vagy állapotot, ha az nincs megadva. Csak a leírás szövegét add vissza, cím vagy egyéb formázás nélkül.\n\n" +
           details,
       },
     ],
