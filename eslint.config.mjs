@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Az Expo mobilapp saját ESLint-konfigurációval rendelkezik.
+    "mobile/**",
   ]),
 ]);
 
