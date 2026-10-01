@@ -22,7 +22,9 @@ export default async function EditPropertyPage({
     await Promise.all([
       supabase
         .from("properties")
-        .select("id, address, price, size_sqm, status, features, ai_description")
+        .select(
+          "id, address, price, size_sqm, status, features, ai_description, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost, min_lease_months, pets_allowed",
+        )
         .eq("id", id)
         .maybeSingle(),
       supabase

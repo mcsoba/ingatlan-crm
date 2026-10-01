@@ -8,12 +8,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAccentPreset } from "@/lib/accent-presets";
 import { PrintButton } from "./print-button";
 import { LeadForm } from "./lead-form";
+import {
+  CONDITION_LABELS,
+  HEATING_LABELS,
+  LISTING_TYPE_LABELS,
+  PARKING_LABELS,
+  PROPERTY_TYPE_LABELS,
+  floorLabel,
+} from "@/app/dashboard/properties/constants";
 
 const loadProperty = cache(async (propertyId: string) => {
   const admin = createAdminClient();
   const { data: property } = await admin
     .from("properties")
-    .select("id, agency_id, address, price, size_sqm, status, ai_description, features")
+    .select(
+      "id, agency_id, address, price, size_sqm, status, ai_description, features, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost, min_lease_months, pets_allowed",
+    )
     .eq("id", propertyId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -94,6 +104,46 @@ export default async function PublicPropertyPage({
     (p) => admin.storage.from("property-photos").getPublicUrl(p.path).data.publicUrl,
   );
   const notes = (property.features as { notes?: string } | null)?.notes;
+  const isRent = property.listing_type === "rent";
+  const yesNo = (v: boolean | null) => (v === true ? "Igen" : v === false ? "Nem" : null);
+  const details: [string, string | number | null | undefined][] = [
+    ["Hirdetés", property.listing_type ? LISTING_TYPE_LABELS[property.listing_type] : null],
+    ["Típus", property.property_type ? PROPERTY_TYPE_LABELS[property.property_type] : null],
+    ["Település", [property.postal_code, property.city].filter(Boolean).join(" ") || null],
+    [
+      "Szobák",
+      property.rooms != null
+        ? property.half_rooms
+          ? `${property.rooms} + ${property.half_rooms} fél`
+          : property.rooms
+        : null,
+    ],
+    ["Telekméret", property.plot_sqm ? `${property.plot_sqm} m²` : null],
+    ["Állapot", property.condition ? CONDITION_LABELS[property.condition] : null],
+    ["Építés éve", property.year_built],
+    ["Emelet", floorLabel(property.floor)],
+    ["Épület szintjei", property.building_floors],
+    [
+      "Fűtés",
+      (property.heating ?? []).map((h: string) => HEATING_LABELS[h]).filter(Boolean).join(", ") || null,
+    ],
+    ["Energetikai besorolás", property.energy_rating],
+    ["Parkolás", property.parking ? PARKING_LABELS[property.parking] : null],
+    ["Erkély / terasz", property.balcony_sqm ? `${property.balcony_sqm} m²` : null],
+    ["Lift", yesNo(property.has_lift)],
+    ["Klíma", yesNo(property.has_air_conditioning)],
+    ["Kertkapcsolatos", yesNo(property.has_garden_access)],
+    ["Bútorozott", yesNo(property.is_furnished)],
+    [
+      "Közös költség",
+      property.monthly_common_cost
+        ? `${property.monthly_common_cost.toLocaleString("hu-HU")} Ft/hó`
+        : null,
+    ],
+    ["Min. bérleti idő", isRent && property.min_lease_months ? `${property.min_lease_months} hónap` : null],
+    ["Kisállat", isRent ? yesNo(property.pets_allowed) : null],
+  ];
+  const visibleDetails = details.filter(([, v]) => v != null && v !== "");
   const preset = getAccentPreset(agency?.accent_preset);
   const logoUrl = agency?.logo_path
     ? admin.storage.from("agency-logos").getPublicUrl(agency.logo_path).data.publicUrl
@@ -169,7 +219,7 @@ export default async function PublicPropertyPage({
         {property.price && (
           <span className="flex items-center gap-1.5">
             <Wallet className="h-4 w-4" strokeWidth={1.75} />
-            {property.price.toLocaleString("hu-HU")} Ft
+            {property.price.toLocaleString("hu-HU")} Ft{isRent ? "/hó" : ""}
           </span>
         )}
         {property.size_sqm && (
@@ -179,6 +229,17 @@ export default async function PublicPropertyPage({
           </span>
         )}
       </div>
+
+      {visibleDetails.length > 0 && (
+        <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border bg-surface p-4 text-sm sm:grid-cols-3">
+          {visibleDetails.map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs text-muted">{label}</dt>
+              <dd className="font-medium text-foreground">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {property.ai_description && (
         <p className="mt-6 leading-relaxed text-foreground">

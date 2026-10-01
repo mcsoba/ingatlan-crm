@@ -7,6 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
+import {
+  CONDITION_LABELS,
+  ENERGY_RATINGS,
+  HEATING_LABELS,
+  LISTING_TYPE_LABELS,
+  PARKING_LABELS,
+  PROPERTY_TYPE_LABELS,
+} from "./constants";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -21,6 +29,61 @@ function parseNumber(value: FormDataEntryValue | null): number | null {
 function parseStatus(value: FormDataEntryValue | null): string {
   const status = String(value ?? "available");
   return VALID_STATUSES.includes(status) ? status : "available";
+}
+
+function parseChoice(
+  value: FormDataEntryValue | null,
+  allowed: Record<string, string> | string[],
+): string | null {
+  const v = String(value ?? "").trim();
+  const keys = Array.isArray(allowed) ? allowed : Object.keys(allowed);
+  return keys.includes(v) ? v : null;
+}
+
+function parseInt16(value: FormDataEntryValue | null): number | null {
+  const n = parseNumber(value);
+  return n == null ? null : Math.round(n);
+}
+
+// Tri-state checkbox fields: the form sends "yes"/"no"; anything else
+// (including the field being absent) means "not specified".
+function parseYesNo(value: FormDataEntryValue | null): boolean | null {
+  if (value === "yes") return true;
+  if (value === "no") return false;
+  return null;
+}
+
+// The structured listing fields (0037), shared by create and update.
+function parseListingFields(formData: FormData) {
+  const listingType = parseChoice(formData.get("listing_type"), LISTING_TYPE_LABELS);
+  const rentOnly = <T,>(v: T) => (listingType === "rent" ? v : null);
+  return {
+    listing_type: listingType,
+    property_type: parseChoice(formData.get("property_type"), PROPERTY_TYPE_LABELS),
+    city: String(formData.get("city") ?? "").trim() || null,
+    postal_code: String(formData.get("postal_code") ?? "").trim() || null,
+    plot_sqm: parseNumber(formData.get("plot_sqm")),
+    rooms: parseInt16(formData.get("rooms")),
+    half_rooms: parseInt16(formData.get("half_rooms")),
+    floor: parseInt16(formData.get("floor")),
+    building_floors: parseInt16(formData.get("building_floors")),
+    year_built: parseInt16(formData.get("year_built")),
+    condition: parseChoice(formData.get("condition"), CONDITION_LABELS),
+    heating: formData
+      .getAll("heating")
+      .map((v) => String(v))
+      .filter((v) => v in HEATING_LABELS),
+    energy_rating: parseChoice(formData.get("energy_rating"), ENERGY_RATINGS),
+    parking: parseChoice(formData.get("parking"), PARKING_LABELS),
+    balcony_sqm: parseNumber(formData.get("balcony_sqm")),
+    has_lift: parseYesNo(formData.get("has_lift")),
+    has_air_conditioning: parseYesNo(formData.get("has_air_conditioning")),
+    has_garden_access: parseYesNo(formData.get("has_garden_access")),
+    is_furnished: parseYesNo(formData.get("is_furnished")),
+    monthly_common_cost: parseNumber(formData.get("monthly_common_cost")),
+    min_lease_months: rentOnly(parseInt16(formData.get("min_lease_months"))),
+    pets_allowed: rentOnly(parseYesNo(formData.get("pets_allowed"))),
+  };
 }
 
 async function uploadPhotoIfPresent(
@@ -78,6 +141,7 @@ export async function createProperty(formData: FormData) {
       status: parseStatus(formData.get("status")),
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
+      ...parseListingFields(formData),
     })
     .select("id")
     .single();
@@ -111,6 +175,7 @@ export async function updateProperty(id: string, formData: FormData) {
       status: parseStatus(formData.get("status")),
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
+      ...parseListingFields(formData),
     })
     .eq("id", id);
 
@@ -189,6 +254,8 @@ export async function generateDescription(input: {
   price: number | null;
   size_sqm: number | null;
   notes: string;
+  // Human-readable structured facts from the form ("Típus: Tégla lakás", ...)
+  facts?: string[];
 }): Promise<string> {
   await ensureCurrentUserProfile();
 
@@ -201,6 +268,7 @@ export async function generateDescription(input: {
     `Cím: ${address}`,
     input.price ? `Ár: ${input.price.toLocaleString("hu-HU")} Ft` : null,
     input.size_sqm ? `Alapterület: ${input.size_sqm} m²` : null,
+    ...(input.facts ?? []).slice(0, 30).map((f) => String(f).slice(0, 200)),
     input.notes.trim() ? `Jellemzők: ${input.notes.trim()}` : null,
   ]
     .filter(Boolean)
@@ -412,13 +480,19 @@ export async function importPropertiesCsv(formData: FormData): Promise<ImportRes
   const addressIdx = header.indexOf("address");
   if (addressIdx === -1) {
     throw new Error(
-      "A CSV első sorában (fejléc) kötelező az 'address' oszlop. Elvárt formátum: address,price,size_sqm,status,notes",
+      "A CSV első sorában (fejléc) kötelező az 'address' oszlop. Elvárt formátum: address,price,size_sqm,status,notes (opcionálisan: listing_type,property_type,city,postal_code,rooms)",
     );
   }
   const priceIdx = header.indexOf("price");
   const sizeIdx = header.indexOf("size_sqm");
   const statusIdx = header.indexOf("status");
   const notesIdx = header.indexOf("notes");
+  const listingTypeIdx = header.indexOf("listing_type");
+  const propertyTypeIdx = header.indexOf("property_type");
+  const cityIdx = header.indexOf("city");
+  const postalIdx = header.indexOf("postal_code");
+  const roomsIdx = header.indexOf("rooms");
+  const cell = (row: string[], idx: number) => (idx === -1 ? "" : (row[idx] ?? "").trim());
 
   let imported = 0;
   let skipped = 0;
@@ -429,6 +503,11 @@ export async function importPropertiesCsv(formData: FormData): Promise<ImportRes
     size_sqm: number | null;
     status: string;
     features: { notes?: string };
+    listing_type: string | null;
+    property_type: string | null;
+    city: string | null;
+    postal_code: string | null;
+    rooms: number | null;
   }[] = [];
 
   for (const row of rows.slice(1)) {
@@ -446,6 +525,11 @@ export async function importPropertiesCsv(formData: FormData): Promise<ImportRes
       size_sqm: parseNumber(row[sizeIdx] ?? null),
       status: VALID_STATUSES.includes(status) ? status : "available",
       features: notes ? { notes } : {},
+      listing_type: parseChoice(cell(row, listingTypeIdx), LISTING_TYPE_LABELS),
+      property_type: parseChoice(cell(row, propertyTypeIdx), PROPERTY_TYPE_LABELS),
+      city: cell(row, cityIdx) || null,
+      postal_code: cell(row, postalIdx) || null,
+      rooms: parseInt16(cell(row, roomsIdx) || null),
     });
   }
 

@@ -8,13 +8,13 @@ export async function GET() {
 
   const { data: properties, error } = await supabase
     .from("properties")
-    .select("address, price, size_sqm, status, features, ai_description")
+    .select("address, price, size_sqm, status, features, ai_description, listing_type, property_type, city, postal_code, rooms")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
   const csv = toCsv(
-    ["address", "price", "size_sqm", "status", "notes", "ai_description"],
+    ["address", "price", "size_sqm", "status", "notes", "ai_description", "listing_type", "property_type", "city", "postal_code", "rooms"],
     (properties ?? []).map((p) => [
       p.address,
       p.price,
@@ -22,6 +22,11 @@ export async function GET() {
       p.status,
       (p.features as { notes?: string } | null)?.notes ?? "",
       p.ai_description,
+      p.listing_type,
+      p.property_type,
+      p.city,
+      p.postal_code,
+      p.rooms,
     ]),
   );
 
