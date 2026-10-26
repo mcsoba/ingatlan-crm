@@ -22,9 +22,12 @@ function dueFor(key: DueKey): string | null {
   const d = new Date();
   if (key === "tomorrow") d.setDate(d.getDate() + 1);
   if (key === "week") d.setDate(d.getDate() + 7);
-  // Mai teendőnél a következő egész óra, a többinél reggel 9 óra
-  if (key === "today") d.setHours(d.getHours() + 1, 0, 0, 0);
-  else d.setHours(9, 0, 0, 0);
+  // Mai teendőnél a következő egész óra (23 óra után a nap vége, hogy ne csússzon holnapra),
+  // a többinél reggel 9 óra
+  if (key === "today") {
+    if (d.getHours() >= 23) d.setHours(23, 59, 0, 0);
+    else d.setHours(d.getHours() + 1, 0, 0, 0);
+  } else d.setHours(9, 0, 0, 0);
   return d.toISOString();
 }
 
