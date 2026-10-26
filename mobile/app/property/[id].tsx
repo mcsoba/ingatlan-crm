@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
-import { Dimensions, FlatList, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, Dimensions, FlatList, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
-import { Share2 } from "lucide-react-native";
+import { Camera, ImagePlus, Share2 } from "lucide-react-native";
 import { photoUrl, SITE_URL, supabase } from "../../lib/supabase";
 import { useColors } from "../../lib/theme";
+import { useAuth } from "../../context/AuthContext";
+import { pickPhotos, uploadPropertyPhotos } from "../../lib/photos";
 import { formatHuf } from "../../lib/format";
 import {
   CONDITION_LABELS,
@@ -55,6 +57,8 @@ const yesNo = (v: boolean | null) => (v === true ? "Igen" : v === false ? "Nem" 
 export default function PropertyDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = useColors();
+  const { profile } = useAuth();
+  const [uploading, setUploading] = useState<string | null>(null);
   const [p, setP] = useState<Property | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +92,21 @@ export default function PropertyDetail() {
       setError("Nem sikerült módosítani az állapotot.");
       load();
     }
+  }
+
+  async function addPhotos(source: "camera" | "library") {
+    if (!p || !profile || uploading) return;
+    const picked = await pickPhotos(source);
+    if (!picked?.length) return;
+    setUploading(`Feltöltés… 0 / ${picked.length}`);
+    const uploaded = await uploadPropertyPhotos(profile.agency_id, p.id, picked, (done) =>
+      setUploading(`Feltöltés… ${done} / ${picked.length}`),
+    );
+    setUploading(null);
+    if (uploaded < picked.length) {
+      Alert.alert("Néhány fotó nem töltődött fel", `${picked.length - uploaded} kép feltöltése nem sikerült. Próbáld újra.`);
+    }
+    load();
   }
 
   async function share() {
@@ -157,6 +176,20 @@ export default function PropertyDetail() {
         <View style={{ marginTop: 14 }}>
           <Button label="Megosztás ügyféllel" variant="secondary" icon={<Share2 size={18} color={c.text} />} onPress={share} />
         </View>
+
+        <SectionTitle>Fotók hozzáadása</SectionTitle>
+        {uploading ? (
+          <Button label={uploading} variant="secondary" onPress={() => {}} loading />
+        ) : (
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <Button label="Fotózás" variant="secondary" icon={<Camera size={18} color={c.text} />} onPress={() => addPhotos("camera")} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button label="Galériából" variant="secondary" icon={<ImagePlus size={18} color={c.text} />} onPress={() => addPhotos("library")} />
+            </View>
+          </View>
+        )}
 
         <SectionTitle>Állapot</SectionTitle>
         <View style={styles.chips}>

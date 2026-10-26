@@ -25,7 +25,14 @@
       "expo-router",
       "expo-status-bar",
       "expo-sqlite",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Az ingatlanokhoz tartozó fotók kiválasztásához.",
+          "cameraPermission": "Az ingatlanok lefotózásához a helyszínen."
+        }
+      ]
     ],
     "scheme": "ingatlancrm",
     "experiments": {

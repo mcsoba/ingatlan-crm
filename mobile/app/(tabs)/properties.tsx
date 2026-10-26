@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
-import { Building } from "lucide-react-native";
+import { Building, Plus } from "lucide-react-native";
 import { photoUrl, supabase } from "../../lib/supabase";
 import { useColors } from "../../lib/theme";
 import { formatHuf } from "../../lib/format";
@@ -16,6 +16,7 @@ type Property = {
   price: number | null;
   size_sqm: number | null;
   rooms: number | null;
+  half_rooms: number | null;
   status: string;
   listing_type: string | null;
   property_type: string | null;
@@ -47,7 +48,7 @@ export default function PropertiesScreen() {
   const load = useCallback(async () => {
     let q = supabase
       .from("properties")
-      .select("id, address, city, price, size_sqm, rooms, status, listing_type, property_type")
+      .select("id, address, city, price, size_sqm, rooms, half_rooms, status, listing_type, property_type")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -115,7 +116,7 @@ export default function PropertiesScreen() {
         <FlatList
           data={items ?? []}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 12 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, gap: 12 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -128,7 +129,7 @@ export default function PropertiesScreen() {
             />
           }
           ListEmptyComponent={
-            <EmptyState title="Nincs találat" text="Az ingatlanokat a számítógépes CRM-ben veheted fel, fotókkal együtt." />
+            <EmptyState title="Nincs találat" text="Új ingatlant a + gombbal vehetsz fel, akár a helyszínen fotózva." />
           }
           renderItem={({ item }) => (
             <Pressable
@@ -158,7 +159,7 @@ export default function PropertiesScreen() {
                   {[
                     item.property_type ? PROPERTY_TYPE_LABELS[item.property_type] : null,
                     item.size_sqm ? `${item.size_sqm} m²` : null,
-                    item.rooms ? `${item.rooms} szoba` : null,
+                    item.rooms ? `${item.rooms}${item.half_rooms ? ` + ${item.half_rooms} fél` : ""} szoba` : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -172,6 +173,14 @@ export default function PropertiesScreen() {
           )}
         />
       )}
+
+      <Pressable
+        accessibilityLabel="Új ingatlan"
+        onPress={() => router.push("/property/new")}
+        style={[styles.fab, { backgroundColor: c.accent }]}
+      >
+        <Plus color="#fff" size={26} />
+      </Pressable>
     </View>
   );
 }
@@ -185,4 +194,15 @@ const styles = StyleSheet.create({
   noPhoto: { alignItems: "center", justifyContent: "center" },
   body: { padding: 12, gap: 4 },
   price: { fontSize: 18, fontWeight: "800" },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 3px 8px rgba(0, 0, 0, 0.2)",
+  },
 });
