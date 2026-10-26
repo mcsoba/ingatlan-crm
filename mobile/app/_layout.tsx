@@ -44,6 +44,7 @@ function RootNavigator() {
           <Stack.Screen name="contact/[id]" options={{ title: "Kontakt" }} />
           <Stack.Screen name="contact/new" options={{ title: "Új kontakt", presentation: "modal" }} />
           <Stack.Screen name="property/new" options={{ title: "Új ingatlan", presentation: "modal" }} />
+          <Stack.Screen name="property/edit/[id]" options={{ title: "Ingatlan szerkesztése", presentation: "modal" }} />
           <Stack.Screen name="property/[id]" options={{ title: "Ingatlan" }} />
           <Stack.Screen name="deal/[id]" options={{ title: "Üzlet" }} />
         </Stack.Protected>

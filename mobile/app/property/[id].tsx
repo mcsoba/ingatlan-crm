@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { Alert, Dimensions, FlatList, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
-import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
-import { Camera, ImagePlus, Share2 } from "lucide-react-native";
+import { Camera, ImagePlus, Pencil, Share2 } from "lucide-react-native";
 import { photoUrl, SITE_URL, supabase } from "../../lib/supabase";
 import { useColors } from "../../lib/theme";
 import { useAuth } from "../../context/AuthContext";
@@ -47,10 +47,12 @@ type Property = {
   has_garden_access: boolean | null;
   is_furnished: boolean | null;
   monthly_common_cost: number | null;
+  min_lease_months: number | null;
+  pets_allowed: boolean | null;
 };
 
 const COLUMNS =
-  "id, address, price, size_sqm, status, ai_description, features, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost";
+  "id, address, price, size_sqm, status, ai_description, features, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost, min_lease_months, pets_allowed";
 
 const yesNo = (v: boolean | null) => (v === true ? "Igen" : v === false ? "Nem" : null);
 
@@ -142,12 +144,28 @@ export default function PropertyDetail() {
     ["Kertkapcsolat", yesNo(p.has_garden_access)],
     ["Bútorozott", yesNo(p.is_furnished)],
     ["Közös költség", p.monthly_common_cost ? formatHuf(p.monthly_common_cost, true) : null],
+    ["Min. bérleti idő", isRent && p.min_lease_months ? `${p.min_lease_months} hónap` : null],
+    ["Háziállat", isRent ? yesNo(p.pets_allowed) : null],
   ];
   const visible = details.filter(([, v]) => v != null && v !== "");
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-      <Stack.Screen options={{ title: p.address }} />
+      <Stack.Screen
+        options={{
+          title: p.address,
+          headerRight: () => (
+            <Pressable
+              accessibilityLabel="Szerkesztés"
+              hitSlop={10}
+              onPress={() => router.push({ pathname: "/property/edit/[id]", params: { id: p.id } })}
+              style={{ padding: 4 }}
+            >
+              <Pencil size={22} color={c.accent} />
+            </Pressable>
+          ),
+        }}
+      />
       {photos.length ? (
         <FlatList
           horizontal
@@ -217,6 +235,15 @@ export default function PropertyDetail() {
             </Card>
           </>
         ) : null}
+
+        <View style={{ marginTop: 12 }}>
+          <Button
+            label={visible.length > 4 ? "Adatok szerkesztése" : "Adatok kiegészítése (fűtés, emelet, …)"}
+            variant="secondary"
+            icon={<Pencil size={18} color={c.text} />}
+            onPress={() => router.push({ pathname: "/property/edit/[id]", params: { id: p.id } })}
+          />
+        </View>
 
         {p.ai_description ? (
           <>
