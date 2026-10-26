@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToProfiles } from "@/lib/push";
+import { budapestEndOfToday, TZ } from "@/lib/time";
 
 // Két feladat egy végponton:
 // - alapból: a következő ~1 órában esedékes, még nem jelzett teendőkről push
@@ -14,20 +15,6 @@ const TYPE_LABELS: Record<string, string> = {
   viewing: "Megtekintés",
   reminder: "Emlékeztető",
 };
-
-const TZ = "Europe/Budapest";
-
-function budapestEndOfToday(now: Date): Date {
-  const day = now.toLocaleDateString("en-CA", { timeZone: TZ });
-  const offset =
-    new Intl.DateTimeFormat("en-US", { timeZone: TZ, timeZoneName: "shortOffset" })
-      .formatToParts(now)
-      .find((p) => p.type === "timeZoneName")
-      ?.value.replace("GMT", "") || "+0";
-  const [h, m] = offset.slice(1).split(":");
-  const sign = offset.startsWith("-") ? "-" : "+";
-  return new Date(`${day}T23:59:59${sign}${h!.padStart(2, "0")}:${(m ?? "00").padStart(2, "0")}`);
-}
 
 type ActivityRow = {
   id: string;

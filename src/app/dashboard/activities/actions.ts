@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { syncActivityStatusChange, syncActivityDeletion } from "@/lib/google-calendar-sync";
+import { sendPushToProfiles } from "@/lib/push";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "jegyzet",
@@ -33,17 +34,36 @@ export async function createActivity(formData: FormData) {
     ? recurrenceRaw
     : "none";
 
+  // Felelős: csak az iroda tagja lehet (a profiles RLS csak a saját irodát látja);
+  // ha nincs megadva, az adatbázis alapértéke a létrehozó (auth.uid()).
+  const assignedRaw = String(formData.get("assigned_to") ?? "");
+  let assignedTo: string | null = null;
+  if (assignedRaw) {
+    const { data: member } = await supabase.from("profiles").select("id").eq("id", assignedRaw).maybeSingle();
+    assignedTo = member?.id ?? null;
+  }
+
+  const dueAt = dueAtRaw ? new Date(dueAtRaw).toISOString() : null;
   const { error } = await supabase.from("activities").insert({
     agency_id: profile.agency_id,
     contact_id: contactId,
     deal_id: dealId,
     type,
     content,
-    due_at: dueAtRaw ? new Date(dueAtRaw).toISOString() : null,
+    due_at: dueAt,
     recurrence,
+    ...(assignedTo ? { assigned_to: assignedTo } : {}),
   });
 
   if (error) throw error;
+
+  if (assignedTo && assignedTo !== profile.id) {
+    await sendPushToProfiles(createAdminClient(), [assignedTo], {
+      title: "Új feladatot kaptál",
+      body: `${profile.full_name || "Egy kollégád"}: ${content}${dueAt ? ` (határidő: ${new Date(dueAt).toLocaleDateString("hu-HU")})` : ""}`,
+      url: dealId ? `/deal/${dealId}` : contactId ? `/contact/${contactId}` : "/",
+    });
+  }
 
   if (redirectTo) revalidatePath(redirectTo);
   revalidatePath("/dashboard");

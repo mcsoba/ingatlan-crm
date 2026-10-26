@@ -394,6 +394,22 @@ export async function renameStage(id: string, formData: FormData) {
   revalidatePath("/dashboard/pipeline");
 }
 
+export async function updateStageGuidance(id: string, formData: FormData) {
+  await requireOwnerOrAdmin();
+  const guidance = String(formData.get("guidance") ?? "").trim().slice(0, 500);
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pipeline_stages")
+    .update({ guidance: guidance || null })
+    .eq("id", id);
+
+  if (error) throw error;
+
+  revalidatePath("/dashboard/pipeline/stages");
+  revalidatePath("/dashboard/pipeline");
+}
+
 export async function deleteStage(formData: FormData) {
   await requireOwnerOrAdmin();
   const id = String(formData.get("id"));

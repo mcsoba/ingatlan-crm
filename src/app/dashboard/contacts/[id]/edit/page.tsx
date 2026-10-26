@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Kanban } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ensureCurrentUserProfile } from "@/lib/agency";
+import { listTeamMembers } from "@/lib/team";
 import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
 import { ContactCommsPanel } from "../../contact-comms-panel";
@@ -48,6 +50,8 @@ export default async function EditContactPage({
     { data: activities, error: activitiesError },
     { data: contactTagRows },
     allTags,
+    teamMembers,
+    { profile },
   ] = await Promise.all([
     supabase
       .from("contacts")
@@ -71,6 +75,8 @@ export default async function EditContactPage({
       .order("created_at", { ascending: false }),
     supabase.from("contact_tags").select("tag_id").eq("contact_id", id),
     listAgencyTags(),
+    listTeamMembers(),
+    ensureCurrentUserProfile(),
   ]);
 
   if (dealsError) throw dealsError;
@@ -196,6 +202,8 @@ export default async function EditContactPage({
               contactId={contact.id}
               activities={activities ?? []}
               redirectTo={`/dashboard/contacts/${contact.id}/edit?tab=kapcsolodo`}
+              members={teamMembers}
+              currentUserId={profile.id}
             />
           </div>
 

@@ -143,7 +143,7 @@ export default async function ContactsPage({
         <select name="status" defaultValue={status ?? ""} className={inputClass}>
           <option value="">Minden státusz</option>
           <option value="new">Új</option>
-          <option value="contacted">Felvéve</option>
+          <option value="contacted">Megkeresve</option>
           <option value="qualified">Minősített</option>
           <option value="inactive">Inaktív</option>
         </select>

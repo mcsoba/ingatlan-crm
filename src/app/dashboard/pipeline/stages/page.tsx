@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
-import { createStage, deleteStage, moveStage, renameStage } from "../actions";
+import { createStage, deleteStage, moveStage, renameStage, updateStageGuidance } from "../actions";
+import { DEFAULT_STAGE_GUIDANCE, stageGuidance } from "@/lib/stage-guidance";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ export default async function PipelineStagesPage() {
   const supabase = await createClient();
   const { data: stages, error } = await supabase
     .from("pipeline_stages")
-    .select("id, name, position")
+    .select("id, name, position, guidance")
     .order("position");
 
   if (error) throw error;
@@ -23,6 +24,7 @@ export default async function PipelineStagesPage() {
     <div className="max-w-md">
       <PageHeader
         title="Pipeline szakaszok"
+        description="Az üzletek lépései, és hogy mit kell tenni az egyes lépésekben. Az útmutató az üzlet oldalán, a weben és a mobilon is megjelenik."
         action={
           <Link
             href="/dashboard/pipeline"
@@ -44,17 +46,21 @@ export default async function PipelineStagesPage() {
           const moveUp = moveStage.bind(null, stage.id, "up");
           const moveDown = moveStage.bind(null, stage.id, "down");
           const rename = renameStage.bind(null, stage.id);
+          const saveGuidance = updateStageGuidance.bind(null, stage.id);
+          const guidance = stageGuidance(stage);
 
           if (!canEdit) {
             return (
-              <Card key={stage.id} className="p-2.5 text-sm text-foreground">
-                {stage.name}
+              <Card key={stage.id} className="flex flex-col gap-1 p-2.5 text-sm">
+                <span className="font-medium text-foreground">{stage.name}</span>
+                {guidance && <span className="text-xs text-muted">{guidance}</span>}
               </Card>
             );
           }
 
           return (
-            <Card key={stage.id} className="flex items-center gap-2 p-2">
+            <Card key={stage.id} className="flex flex-col gap-2 p-2">
+            <div className="flex items-center gap-2">
               <div className="flex flex-col">
                 <form action={moveUp}>
                   <button
@@ -92,6 +98,23 @@ export default async function PipelineStagesPage() {
                 <button type="submit" className="text-muted-subtle hover:text-danger">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+              </form>
+            </div>
+              <form action={saveGuidance} className="flex flex-col gap-1.5 pl-6">
+                <label className="text-xs font-medium text-muted" htmlFor={`guidance-${stage.id}`}>
+                  Mit kell tenni ebben a szakaszban?
+                </label>
+                <textarea
+                  id={`guidance-${stage.id}`}
+                  name="guidance"
+                  rows={2}
+                  defaultValue={stage.guidance ?? ""}
+                  placeholder={DEFAULT_STAGE_GUIDANCE[stage.name.trim().toLowerCase()] ?? "pl. Hívd fel az ügyfelet, és egyeztess időpontot."}
+                  className={`${inputClass} text-xs`}
+                />
+                <Button type="submit" variant="ghost" size="sm" className="self-start">
+                  Útmutató mentése
+                </Button>
               </form>
             </Card>
           );

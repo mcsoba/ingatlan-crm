@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { User, Building2, ClipboardCheck, Percent, Printer, CheckCircle2 } from "lucide-react";
+import { User, Building2, ClipboardCheck, Percent, Printer, CheckCircle2, Compass, CalendarClock, AlertTriangle } from "lucide-react";
+import { ensureCurrentUserProfile } from "@/lib/agency";
+import { stageGuidance } from "@/lib/stage-guidance";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -9,7 +11,6 @@ import {
   updateDealCommission,
   updateDealNotes,
   updateDealOwner,
-  updateDealStage,
   updateDealType,
 } from "../actions";
 import { DealFollowUpPanel } from "./follow-up-panel";
@@ -51,6 +52,7 @@ export default async function DealDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
   const [{ data: deal }, { data: stages }, { data: members }, { data: activities, error: activitiesError }] =
@@ -62,7 +64,7 @@ export default async function DealDetailPage({
         )
         .eq("id", id)
         .maybeSingle(),
-      supabase.from("pipeline_stages").select("id, name").order("position"),
+      supabase.from("pipeline_stages").select("id, name, guidance").order("position"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
       supabase
         .from("activities")
@@ -79,8 +81,13 @@ export default async function DealDetailPage({
   const dealRow = deal as unknown as DealDetailRow;
   const contact = dealRow.contacts;
   const property = dealRow.properties;
-  const stageName = stages?.find((s) => s.id === dealRow.stage_id)?.name ?? "—";
-  const updateStageWithId = updateDealStage.bind(null, dealRow.id);
+  const currentStage = stages?.find((s) => s.id === dealRow.stage_id);
+  const stageName = currentStage?.name ?? "—";
+  const guidance = stageGuidance(currentStage);
+  const nextTask = (activities ?? [])
+    .filter((a) => !a.done && a.due_at && a.type !== "checklist")
+    .sort((a, b) => new Date(a.due_at!).getTime() - new Date(b.due_at!).getTime())[0];
+  const nextTaskOverdue = !!nextTask && new Date(nextTask.due_at!).getTime() < new Date().getTime();
   const updateOwnerWithId = updateDealOwner.bind(null, dealRow.id);
   const updateTypeWithId = updateDealType.bind(null, dealRow.id);
   const updateNotesWithId = updateDealNotes.bind(null, dealRow.id);
@@ -99,6 +106,11 @@ export default async function DealDetailPage({
       if (memberIds.has(user.id)) memberEmailById.set(user.id, user.email ?? "");
     }
   }
+
+  const teamMembers = (members ?? []).map((m) => ({
+    id: m.id,
+    name: m.full_name || memberEmailById.get(m.id) || "Ismeretlen",
+  }));
 
   const hasChecklist = (activities ?? []).some((a) => a.type === "checklist");
   const commissionAmount =
@@ -137,6 +149,42 @@ export default async function DealDetailPage({
             currentStageId={dealRow.stage_id}
             disabled={dealRow.status === "lost"}
           />
+        )}
+
+        {dealRow.status !== "lost" && (
+          <Card className="flex flex-col gap-3 border-accent/30 bg-accent-soft/40 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Compass className="h-4 w-4 text-accent" strokeWidth={2} />
+              Mit kell most tenned?
+            </div>
+            {guidance && (
+              <p className="text-sm text-foreground">
+                <span className="font-medium">{stageName}: </span>
+                {guidance}
+              </p>
+            )}
+            {nextTask ? (
+              <div className="flex items-start gap-2 rounded-md bg-surface p-2.5 text-sm">
+                <CalendarClock className={`mt-0.5 h-4 w-4 shrink-0 ${nextTaskOverdue ? "text-danger" : "text-accent"}`} strokeWidth={1.75} />
+                <div className="min-w-0">
+                  <div className="text-xs text-muted">Következő lépés</div>
+                  <div className="text-foreground">{nextTask.content}</div>
+                  <div className={`text-xs font-medium ${nextTaskOverdue ? "text-danger" : "text-muted"}`}>
+                    {nextTaskOverdue ? "Lejárt: " : ""}
+                    {new Date(nextTask.due_at!).toLocaleDateString("hu-HU")}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-sm text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+                Nincs ütemezett következő lépés, így az ügy könnyen elakad. Adj hozzá egy teendőt határidővel.
+              </div>
+            )}
+            <a href="#uj-teendo" className="self-start text-sm font-medium text-accent hover:underline">
+              {nextTask ? "Újabb teendő felvétele ↓" : "Következő lépés megadása ↓"}
+            </a>
+          </Card>
         )}
 
         <div className="grid grid-cols-2 gap-3">
@@ -221,26 +269,6 @@ export default async function DealDetailPage({
         </Card>
 
         <Card className="flex flex-col gap-4 p-4">
-          <form action={updateStageWithId} className="flex flex-col gap-1.5">
-            <span className={labelClass}>Szakasz</span>
-            <div className="flex gap-2">
-              <select
-                name="stage_id"
-                defaultValue={dealRow.stage_id}
-                className={`${inputClass} flex-1`}
-              >
-                {stages?.map((stage) => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.name}
-                  </option>
-                ))}
-              </select>
-              <Button type="submit" variant="secondary">
-                Mentés
-              </Button>
-            </div>
-          </form>
-
           <form action={updateOwnerWithId} className="flex flex-col gap-1.5">
             <span className={labelClass}>Felelős ügynök</span>
             <div className="flex gap-2">
@@ -365,6 +393,8 @@ export default async function DealDetailPage({
             dealId={dealRow.id}
             activities={activities ?? []}
             redirectTo={`/dashboard/pipeline/${dealRow.id}`}
+            members={teamMembers}
+            currentUserId={profile.id}
           />
         </div>
 

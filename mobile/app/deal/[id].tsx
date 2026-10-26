@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ChevronRight, Phone } from "lucide-react-native";
+import { AlertTriangle, CalendarClock, ChevronRight, Compass, Phone } from "lucide-react-native";
 import { supabase } from "../../lib/supabase";
 import { useColors } from "../../lib/theme";
 import { formatDue, formatHuf, isOverdue } from "../../lib/format";
@@ -10,6 +10,8 @@ import { ACTIVITY_TYPE_LABELS } from "../../lib/labels";
 import { callPhone } from "../../lib/contact-actions";
 import { Badge, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
 import { ActivityComposer } from "../../components/ActivityComposer";
+import { NextStepSheet } from "../../components/NextStepSheet";
+import { stageGuidance } from "../../lib/process";
 
 type Deal = {
   id: string;
@@ -22,7 +24,7 @@ type Deal = {
   contacts: { name: string; phone: string | null } | null;
   properties: { address: string; price: number | null } | null;
 };
-type Stage = { id: string; name: string; position: number };
+type Stage = { id: string; name: string; position: number; guidance: string | null };
 type Activity = { id: string; type: string; content: string; due_at: string | null; done: boolean; created_at: string };
 
 export default function DealDetail() {
@@ -32,6 +34,7 @@ export default function DealDetail() {
   const [stages, setStages] = useState<Stage[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<null | { title?: string }>(null);
 
   const load = useCallback(async () => {
     const [dRes, sRes, aRes] = await Promise.all([
@@ -40,7 +43,7 @@ export default function DealDetail() {
         .select("id, stage_id, deal_type, deal_amount, status, contact_id, property_id, contacts(name, phone), properties(address, price)")
         .eq("id", id)
         .maybeSingle(),
-      supabase.from("pipeline_stages").select("id, name, position").order("position"),
+      supabase.from("pipeline_stages").select("id, name, position, guidance").order("position"),
       supabase
         .from("activities")
         .select("id, type, content, due_at, done, created_at")
@@ -83,10 +86,17 @@ export default function DealDetail() {
     setActivities((prev) => prev.map((x) => (x.id === a.id ? { ...x, done: !x.done } : x)));
     const { error: err } = await supabase.from("activities").update({ done: !a.done }).eq("id", a.id);
     if (err) load();
+    else if (!a.done) setSheet({ title: "Kész! Mi a következő lépés?" });
   }
 
   if (error && !deal) return <ErrorBox message={error} onRetry={load} />;
   if (!deal) return <Loading />;
+
+  const currentStage = stages.find((s) => s.id === deal.stage_id);
+  const guidance = stageGuidance(currentStage);
+  const nextTask = activities
+    .filter((a) => !a.done && a.due_at)
+    .sort((x, y) => new Date(x.due_at!).getTime() - new Date(y.due_at!).getTime())[0];
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
@@ -136,6 +146,46 @@ export default function DealDetail() {
         ) : null}
       </Card>
 
+      {deal.status !== "lost" ? (
+        <Card style={{ marginTop: 16, gap: 12, borderColor: c.accent, backgroundColor: c.accentSoft }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Compass size={20} color={c.accent} />
+            <Text style={{ color: c.text, fontSize: 17, fontWeight: "800" }}>Mit kell most tenned?</Text>
+          </View>
+          {guidance ? (
+            <Text style={{ color: c.text, fontSize: 15, lineHeight: 21 }}>
+              <Text style={{ fontWeight: "700" }}>{currentStage?.name}: </Text>
+              {guidance}
+            </Text>
+          ) : null}
+          {nextTask ? (
+            <View style={[styles.nextRow, { backgroundColor: c.surface }]}>
+              <CalendarClock size={18} color={isOverdue(nextTask.due_at) ? c.danger : c.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: c.muted, fontSize: 12 }}>Következő lépés</Text>
+                <Text style={{ color: c.text, fontWeight: "600" }} numberOfLines={2}>
+                  {nextTask.content}
+                </Text>
+                <Text style={{ color: isOverdue(nextTask.due_at) ? c.danger : c.muted, fontSize: 13, fontWeight: "600" }}>
+                  {isOverdue(nextTask.due_at) ? "Lejárt: " : ""}
+                  {formatDue(nextTask.due_at)}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.nextRow, { backgroundColor: c.warningSoft }]}>
+              <AlertTriangle size={18} color={c.warning} />
+              <Text style={{ color: c.text, flex: 1 }}>Nincs ütemezett következő lépés, így az ügy könnyen elakad.</Text>
+            </View>
+          )}
+          <Pressable onPress={() => setSheet({})} style={[styles.nextBtn, { backgroundColor: c.accent }]}>
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+              {nextTask ? "Újabb lépés ütemezése" : "Következő lépés megadása"}
+            </Text>
+          </Pressable>
+        </Card>
+      ) : null}
+
       <SectionTitle>Szakasz – koppints a továbblépéshez</SectionTitle>
       <View style={{ gap: 8 }}>
         {stages.map((s, i) => {
@@ -162,7 +212,7 @@ export default function DealDetail() {
         })}
       </View>
 
-      <SectionTitle>Új bejegyzés</SectionTitle>
+      <SectionTitle>Jegyzet vagy teendő rögzítése</SectionTitle>
       <ActivityComposer dealId={deal.id} contactId={deal.contact_id} onSaved={load} />
 
       <SectionTitle>Előzmények</SectionTitle>
@@ -194,6 +244,17 @@ export default function DealDetail() {
           </Card>
         ))
       )}
+      <NextStepSheet
+        visible={!!sheet}
+        title={sheet?.title}
+        subtitle={deal.contacts?.name}
+        contactId={deal.contact_id}
+        dealId={deal.id}
+        onClose={() => {
+          setSheet(null);
+          load();
+        }}
+      />
     </ScrollView>
   );
 }
@@ -203,4 +264,6 @@ const styles = StyleSheet.create({
   call: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   stageRow: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, minHeight: 48 },
   dot: { width: 10, height: 10, borderRadius: 5 },
+  nextRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12 },
+  nextBtn: { minHeight: 46, borderRadius: 12, alignItems: "center", justifyContent: "center" },
 });

@@ -9,6 +9,8 @@ import { ACTIVITY_TYPE_LABELS, CONTACT_STATUS_LABELS } from "../../lib/labels";
 import { callPhone, sendEmail, smsPhone } from "../../lib/contact-actions";
 import { Badge, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
 import { ActivityComposer } from "../../components/ActivityComposer";
+import { NextStepSheet } from "../../components/NextStepSheet";
+import { CONTACT_STATUS_HELP } from "../../lib/process";
 
 type Contact = {
   id: string;
@@ -34,6 +36,7 @@ export default function ContactDetail() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     const [cRes, aRes, dRes] = await Promise.all([
@@ -80,6 +83,7 @@ export default function ContactDetail() {
     setActivities((prev) => prev.map((x) => (x.id === a.id ? { ...x, done: !x.done } : x)));
     const { error: err } = await supabase.from("activities").update({ done: !a.done }).eq("id", a.id);
     if (err) load();
+    else if (!a.done) setSheetOpen(true);
   }
 
   if (error && !contact) return <ErrorBox message={error} onRetry={load} />;
@@ -149,6 +153,9 @@ export default function ContactDetail() {
           </Pressable>
         ))}
       </View>
+      {CONTACT_STATUS_HELP[contact.status] ? (
+        <Text style={{ color: c.muted, fontSize: 13, marginTop: 8 }}>{CONTACT_STATUS_HELP[contact.status]}</Text>
+      ) : null}
 
       {contact.notes ? (
         <>
@@ -176,7 +183,7 @@ export default function ContactDetail() {
         </>
       ) : null}
 
-      <SectionTitle>Új bejegyzés</SectionTitle>
+      <SectionTitle>Jegyzet vagy teendő rögzítése</SectionTitle>
       <ActivityComposer contactId={contact.id} onSaved={load} />
 
       <SectionTitle>Előzmények</SectionTitle>
@@ -212,6 +219,17 @@ export default function ContactDetail() {
           </Card>
         ))
       )}
+
+      <NextStepSheet
+        visible={sheetOpen}
+        title="Kész! Mi a következő lépés?"
+        subtitle={contact.name}
+        contactId={contact.id}
+        onClose={() => {
+          setSheetOpen(false);
+          load();
+        }}
+      />
     </ScrollView>
   );
 }

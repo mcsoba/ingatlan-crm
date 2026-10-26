@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -11,9 +12,10 @@ import { TaskQuickAdd } from "./task-quick-add";
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; type?: string }>;
+  searchParams: Promise<{ status?: string; type?: string; who?: string }>;
 }) {
-  const { status = "open", type } = await searchParams;
+  const { status = "open", type, who = "me" } = await searchParams;
+  const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
   let query = supabase
@@ -25,23 +27,28 @@ export default async function TasksPage({
   if (status === "open") query = query.eq("done", false);
   else if (status === "done") query = query.eq("done", true);
   if (type) query = query.eq("type", type);
+  if (who === "me") query = query.eq("assigned_to", profile.id);
 
   const { data: activities, error } = await query;
   if (error) throw error;
 
-  const hasFilters = status !== "open" || Boolean(type);
+  const hasFilters = status !== "open" || Boolean(type) || who !== "me";
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Teendők"
-        description="Az iroda összes hívása, megtekintése és emlékeztetője egy listában."
-        helpText="Minden csapattag teendője itt látszik, nem csak a sajátod — a naptár havi nézete helyett ez a teljes, szűrhető lista."
+        description="Hívások, megtekintések és emlékeztetők határidő szerint. Alapból a saját feladataidat látod."
+        helpText="A „Kié” szűrővel átválthatsz az egész iroda teendőire. Egy teendő felelősét a felvételkor a „Kinek a feladata?” mezőben adhatod meg."
       />
 
       <TaskQuickAdd />
 
       <form className="flex flex-wrap gap-2">
+        <select name="who" defaultValue={who} className={inputClass}>
+          <option value="me">Az enyéim</option>
+          <option value="all">Az egész iroda</option>
+        </select>
         <select name="status" defaultValue={status} className={inputClass}>
           <option value="open">Nyitott</option>
           <option value="done">Kész</option>

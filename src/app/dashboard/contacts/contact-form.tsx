@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 import { queueToast } from "@/components/ui/toast";
+import { STATUS_HELP } from "./constants";
 
 type ContactFormProps = {
   action: (formData: FormData) => void;
@@ -193,10 +194,11 @@ export function ContactForm({
               className={inputClass}
             >
               <option value="new">Új</option>
-              <option value="contacted">Felvéve a kapcsolat</option>
+              <option value="contacted">Megkeresve</option>
               <option value="qualified">Minősített</option>
               <option value="inactive">Inaktív</option>
             </select>
+            {STATUS_HELP[status] && <span className="text-xs text-muted">{STATUS_HELP[status]}</span>}
           </div>
 
           <div className={fieldGroupClass}>

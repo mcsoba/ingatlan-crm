@@ -53,16 +53,23 @@ export type Activity = {
   sequence_id?: string | null;
 };
 
+export type TeamMember = { id: string; name: string };
+
 export function ActivityPanel({
   contactId,
   dealId,
   activities,
   redirectTo,
+  members,
+  currentUserId,
 }: {
   contactId?: string;
   dealId?: string;
   activities: Activity[];
   redirectTo: string;
+  // Ha meg van adva, a felelős is kiválasztható (alapból a bejelentkezett felhasználó)
+  members?: TeamMember[];
+  currentUserId?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -181,7 +188,11 @@ export function ActivityPanel({
         </div>
       )}
 
-      <Card className="flex flex-col gap-2 p-3">
+      <Card id="uj-teendo" className="flex flex-col gap-2 p-3">
+        <div className="text-sm font-medium text-foreground">Új jegyzet vagy teendő</div>
+        <p className="-mt-1 text-xs text-muted">
+          Ha határidőt adsz meg, teendőként megjelenik a felelős napi listáján, és emlékeztetőt is kap róla.
+        </p>
         <form action={createActivity} className="flex flex-col gap-2">
           {contactId && (
             <input type="hidden" name="contact_id" value={contactId} />
@@ -189,7 +200,9 @@ export function ActivityPanel({
           {dealId && <input type="hidden" name="deal_id" value={dealId} />}
           <input type="hidden" name="redirect_to" value={redirectTo} />
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1 text-xs text-muted">
+            Típus
             <select
               name="type"
               value={type}
@@ -202,11 +215,29 @@ export function ActivityPanel({
               <option value="reminder">Emlékeztető</option>
               <option value="checklist">Checklist</option>
             </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted">
+            Határidő (nem kötelező)
             <input
               type="date"
               name="due_at"
               className={`${inputClass} py-1.5`}
             />
+            </label>
+            {members && members.length > 1 && (
+              <label className="flex flex-col gap-1 text-xs text-muted">
+                Kinek a feladata?
+                <select name="assigned_to" defaultValue={currentUserId ?? ""} className={`${inputClass} py-1.5`}>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.id === currentUserId ? `${m.name} (én)` : m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="flex flex-col gap-1 text-xs text-muted">
+            Ismétlődés
             <select
               name="recurrence"
               defaultValue="none"
@@ -218,6 +249,7 @@ export function ActivityPanel({
               <option value="weekly">Hetente</option>
               <option value="monthly">Havonta</option>
             </select>
+            </label>
           </div>
           <textarea
             name="content"

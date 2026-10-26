@@ -43,15 +43,21 @@ export function ActivityComposer({
   contactId,
   dealId,
   onSaved,
+  defaultType = "note",
+  defaultDue = "none",
+  saveLabel = "Mentés",
 }: {
   contactId?: string | null;
   dealId?: string | null;
   onSaved: () => void;
+  defaultType?: (typeof TYPES)[number];
+  defaultDue?: DueKey;
+  saveLabel?: string;
 }) {
   const c = useColors();
   const { profile } = useAuth();
-  const [type, setType] = useState<(typeof TYPES)[number]>("note");
-  const [due, setDue] = useState<DueKey>("none");
+  const [type, setType] = useState<(typeof TYPES)[number]>(defaultType);
+  const [due, setDue] = useState<DueKey>(defaultDue);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +81,7 @@ export function ActivityComposer({
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setContent("");
-    setDue("none");
+    setDue(defaultDue);
     onSaved();
   }
 
@@ -114,7 +120,7 @@ export function ActivityComposer({
         ))}
       </View>
       {error ? <Text style={{ color: c.danger }}>{error}</Text> : null}
-      <Button label="Mentés" onPress={save} loading={busy} disabled={!content.trim()} />
+      <Button label={saveLabel} onPress={save} loading={busy} disabled={!content.trim()} />
     </Card>
   );
 }
