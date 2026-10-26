@@ -32,6 +32,12 @@
           "photosPermission": "Az ingatlanokhoz tartozó fotók kiválasztásához.",
           "cameraPermission": "Az ingatlanok lefotózásához a helyszínen."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6366f1"
+        }
       ]
     ],
     "scheme": "ingatlancrm",

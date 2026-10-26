@@ -8,6 +8,8 @@ import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 import { sendSms } from "@/lib/twilio";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToProfiles } from "@/lib/push";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -749,6 +751,14 @@ export async function bulkUpdateContactOwner(ids: string[], ownerId: string) {
     .eq("agency_id", profile.agency_id)
     .in("id", ids);
   if (error) throw error;
+
+  if (ownerId && ownerId !== profile.id) {
+    await sendPushToProfiles(createAdminClient(), [ownerId], {
+      title: ids.length === 1 ? "Új ügyfelet kaptál" : `${ids.length} új ügyfelet kaptál`,
+      body: `${profile.full_name || "Egy kollégád"} rád bízta őket. Nézd meg a Kontaktok fülön.`,
+      url: ids.length === 1 ? `/contact/${ids[0]}` : "/contacts",
+    });
+  }
 
   revalidatePath("/dashboard/contacts");
 }

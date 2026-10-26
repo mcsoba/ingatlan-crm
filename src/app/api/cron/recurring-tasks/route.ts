@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const { data: dueActivities, error } = await admin
     .from("activities")
-    .select("id, agency_id, contact_id, deal_id, type, content, due_at, recurrence")
+    .select("id, agency_id, contact_id, deal_id, type, content, due_at, recurrence, assigned_to")
     .neq("recurrence", "none")
     .eq("next_occurrence_created", false)
     .not("due_at", "is", null)
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       content: activity.content,
       due_at: nextDueAt(activity.due_at as string, activity.recurrence),
       recurrence: activity.recurrence,
+      assigned_to: activity.assigned_to,
       done: false,
       next_occurrence_created: false,
     });

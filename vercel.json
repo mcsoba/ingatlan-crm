@@ -23,6 +23,14 @@
     {
       "path": "/api/cron/purge-trash",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/push-reminders",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/push-reminders?digest=1",
+      "schedule": "0 6 * * *"
     }
   ]
 }

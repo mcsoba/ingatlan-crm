@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 import { sendSms } from "@/lib/twilio";
 import { sendLeadWebhook } from "@/lib/webhook";
+import { sendPushToAgency, sendPushToProfiles } from "@/lib/push";
 
 const MAX_NAME_LENGTH = 200;
 const MAX_CONTACT_FIELD_LENGTH = 200;
@@ -328,6 +329,17 @@ export async function POST(request: Request) {
     ),
     notifyAgencySms(admin, agencyId, trimmedName, assignee?.full_name),
     autoEnroll(admin, agencyId, insertedContact.id, Boolean(leadEmail)),
+    // Kiosztott lead: csak a felelős kap értesítést; különben az egész iroda
+    (() => {
+      const push = {
+        title: assignee ? "Új érdeklődőt kaptál" : "Új érdeklődő érkezett",
+        body: `${trimmedName} — hívd fel minél előbb${leadPhone ? ` (${leadPhone})` : ""}.`,
+        url: `/contact/${insertedContact.id}`,
+      };
+      return assignee
+        ? sendPushToProfiles(admin, [assignee.id], push)
+        : sendPushToAgency(admin, agencyId, push);
+    })(),
     agency.lead_webhook_url
       ? sendLeadWebhook(agency.lead_webhook_url, {
           agencyId,

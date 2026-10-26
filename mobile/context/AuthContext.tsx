@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { registerForPush, unregisterPush } from "../lib/push";
 
 export type Profile = {
   id: string;
@@ -70,7 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return "Nem sikerült a bejelentkezés. Ellenőrizd az internetkapcsolatot.";
   }
 
+  // Bejelentkezett felhasználónál az eszköz regisztrálása push-értesítésekre
+  useEffect(() => {
+    if (profile) registerForPush().catch(() => {});
+  }, [profile]);
+
   async function signOut() {
+    await unregisterPush().catch(() => {});
     await supabase.auth.signOut();
   }
 

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function createDeal(formData: FormData) {
   const { profile } = await ensureCurrentUserProfile();
@@ -140,10 +142,12 @@ export async function updateDealStage(dealId: string, formData: FormData) {
 }
 
 export async function updateDealOwner(dealId: string, formData: FormData) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
   const ownerId = String(formData.get("owner_id") ?? "") || null;
+
+  const { data: before } = await supabase.from("deals").select("owner_id, contacts(name)").eq("id", dealId).maybeSingle();
 
   const { error } = await supabase
     .from("deals")
@@ -151,6 +155,16 @@ export async function updateDealOwner(dealId: string, formData: FormData) {
     .eq("id", dealId);
 
   if (error) throw error;
+
+  // Az új felelős értesítést kap (saját magunknak nem küldünk)
+  if (ownerId && ownerId !== profile.id && before?.owner_id !== ownerId) {
+    const contactName = (before?.contacts as unknown as { name: string } | null)?.name;
+    await sendPushToProfiles(createAdminClient(), [ownerId], {
+      title: "Új üzletet kaptál",
+      body: `${profile.full_name || "Egy kollégád"} rád bízta: ${contactName ?? "üzlet"}.`,
+      url: `/deal/${dealId}`,
+    });
+  }
 
   revalidatePath(`/dashboard/pipeline/${dealId}`);
 }
