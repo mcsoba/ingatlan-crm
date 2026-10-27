@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { inputClass } from "@/components/ui/styles";
+import { formatDue } from "@/lib/time";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "Jegyzet",
@@ -134,7 +135,7 @@ export function ActivityPanel({
                   <div className="text-xs text-muted">
                     {TYPE_LABELS[activity.type] ?? activity.type}
                     {activity.due_at &&
-                      ` · határidő: ${new Date(activity.due_at).toLocaleDateString("hu-HU")}`}
+                      ` · határidő: ${formatDue(activity.due_at)}`}
                   </div>
                   <div className="break-words text-foreground">
                     {activity.content}
@@ -218,11 +219,19 @@ export function ActivityPanel({
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">
             Határidő (nem kötelező)
-            <input
-              type="date"
-              name="due_at"
-              className={`${inputClass} py-1.5`}
-            />
+            <div className="flex gap-1.5">
+              <input
+                type="date"
+                name="due_at"
+                className={`${inputClass} min-w-0 flex-1 py-1.5`}
+              />
+              <input
+                type="time"
+                name="due_time"
+                title="Időpont (ha üres: reggel 9)"
+                className={`${inputClass} w-24 py-1.5`}
+              />
+            </div>
             </label>
             {members && members.length > 1 && (
               <label className="flex flex-col gap-1 text-xs text-muted">

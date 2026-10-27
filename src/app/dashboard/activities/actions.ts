@@ -7,6 +7,7 @@ import { ensureCurrentUserProfile } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { syncActivityStatusChange, syncActivityDeletion } from "@/lib/google-calendar-sync";
 import { sendPushToProfiles } from "@/lib/push";
+import { budapestDateTime, formatDue } from "@/lib/time";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "jegyzet",
@@ -27,7 +28,8 @@ export async function createActivity(formData: FormData) {
   const contactId = String(formData.get("contact_id") ?? "") || null;
   const dealId = String(formData.get("deal_id") ?? "") || null;
   const type = String(formData.get("type") ?? "note");
-  const dueAtRaw = String(formData.get("due_at") ?? "");
+  const dueDate = String(formData.get("due_at") ?? "");
+  const dueTime = String(formData.get("due_time") ?? "");
   const redirectTo = String(formData.get("redirect_to") ?? "");
   const recurrenceRaw = String(formData.get("recurrence") ?? "none");
   const recurrence = ["none", "daily", "weekly", "monthly"].includes(recurrenceRaw)
@@ -43,7 +45,7 @@ export async function createActivity(formData: FormData) {
     assignedTo = member?.id ?? null;
   }
 
-  const dueAt = dueAtRaw ? new Date(dueAtRaw).toISOString() : null;
+  const dueAt = budapestDateTime(dueDate, dueTime)?.toISOString() ?? null;
   const { error } = await supabase.from("activities").insert({
     agency_id: profile.agency_id,
     contact_id: contactId,
@@ -60,7 +62,7 @@ export async function createActivity(formData: FormData) {
   if (assignedTo && assignedTo !== profile.id) {
     await sendPushToProfiles(createAdminClient(), [assignedTo], {
       title: "Új feladatot kaptál",
-      body: `${profile.full_name || "Egy kollégád"}: ${content}${dueAt ? ` (határidő: ${new Date(dueAt).toLocaleDateString("hu-HU")})` : ""}`,
+      body: `${profile.full_name || "Egy kollégád"}: ${content}${dueAt ? ` (határidő: ${formatDue(dueAt)})` : ""}`,
       url: dealId ? `/deal/${dealId}` : contactId ? `/contact/${contactId}` : "/",
     });
   }

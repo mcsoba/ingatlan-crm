@@ -17,6 +17,7 @@ export function TaskQuickAdd() {
           <option value="reminder">Emlékeztető</option>
         </select>
         <input type="date" name="due_at" className={`${inputClass} py-1.5`} />
+        <input type="time" name="due_time" title="Időpont (ha üres: reggel 9)" className={`${inputClass} py-1.5`} />
         <select
           name="recurrence"
           defaultValue="none"

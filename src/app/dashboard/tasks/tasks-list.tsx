@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { StickyNote, Phone, Eye, Bell, Trash2, Repeat, type LucideIcon } from "lucide-react";
 import { toggleActivityDone, deleteActivity } from "../activities/actions";
+import { formatDue } from "@/lib/time";
 import { Card } from "@/components/ui/card";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -112,7 +113,7 @@ export function TasksList({ activities }: { activities: TaskRow[] }) {
                       <span>
                         {TYPE_LABELS[task.type] ?? task.type}
                         {task.due_at &&
-                          ` · ${new Date(task.due_at).toLocaleDateString("hu-HU")}`}
+                          ` · ${formatDue(task.due_at)}`}
                       </span>
                       {task.recurrence !== "none" && (
                         <span title={RECURRENCE_LABELS[task.recurrence]}>
