@@ -98,7 +98,7 @@ export function ContactForm({
   }, [name, email, phone]);
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-2xl">
       <Card className="p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className={fieldGroupClass}>

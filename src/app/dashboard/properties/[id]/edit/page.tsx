@@ -71,27 +71,31 @@ export default async function EditPropertyPage({
         }
       />
 
-      <TagPicker
-        entityType="property"
-        entityId={property.id}
-        allTags={allTags}
-        initialTagIds={(propertyTagRows ?? []).map((r) => r.tag_id)}
-      />
-
-      <PropertyForm
-        action={updateWithId}
-        defaultValues={property}
-        submitLabel="Mentés"
-      />
-
-      {photos.length > 0 && (
-        <div className="max-w-md">
-          <h2 className={`mb-2 ${sectionLabelClass}`}>
-            Galéria ({photos.length} fotó)
-          </h2>
-          <PropertyGallery propertyId={property.id} photos={photos} />
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0">
+          <PropertyForm
+            action={updateWithId}
+            defaultValues={property}
+            submitLabel="Mentés"
+          />
         </div>
-      )}
+        <aside className="flex min-w-0 flex-col gap-6">
+          <TagPicker
+            entityType="property"
+            entityId={property.id}
+            allTags={allTags}
+            initialTagIds={(propertyTagRows ?? []).map((r) => r.tag_id)}
+          />
+          {photos.length > 0 && (
+            <div>
+              <h2 className={`mb-2 ${sectionLabelClass}`}>
+                Galéria ({photos.length} fotó)
+              </h2>
+              <PropertyGallery propertyId={property.id} photos={photos} />
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -45,7 +45,7 @@ export default async function TeamPage() {
   }
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-3xl">
       <PageHeader title="Csapat" description="Az iroda tagjai és szerepkörük." />
 
       <div className="mt-6 flex flex-col gap-2">

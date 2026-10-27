@@ -107,7 +107,7 @@ export function ContactCommsPanel({
   }
 
   return (
-    <div className="flex max-w-md flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Card className="flex flex-col gap-2 p-5">
         <div className="flex items-center justify-between">
           <span className={labelClass}>Follow-up email vázlat</span>

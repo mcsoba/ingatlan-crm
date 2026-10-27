@@ -206,7 +206,7 @@ export function PropertyForm({
   const heating = new Set(d.heating ?? []);
 
   return (
-    <Card className="max-w-2xl p-5">
+    <Card className="max-w-3xl p-5">
       <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* ── Alapadatok ── */}
         <div className="grid gap-4 sm:grid-cols-2">

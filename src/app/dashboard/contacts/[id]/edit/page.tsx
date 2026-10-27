@@ -40,7 +40,9 @@ export default async function EditContactPage({
 }) {
   const { id } = await params;
   const { tab } = await searchParams;
-  const activeTab: TabId = TABS.some((t) => t.id === tab) ? (tab as TabId) : "adatlap";
+  const activeTab: TabId = TABS.some((t) => t.id === tab)
+    ? (tab as TabId)
+    : "adatlap";
   const supabase = await createClient();
 
   const [
@@ -119,33 +121,33 @@ export default async function EditContactPage({
       </div>
 
       {activeTab === "adatlap" && (
-        <>
-          <TagPicker
-            entityType="contact"
-            entityId={contact.id}
-            allTags={allTags}
-            initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
-          />
-
-          <div className="max-w-md">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0">
+            <ContactForm
+              action={updateWithId}
+              contactId={contact.id}
+              defaultValues={contact}
+              submitLabel="Mentés"
+            />
+          </div>
+          <aside className="flex min-w-0 flex-col gap-4">
+            <TagPicker
+              entityType="contact"
+              entityId={contact.id}
+              allTags={allTags}
+              initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
+            />
             <LeadScorePanel
               contactId={contact.id}
               initialScore={contact.lead_score}
               initialReason={contact.lead_score_reason}
             />
-          </div>
-
-          <ContactForm
-            action={updateWithId}
-            contactId={contact.id}
-            defaultValues={contact}
-            submitLabel="Mentés"
-          />
-        </>
+          </aside>
+        </div>
       )}
 
       {activeTab === "kommunikacio" && (
-        <>
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
           <ContactCommsPanel
             contactId={contact.id}
             name={contact.name}
@@ -156,62 +158,71 @@ export default async function EditContactPage({
             notes={contact.notes}
           />
 
-          <div className="max-w-md">
-            <CampaignPanel contactId={contact.id} hasEmail={Boolean(contact.email)} />
-          </div>
-        </>
+          <aside className="min-w-0">
+            <CampaignPanel
+              contactId={contact.id}
+              hasEmail={Boolean(contact.email)}
+            />
+          </aside>
+        </div>
       )}
 
       {activeTab === "kapcsolodo" && (
-        <>
-          <div className="max-w-md">
-            <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>
-            <PropertyMatchPanel contactId={contact.id} />
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="flex min-w-0 flex-col gap-6">
+            <div>
+              <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
+              <ActivityPanel
+                contactId={contact.id}
+                activities={activities ?? []}
+                redirectTo={`/dashboard/contacts/${contact.id}/edit?tab=kapcsolodo`}
+                members={teamMembers}
+                currentUserId={profile.id}
+              />
+            </div>
+
+            <div>
+              <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
+              <AttachmentsPanel contactId={contact.id} />
+            </div>
           </div>
 
-          <div className="max-w-md">
-            <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
-            {contactDeals.length === 0 ? (
-              <p className="text-sm text-muted">
-                Ehhez a kontakthoz még nincs deal.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {contactDeals.map((deal) => (
-                  <Link key={deal.id} href={`/dashboard/pipeline/${deal.id}`}>
-                    <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
-                      <Kanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
-                      <div>
-                        <div className="font-medium text-foreground">
-                          {stageNames.get(deal.stage_id) ?? "—"}
+          <aside className="flex min-w-0 flex-col gap-6">
+            <div>
+              <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
+              {contactDeals.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Ehhez a kontakthoz még nincs deal.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {contactDeals.map((deal) => (
+                    <Link key={deal.id} href={`/dashboard/pipeline/${deal.id}`}>
+                      <Card className="flex items-start gap-2.5 p-3 text-sm hover:border-accent/40">
+                        <Kanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-subtle" />
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {stageNames.get(deal.stage_id) ?? "—"}
+                          </div>
+                          {deal.properties && (
+                            <div className="text-muted">
+                              {deal.properties.address}
+                            </div>
+                          )}
                         </div>
-                        {deal.properties && (
-                          <div className="text-muted">{deal.properties.address}</div>
-                        )}
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="max-w-md">
-            <h2 className={`mb-2 ${sectionLabelClass}`}>Aktivitások</h2>
-            <ActivityPanel
-              contactId={contact.id}
-              activities={activities ?? []}
-              redirectTo={`/dashboard/contacts/${contact.id}/edit?tab=kapcsolodo`}
-              members={teamMembers}
-              currentUserId={profile.id}
-            />
-          </div>
-
-          <div className="max-w-md">
-            <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
-            <AttachmentsPanel contactId={contact.id} />
-          </div>
-        </>
+            <div>
+              <h2 className={`mb-2 ${sectionLabelClass}`}>Illő ingatlanok</h2>
+              <PropertyMatchPanel contactId={contact.id} />
+            </div>
+          </aside>
+        </div>
       )}
     </div>
   );

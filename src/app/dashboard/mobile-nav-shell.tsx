@@ -52,7 +52,7 @@ export function MobileNavShell({
       </aside>
 
       <div className="min-w-0 flex-1 bg-background print:w-full">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-10 print:max-w-full print:p-0">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-10 print:max-w-full print:p-0">
           {children}
         </div>
       </div>

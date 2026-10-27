@@ -21,7 +21,7 @@ export default async function PipelineStagesPage() {
   if (error) throw error;
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-3xl">
       <PageHeader
         title="Pipeline szakaszok"
         description="Az üzletek lépései, és hogy mit kell tenni az egyes lépésekben. Az útmutató az üzlet oldalán, a weben és a mobilon is megjelenik."

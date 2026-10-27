@@ -120,9 +120,10 @@ export default async function DealDetailPage({
       : null;
 
   return (
-    <div className="max-w-md">
+    <div>
       <PageHeader
         title={contact?.name ?? "Ismeretlen kontakt"}
+        description={`${dealRow.deal_type === "rent" ? "Bérlés" : "Eladás"} · ${stageName}${dealRow.deal_amount != null ? ` · ${dealRow.deal_amount.toLocaleString("hu-HU")} Ft` : ""}`}
         action={
           <div className="flex items-center gap-4">
             <Link
@@ -142,274 +143,280 @@ export default async function DealDetailPage({
         }
       />
 
-      <div className="mt-6 flex flex-col gap-4">
-        {stages && stages.length > 0 && (
+      {stages && stages.length > 0 && (
+        <div className="mt-6">
           <StageProgress
             dealId={dealRow.id}
             stages={stages}
             currentStageId={dealRow.stage_id}
             disabled={dealRow.status === "lost"}
           />
-        )}
+        </div>
+      )}
 
-        {dealRow.status !== "lost" && (
-          <Card className="flex flex-col gap-3 border-accent/30 bg-accent-soft/40 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Compass className="h-4 w-4 text-accent" strokeWidth={2} />
-              Mit kell most tenned?
-            </div>
-            {guidance && (
-              <p className="text-sm text-foreground">
-                <span className="font-medium">{stageName}: </span>
-                {guidance}
-              </p>
-            )}
-            {nextTask ? (
-              <div className="flex items-start gap-2 rounded-md bg-surface p-2.5 text-sm">
-                <CalendarClock className={`mt-0.5 h-4 w-4 shrink-0 ${nextTaskOverdue ? "text-danger" : "text-accent"}`} strokeWidth={1.75} />
-                <div className="min-w-0">
-                  <div className="text-xs text-muted">Következő lépés</div>
-                  <div className="text-foreground">{nextTask.content}</div>
-                  <div className={`text-xs font-medium ${nextTaskOverdue ? "text-danger" : "text-muted"}`}>
-                    {nextTaskOverdue ? "Lejárt: " : ""}
-                    {formatDue(nextTask.due_at!)}
+      {/* Nagy képernyőn két oszlop: balra a napi munka, jobbra az üzlet adatai */}
+      <div className="mt-4 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {dealRow.status !== "lost" && (
+            <Card className="flex flex-col gap-3 border-accent/30 bg-accent-soft/40 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Compass className="h-4 w-4 text-accent" strokeWidth={2} />
+                Mit kell most tenned?
+              </div>
+              {guidance && (
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">{stageName}: </span>
+                  {guidance}
+                </p>
+              )}
+              {nextTask ? (
+                <div className="flex items-start gap-2 rounded-md bg-surface p-2.5 text-sm">
+                  <CalendarClock className={`mt-0.5 h-4 w-4 shrink-0 ${nextTaskOverdue ? "text-danger" : "text-accent"}`} strokeWidth={1.75} />
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted">Következő lépés</div>
+                    <div className="text-foreground">{nextTask.content}</div>
+                    <div className={`text-xs font-medium ${nextTaskOverdue ? "text-danger" : "text-muted"}`}>
+                      {nextTaskOverdue ? "Lejárt: " : ""}
+                      {formatDue(nextTask.due_at!)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-sm text-foreground">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
-                Nincs ütemezett következő lépés, így az ügy könnyen elakad. Adj hozzá egy teendőt határidővel.
-              </div>
-            )}
-            <a href="#uj-teendo" className="self-start text-sm font-medium text-accent hover:underline">
-              {nextTask ? "Újabb teendő felvétele ↓" : "Következő lépés megadása ↓"}
-            </a>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-3 text-sm">
-            <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
-              <User className="h-3.5 w-3.5" strokeWidth={1.75} />
-              Kontakt
-            </div>
-            {contact ? (
-              <>
-                <Link
-                  href={`/dashboard/contacts/${contact.id}/edit`}
-                  className="font-medium text-foreground hover:text-accent"
-                >
-                  {contact.name}
-                </Link>
-                <div className="mt-0.5 truncate text-muted">
-                  {contact.email || contact.phone || "—"}
+              ) : (
+                <div className="flex items-start gap-2 rounded-md bg-warning-soft p-2.5 text-sm text-foreground">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" strokeWidth={1.75} />
+                  Nincs ütemezett következő lépés, így az ügy könnyen elakad. Adj hozzá egy teendőt határidővel.
                 </div>
-              </>
-            ) : (
-              <div className="text-muted">Nincs kontakt</div>
-            )}
-          </Card>
+              )}
+              <a href="#uj-teendo" className="self-start text-sm font-medium text-accent hover:underline">
+                {nextTask ? "Újabb teendő felvétele ↓" : "Következő lépés megadása ↓"}
+              </a>
+            </Card>
+          )}
 
-          <Card className="p-3 text-sm">
-            <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
-              <Building2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-              Ingatlan
-            </div>
-            {property ? (
-              <Link
-                href={`/dashboard/properties/${property.id}/edit`}
-                className="font-medium text-foreground hover:text-accent"
-              >
-                {property.address}
-                {property.price && (
-                  <span className="block font-normal text-muted">
-                    {property.price.toLocaleString("hu-HU")} Ft
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <div className="text-muted">Nincs kapcsolódó ingatlan</div>
-            )}
-          </Card>
-        </div>
-
-        {dealRow.status === "lost" ? (
-          <LostDealPanel
-            dealId={dealRow.id}
-            status={dealRow.status}
-            lostReason={dealRow.lost_reason}
-            lostAt={dealRow.lost_at}
-          />
-        ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            {isLastStage ? (
-              <span className="flex items-center gap-1.5 text-sm font-medium text-success">
-                <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
-                Nyertes ügylet
-              </span>
-            ) : (
-              <form action={markWonWithId}>
-                <Button type="submit" variant="success">
-                  <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
-                  Nyertesnek jelölés
-                </Button>
-              </form>
-            )}
+          {dealRow.status === "lost" ? (
             <LostDealPanel
               dealId={dealRow.id}
               status={dealRow.status}
               lostReason={dealRow.lost_reason}
               lostAt={dealRow.lost_at}
             />
-          </div>
-        )}
-
-        <Card className="border-accent/20 bg-accent-soft/40 p-4">
-          <AskAssistantPanel dealId={dealRow.id} />
-        </Card>
-
-        <Card className="flex flex-col gap-4 p-4">
-          <form action={updateOwnerWithId} className="flex flex-col gap-1.5">
-            <span className={labelClass}>Felelős ügynök</span>
-            <div className="flex gap-2">
-              <select
-                name="owner_id"
-                defaultValue={dealRow.owner_id ?? ""}
-                className={`${inputClass} flex-1`}
-              >
-                <option value="">Nincs hozzárendelve</option>
-                {(members ?? []).map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.full_name || memberEmailById.get(member.id) || "Ismeretlen"}
-                  </option>
-                ))}
-              </select>
-              <Button type="submit" variant="secondary">
-                Mentés
-              </Button>
-            </div>
-          </form>
-
-          <form action={updateTypeWithId} className="flex flex-col gap-1.5">
-            <span className={labelClass}>Típus</span>
-            <div className="flex gap-2">
-              <select
-                name="deal_type"
-                defaultValue={dealRow.deal_type}
-                className={`${inputClass} flex-1`}
-              >
-                <option value="sale">Eladás</option>
-                <option value="rent">Bérlés</option>
-              </select>
-              <Button type="submit" variant="secondary">
-                Mentés
-              </Button>
-            </div>
-          </form>
-        </Card>
-
-        <Card className="p-4">
-          <form action={updateNotesWithId} className={fieldGroupClass}>
-            <span className={labelClass}>Jegyzet</span>
-            <textarea
-              name="notes"
-              rows={3}
-              defaultValue={dealRow.notes ?? ""}
-              className={inputClass}
-            />
-            <Button type="submit" variant="secondary" size="sm" className="self-start">
-              Jegyzet mentése
-            </Button>
-          </form>
-        </Card>
-
-        <Card className="p-4">
-          <form action={updateCommissionWithId} className="flex flex-col gap-2">
-            <span className={labelClass}>
-              <span className="inline-flex items-center gap-1.5">
-                <Percent className="h-3.5 w-3.5" strokeWidth={1.75} />
-                Jutalék
-              </span>
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              <div className={fieldGroupClass}>
-                <span className="text-xs text-muted">Végleges ár (Ft)</span>
-                <FormattedNumberInput
-                  name="deal_amount"
-                  defaultValue={dealRow.deal_amount ?? ""}
-                  className={inputClass}
-                />
-              </div>
-              <div className={fieldGroupClass}>
-                <span className="text-xs text-muted">Jutalék (%)</span>
-                <input
-                  name="commission_rate"
-                  type="number"
-                  step="0.1"
-                  defaultValue={dealRow.commission_rate ?? ""}
-                  className={inputClass}
-                />
-              </div>
-            </div>
-            {commissionAmount != null && (
-              <div className="text-sm text-foreground">
-                Várható jutalék:{" "}
-                <span className="font-semibold">
-                  {commissionAmount.toLocaleString("hu-HU", {
-                    maximumFractionDigits: 0,
-                  })}{" "}
-                  Ft
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              {isLastStage ? (
+                <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
+                  Nyertes ügylet
                 </span>
-              </div>
-            )}
-            <Button type="submit" variant="secondary" size="sm" className="self-start">
-              Mentés
-            </Button>
-          </form>
-        </Card>
+              ) : (
+                <form action={markWonWithId}>
+                  <Button type="submit" variant="success">
+                    <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
+                    Nyertesnek jelölés
+                  </Button>
+                </form>
+              )}
+              <LostDealPanel
+                dealId={dealRow.id}
+                status={dealRow.status}
+                lostReason={dealRow.lost_reason}
+                lostAt={dealRow.lost_at}
+              />
+            </div>
+          )}
 
-        <Card className="p-4">
-          <DealFollowUpPanel
-            contactName={contact?.name ?? ""}
-            stageName={stageName}
-            propertyAddress={property?.address ?? null}
-            notes={dealRow.notes ?? ""}
-          />
-        </Card>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className={sectionLabelClass}>Aktivitások</h2>
-            {!hasChecklist && (
-              <form action={seedChecklistWithId}>
-                <Button type="submit" variant="secondary" size="sm">
-                  <ClipboardCheck className="h-3.5 w-3.5" />
-                  Tranzakciós checklist létrehozása
-                </Button>
-              </form>
-            )}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className={sectionLabelClass}>Aktivitások</h2>
+              {!hasChecklist && (
+                <form action={seedChecklistWithId}>
+                  <Button type="submit" variant="secondary" size="sm">
+                    <ClipboardCheck className="h-3.5 w-3.5" />
+                    Tranzakciós checklist létrehozása
+                  </Button>
+                </form>
+              )}
+            </div>
+            <ActivityPanel
+              dealId={dealRow.id}
+              activities={activities ?? []}
+              redirectTo={`/dashboard/pipeline/${dealRow.id}`}
+              members={teamMembers}
+              currentUserId={profile.id}
+            />
           </div>
-          <ActivityPanel
-            dealId={dealRow.id}
-            activities={activities ?? []}
-            redirectTo={`/dashboard/pipeline/${dealRow.id}`}
-            members={teamMembers}
-            currentUserId={profile.id}
-          />
+
+          <div>
+            <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
+            <AttachmentsPanel dealId={dealRow.id} />
+          </div>
         </div>
 
-        <div>
-          <h2 className={`mb-2 ${sectionLabelClass}`}>Csatolt fájlok</h2>
-          <AttachmentsPanel dealId={dealRow.id} />
-        </div>
+        <aside className="flex min-w-0 flex-col gap-4">
+          <Card className="divide-y divide-border-subtle p-0 text-sm">
+            <div className="p-3">
+              <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
+                <User className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Kontakt
+              </div>
+              {contact ? (
+                <>
+                  <Link
+                    href={`/dashboard/contacts/${contact.id}/edit`}
+                    className="font-medium text-foreground hover:text-accent"
+                  >
+                    {contact.name}
+                  </Link>
+                  <div className="mt-0.5 truncate text-muted">
+                    {[contact.phone, contact.email].filter(Boolean).join(" · ") || "—"}
+                  </div>
+                </>
+              ) : (
+                <div className="text-muted">Nincs kontakt</div>
+              )}
+            </div>
+            <div className="p-3">
+              <div className="mb-1 flex items-center gap-1.5 text-xs text-muted">
+                <Building2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Ingatlan
+              </div>
+              {property ? (
+                <Link
+                  href={`/dashboard/properties/${property.id}/edit`}
+                  className="font-medium text-foreground hover:text-accent"
+                >
+                  {property.address}
+                  {property.price && (
+                    <span className="block font-normal text-muted">
+                      {property.price.toLocaleString("hu-HU")} Ft
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                <div className="text-muted">Nincs kapcsolódó ingatlan</div>
+              )}
+            </div>
+          </Card>
 
-        <div className="flex flex-col gap-3 border-t border-border-subtle pt-4">
-          <DeleteDealButton
-            dealId={dealRow.id}
-            dealTitle={contact?.name ?? "Ismeretlen kontakt"}
-          />
-        </div>
+          <Card className="flex flex-col gap-4 p-4">
+            <form action={updateOwnerWithId} className="flex flex-col gap-1.5">
+              <span className={labelClass}>Felelős ügynök</span>
+              <div className="flex gap-2">
+                <select
+                  name="owner_id"
+                  defaultValue={dealRow.owner_id ?? ""}
+                  className={`${inputClass} min-w-0 flex-1`}
+                >
+                  <option value="">Nincs hozzárendelve</option>
+                  {teamMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
+                <Button type="submit" variant="secondary">
+                  Mentés
+                </Button>
+              </div>
+            </form>
+
+            <form action={updateTypeWithId} className="flex flex-col gap-1.5">
+              <span className={labelClass}>Típus</span>
+              <div className="flex gap-2">
+                <select
+                  name="deal_type"
+                  defaultValue={dealRow.deal_type}
+                  className={`${inputClass} min-w-0 flex-1`}
+                >
+                  <option value="sale">Eladás</option>
+                  <option value="rent">Bérlés</option>
+                </select>
+                <Button type="submit" variant="secondary">
+                  Mentés
+                </Button>
+              </div>
+            </form>
+          </Card>
+
+          <Card className="p-4">
+            <form action={updateCommissionWithId} className="flex flex-col gap-2">
+              <span className={labelClass}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Percent className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Jutalék
+                </span>
+              </span>
+              <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
+                <div className={fieldGroupClass}>
+                  <span className="text-xs text-muted">Végleges ár (Ft)</span>
+                  <FormattedNumberInput
+                    name="deal_amount"
+                    defaultValue={dealRow.deal_amount ?? ""}
+                    className={inputClass}
+                  />
+                </div>
+                <div className={fieldGroupClass}>
+                  <span className="text-xs text-muted">Jutalék (%)</span>
+                  <input
+                    name="commission_rate"
+                    type="number"
+                    step="0.1"
+                    defaultValue={dealRow.commission_rate ?? ""}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              {commissionAmount != null && (
+                <div className="text-sm text-foreground">
+                  Várható jutalék:{" "}
+                  <span className="font-semibold">
+                    {commissionAmount.toLocaleString("hu-HU", {
+                      maximumFractionDigits: 0,
+                    })}{" "}
+                    Ft
+                  </span>
+                </div>
+              )}
+              <Button type="submit" variant="secondary" size="sm" className="self-start">
+                Mentés
+              </Button>
+            </form>
+          </Card>
+
+          <Card className="p-4">
+            <form action={updateNotesWithId} className={fieldGroupClass}>
+              <span className={labelClass}>Jegyzet</span>
+              <textarea
+                name="notes"
+                rows={3}
+                defaultValue={dealRow.notes ?? ""}
+                className={inputClass}
+              />
+              <Button type="submit" variant="secondary" size="sm" className="self-start">
+                Jegyzet mentése
+              </Button>
+            </form>
+          </Card>
+
+          <Card className="border-accent/20 bg-accent-soft/40 p-4">
+            <AskAssistantPanel dealId={dealRow.id} />
+          </Card>
+
+          <Card className="p-4">
+            <DealFollowUpPanel
+              contactName={contact?.name ?? ""}
+              stageName={stageName}
+              propertyAddress={property?.address ?? null}
+              notes={dealRow.notes ?? ""}
+            />
+          </Card>
+
+          <div className="border-t border-border-subtle pt-4">
+            <DeleteDealButton
+              dealId={dealRow.id}
+              dealTitle={contact?.name ?? "Ismeretlen kontakt"}
+            />
+          </div>
+        </aside>
       </div>
     </div>
   );
