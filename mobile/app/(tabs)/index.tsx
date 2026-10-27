@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AppState, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { BellOff, Check, ChevronRight, LogOut, Phone, PhoneCall } from "lucide-react-native";
-import { supabase } from "../../lib/supabase";
+import { BellOff, BookOpen, Check, ChevronRight, LogOut, Phone, PhoneCall } from "lucide-react-native";
+import { SITE_URL, supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { useColors } from "../../lib/theme";
 import { formatDue, isOverdue } from "../../lib/format";
@@ -56,6 +56,11 @@ export default function TodayScreen() {
       sub.remove();
     };
   }, [profile]);
+
+  // A webes CRM nyilvános (belépés nélküli) útmutató oldala
+  function openGuide() {
+    if (SITE_URL) Linking.openURL(`${SITE_URL}/guide`).catch(() => {});
+  }
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -200,6 +205,9 @@ export default function TodayScreen() {
             <Text style={[styles.hello, { color: c.text }]}>Szia{firstName ? `, ${firstName}` : ""}!</Text>
             <Text style={{ color: c.muted, fontSize: 14 }}>{profile?.agencyName ?? ""}</Text>
           </View>
+          <Pressable accessibilityLabel="Használati útmutató" onPress={openGuide} hitSlop={12} style={{ marginRight: 18 }}>
+            <BookOpen color={c.muted} size={22} />
+          </Pressable>
           <Pressable accessibilityLabel="Kijelentkezés" onPress={signOut} hitSlop={12}>
             <LogOut color={c.muted} size={22} />
           </Pressable>
@@ -323,6 +331,15 @@ export default function TodayScreen() {
             ) : null}
           </>
         ) : null}
+
+        <Pressable onPress={openGuide} style={[styles.guide, { borderColor: c.border, backgroundColor: c.surface }]}>
+          <BookOpen size={20} color={c.accent} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.text, fontWeight: "700" }}>Használati útmutató</Text>
+            <Text style={{ color: c.muted, fontSize: 13 }}>Hogyan vegyél fel érdeklődőt, vezess üzletet, mit kell tenned</Text>
+          </View>
+          <ChevronRight size={18} color={c.subtle} />
+        </Pressable>
       </ScrollView>
 
       <NextStepSheet
@@ -404,6 +421,7 @@ const styles = StyleSheet.create({
   hello: { fontSize: 24, fontWeight: "800" },
   segment: { flexDirection: "row", borderRadius: 12, padding: 3 },
   segmentItem: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: 10 },
+  guide: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 14, padding: 14, marginTop: 24 },
   banner: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 12, marginTop: 12 },
   summary: { flexDirection: "row", gap: 8, marginTop: 14 },
   pill: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, paddingVertical: 10, alignItems: "center" },
