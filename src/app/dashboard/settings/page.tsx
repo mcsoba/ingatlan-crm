@@ -139,7 +139,7 @@ export default async function SettingsPage({
   const missingCount = integrations.filter((i) => !i.configured).length;
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex max-w-4xl flex-col gap-6">
       <PageHeader
         title="Beállítások"
         description="Fiók, iroda és külső szolgáltatások kezelése."

@@ -97,6 +97,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Nagy (1440p, 4K) monitoron kicsit nagyobb alapméret, hogy ne legyen apró a
+   szöveg; minden rem-alapú méret arányosan nő vele. */
+@media (min-width: 2000px) {
+  html {
+    font-size: 17px;
+  }
+}
+@media (min-width: 2400px) {
+  html {
+    font-size: 18px;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -57,7 +57,7 @@ export function StageProgress({
                 ? "bg-accent text-white"
                 : reached
                   ? "bg-accent-soft text-accent hover:bg-accent/20"
-                  : "bg-background text-muted hover:text-foreground"
+                  : "border border-border bg-surface text-muted hover:text-foreground"
             }`}
             title={stage.name}
           >

@@ -290,8 +290,8 @@ export function PipelineBoard({
             if (el) columnRefs.current.set(stage.id, el);
             else columnRefs.current.delete(stage.id);
           }}
-          className={`w-64 flex-shrink-0 snap-start rounded-xl p-2.5 transition-colors ${
-            hoverStageId === stage.id ? "bg-accent-soft" : "bg-background"
+          className={`w-64 flex-shrink-0 snap-start rounded-xl p-2.5 transition-colors xl:w-auto xl:min-w-64 xl:flex-1 ${
+            hoverStageId === stage.id ? "border border-accent/40 bg-accent-soft" : "border border-border-subtle bg-surface/40"
           }`}
         >
           <div className="mb-3 flex items-center gap-2 px-1 text-sm font-medium text-foreground">

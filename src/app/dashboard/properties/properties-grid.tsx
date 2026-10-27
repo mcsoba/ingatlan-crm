@@ -206,7 +206,7 @@ export function PropertiesGrid({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {properties.map((property) => (
           <Card key={property.id} className="relative overflow-hidden p-3">
             <label className="absolute top-2 left-2 z-10 flex h-5 w-5 items-center justify-center rounded-md bg-surface/90 shadow-sm">
