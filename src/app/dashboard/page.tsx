@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Kanban, Circle, CheckCircle2, Flame } from "lucide-react";
+import { Users, Building2, Kanban, Circle, CheckCircle2, Flame, BookOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
@@ -99,6 +99,12 @@ export default async function DashboardPage() {
       <PageHeader
         title={`Üdv, ${profile.full_name?.split(" ")[0] || user.email?.split("@")[0]}!`}
         description={[profile.agencies.name, planLabel(profile.agencies.plan_tier)].filter(Boolean).join(" · ")}
+        action={
+          <Link href="/dashboard/guide" className="flex items-center gap-1.5 text-sm text-muted hover:text-accent">
+            <BookOpen className="h-4 w-4" strokeWidth={1.75} />
+            Használati útmutató
+          </Link>
+        }
       />
 
       {!checklistDone && (

@@ -9,7 +9,7 @@ export const DEFAULT_STAGE_GUIDANCE: Record<string, string> = {
     "Szervezd meg és tartsd meg a megtekintést. Utána még aznap kérj visszajelzést az ügyféltől, és rögzítsd jegyzetben.",
   ajánlat: "Rögzítsd írásban az ügyfél ajánlatát, add át az eladónak, és kövesd, amíg válasz nem érkezik.",
   alku: "Egyeztesd a feltételeket (ár, átadás időpontja, foglaló). Ha megvan a megállapodás, indítsd a szerződéskötést.",
-  zárás: "Foglaló, ügyvéd, szerződés, kulcsátadás. Használd a tranzakciós checklistet, a végén jelöld az ügyletet nyertesnek.",
+  zárás: "Foglaló, ügyvéd, szerződés, kulcsátadás. Használd az adásvételi ellenőrzőlistát, a végén jelöld az üzletet nyertesnek.",
 };
 
 export function stageGuidance(stage: { name: string; guidance?: string | null } | null | undefined): string | null {
