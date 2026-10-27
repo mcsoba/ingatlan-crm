@@ -39,7 +39,7 @@ export default function PipelineScreen() {
         .order("updated_at", { ascending: false }),
     ]);
     if (sRes.error || dRes.error) {
-      setError("Nem sikerült betölteni a pipeline-t.");
+      setError("Nem sikerült betölteni az üzleteket.");
       return;
     }
     setError(null);

@@ -143,7 +143,7 @@ export async function TodayPanel({ profileId }: { profileId: string }) {
             title="2. Hívd fel őket"
             count={leads.length}
             href="/dashboard/leads"
-            linkLabel="Lead-postaláda"
+            linkLabel="Új érdeklődők"
           />
           <p className="-mt-2 text-xs text-muted">
             Új érdeklődők, akiket még senki nem keresett. Hívás után állítsd az állapotukat „Megkeresve”-re.
@@ -177,7 +177,7 @@ export async function TodayPanel({ profileId }: { profileId: string }) {
             title="3. Elakadt üzleteid"
             count={stuck.length}
             href="/dashboard/pipeline"
-            linkLabel="Pipeline"
+            linkLabel="Üzletek"
           />
           <p className="-mt-2 text-xs text-muted">
             Nyitott üzletek ütemezett következő lépés nélkül. Nyisd meg, és adj hozzá egy teendőt határidővel.

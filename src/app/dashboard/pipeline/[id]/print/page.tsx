@@ -20,7 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
   call: "Hívás",
   viewing: "Megtekintés",
   reminder: "Emlékeztető",
-  checklist: "Checklist",
+  checklist: "Ellenőrzőlista",
 };
 
 export default async function DealPrintPage({
@@ -96,7 +96,7 @@ export default async function DealPrintPage({
           href={`/dashboard/pipeline/${id}`}
           className="text-sm text-muted hover:text-accent"
         >
-          ← Vissza a dealhez
+          ← Vissza az üzlethez
         </Link>
         <PrintButton />
       </div>
@@ -217,7 +217,7 @@ export default async function DealPrintPage({
         <Card className="mt-4 p-4 text-sm">
           <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted">
             <ClipboardCheck className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Tranzakciós checklist
+            Adásvételi ellenőrzőlista
           </div>
           <ul className="flex flex-col gap-1.5">
             {checklistItems.map((item, i) => (

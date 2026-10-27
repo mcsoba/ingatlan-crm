@@ -210,7 +210,7 @@ export default function ContactDetail() {
         </>
       ) : (
         <Text style={{ color: c.muted, marginBottom: 8 }}>
-          Ha komoly érdeklődő, nyiss neki üzletet, így végigkövethető a pipeline-on.
+          Ha komoly érdeklődő, nyiss neki üzletet, így szakaszról szakaszra követheted az Üzletek fülön.
         </Text>
       )}
       <Button

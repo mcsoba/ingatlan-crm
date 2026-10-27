@@ -74,7 +74,7 @@ export default async function TrashPage() {
     <div className="max-w-2xl">
       <PageHeader
         title="Lomtár"
-        description="A törölt kontaktok, ingatlanok és dealek 30 napig itt visszaállíthatók, utána véglegesen törlődnek."
+        description="A törölt kontaktok, ingatlanok és üzletek 30 napig itt visszaállíthatók, utána véglegesen törlődnek."
       />
 
       {isEmpty ? (
@@ -89,7 +89,7 @@ export default async function TrashPage() {
         <div className="mt-6 flex flex-col gap-6">
           <TrashSection title="Kontaktok" icon={User} table="contacts" rows={contactRows} />
           <TrashSection title="Ingatlanok" icon={Building2} table="properties" rows={propertyRows} />
-          <TrashSection title="Dealek" icon={Kanban} table="deals" rows={dealRows} />
+          <TrashSection title="Üzletek" icon={Kanban} table="deals" rows={dealRows} />
         </div>
       )}
     </div>

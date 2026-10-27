@@ -36,10 +36,10 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/dashboard", label: "Áttekintés", icon: LayoutDashboard },
       { href: "/dashboard/tasks", label: "Teendők", icon: ListChecks },
-      { href: "/dashboard/leads", label: "Lead-postaláda", icon: Inbox },
+      { href: "/dashboard/leads", label: "Új érdeklődők", icon: Inbox },
       { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
       { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
-      { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
+      { href: "/dashboard/pipeline", label: "Üzletek", icon: Kanban },
       { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
     ],
   },

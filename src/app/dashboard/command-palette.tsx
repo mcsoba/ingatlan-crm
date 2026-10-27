@@ -22,9 +22,9 @@ type PaletteAction = { label: string; href: string; icon: LucideIcon; keywords: 
 const ACTIONS: PaletteAction[] = [
   { label: "Új kontakt", href: "/dashboard/contacts/new", icon: Plus, keywords: "uj kontakt hozzaadas letrehoz create contact" },
   { label: "Új ingatlan", href: "/dashboard/properties/new", icon: Plus, keywords: "uj ingatlan hozzaadas letrehoz create property" },
-  { label: "Új deal", href: "/dashboard/pipeline/new", icon: Plus, keywords: "uj deal uzlet hozzaadas letrehoz create" },
-  { label: "Lead-postaláda", href: "/dashboard/leads", icon: Inbox, keywords: "lead postalada uj erdeklodo inbox" },
-  { label: "Pipeline", href: "/dashboard/pipeline", icon: Kanban, keywords: "pipeline deal tabla kanban" },
+  { label: "Új üzlet", href: "/dashboard/pipeline/new", icon: Plus, keywords: "uj deal uzlet hozzaadas letrehoz create" },
+  { label: "Új érdeklődők", href: "/dashboard/leads", icon: Inbox, keywords: "lead postalada uj erdeklodo inbox" },
+  { label: "Üzletek", href: "/dashboard/pipeline", icon: Kanban, keywords: "pipeline deal tabla kanban" },
   { label: "Teendők", href: "/dashboard/tasks", icon: ListChecks, keywords: "teendo feladat task" },
   { label: "Naptár", href: "/dashboard/calendar", icon: CalendarDays, keywords: "naptar calendar" },
   { label: "Riportok", href: "/dashboard/reports", icon: BarChart3, keywords: "riport jelentes statisztika report" },
@@ -44,7 +44,7 @@ const TYPE_ICONS = {
 const TYPE_LABELS = {
   contact: "Kontakt",
   property: "Ingatlan",
-  deal: "Deal",
+  deal: "Üzlet",
 } as const;
 
 export function CommandPalette() {

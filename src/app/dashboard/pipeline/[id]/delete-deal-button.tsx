@@ -24,7 +24,7 @@ export function DeleteDealButton({
         // Queued before the call: deleteDeal redirects server-side, so this
         // component unmounts before any code after the call would run.
         queueToast({
-          title: `"${dealTitle}" deal törölve`,
+          title: `"${dealTitle}" üzlet törölve`,
           variant: "success",
           undo: { table: "deals", id: dealId },
         });

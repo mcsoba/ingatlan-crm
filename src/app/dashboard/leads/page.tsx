@@ -30,16 +30,16 @@ export default async function LeadsInboxPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Lead-postaláda"
+        title="Új érdeklődők"
         description="Az új, még feldolgozatlan érdeklődők — a legfrissebb elöl."
-        helpText="Ide kerül minden új kontakt (weboldalról, telefonról, importból), amit még senki nem vett fel. Három gyors lehetőséged van: 'Minősítés' (deal nyílik az első szakaszban), 'Felvettem a kapcsolatot' vagy 'Elvetés' — így a postaláda mindig csak a teendőket mutatja."
+        helpText="Ide kerül minden új kontakt (weboldalról, telefonról, importból), amit még senki nem vett fel. Három gyors lehetőséged van: 'Minősítés' (üzlet nyílik az első szakaszban), 'Felvettem a kapcsolatot' vagy 'Elvetés' — így a postaláda mindig csak a teendőket mutatja."
       />
 
       {leads.length === 0 ? (
         <EmptyState
           icon={Inbox}
           title="A postaláda üres"
-          description="Nincs feldolgozatlan lead — minden érdeklődővel foglalkoztál."
+          description="Nincs feldolgozatlan érdeklődő — minden érdeklődővel foglalkoztál."
         />
       ) : (
         <div className="flex flex-col gap-3">

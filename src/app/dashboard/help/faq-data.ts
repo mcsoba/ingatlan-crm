@@ -1,3 +1,5 @@
+import { PRIVATE_EDITION } from "@/lib/edition";
+
 export type FaqItem = {
   question: string;
   answer: string;
@@ -10,17 +12,17 @@ export type FaqSection = {
 
 export const FAQ_SECTIONS: FaqSection[] = [
   {
-    category: "Pipeline és teendők",
+    category: "Üzletek és teendők",
     items: [
       {
         question: "Mi az a pipeline?",
         answer:
-          "A pipeline egy kanban-tábla, ami az üzleteidet (dealeket) szakaszonként mutatja (pl. Lead, Megtekintés, Ajánlat, Alku, Zárás). Húzd a kártyát a következő szakaszba, ahogy az üzlet halad. A szakaszok nevét és sorrendjét a Pipeline oldal 'Szakaszok' gombjával szerkesztheted.",
+          "A pipeline egy kanban-tábla, ami az üzleteidet szakaszonként mutatja (pl. Lead, Megtekintés, Ajánlat, Alku, Zárás). Húzd a kártyát a következő szakaszba, ahogy az üzlet halad. A szakaszok nevét és sorrendjét az Üzletek oldal 'Szakaszok' gombjával szerkesztheted.",
       },
       {
-        question: "Hogyan jelölök egy dealt elveszettnek?",
+        question: "Hogyan jelölök egy üzletet elveszettnek?",
         answer:
-          "A deal részletező oldalán az 'Elveszettnek jelölés' linkre kattintva megadhatsz egy indokot. Az elveszett dealek lekerülnek a pipeline-tábláról, és egy külön listában maradnak — bármikor újranyithatók.",
+          "Az üzlet részletező oldalán az 'Elveszettnek jelölés' linkre kattintva megadhatsz egy indokot. Az elveszett üzletek lekerülnek az üzlet-tábláról, és egy külön listában maradnak — bármikor újranyithatók.",
       },
       {
         question: "Mi a különbség a Teendők oldal és a Naptár között?",
@@ -38,7 +40,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
     category: "Kontaktok és címkék",
     items: [
       {
-        question: "Mit jelent a lead-pontszám (Pontszám oszlop)?",
+        question: "Mit jelent az érdeklődő-pontszám (Pontszám oszlop)?",
         answer:
           "Az AI 0-100 közötti pontszámmal értékeli, mennyire tűnik komoly érdeklődőnek egy kontakt a jegyzetek és aktivitás-előzmény alapján (zöld ≥70, sárga 40-69, szürke <40). A kontakt oldalán az indoklás is megjelenik.",
       },
@@ -50,7 +52,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mit jelent az óra-ikon egy kontakt mellett?",
         answer:
-          "Azt jelzi, hogy egy 'kapcsolatba lépve' vagy 'minősített' státuszú kontaktnak 14+ napja nem volt semmilyen aktivitása (jegyzet/hívás/megtekintés) — érdemes utánanézni, nehogy egy lead kihűljön.",
+          "Azt jelzi, hogy egy 'kapcsolatba lépve' vagy 'minősített' státuszú kontaktnak 14+ napja nem volt semmilyen aktivitása (jegyzet/hívás/megtekintés) — érdemes utánanézni, nehogy egy érdeklődő kihűljön.",
       },
       {
         question: "Hogyan vonok össze két duplikált kontaktot?",
@@ -65,10 +67,10 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mi a különbség az egyedi ingatlan-link és a katalógus-link között?",
         answer:
-          "Az egyedi ingatlan-oldal (Ingatlanok listán a 'Nyilvános oldal' gomb) egyetlen ingatlant mutat be, lead-befogadó űrlappal. A katalógus-link (Beállítások → Nyilvános ingatlan-katalógus) az iroda ÖSSZES elérhető ingatlanát listázza egy állandó linken — érdemes ezt megosztani Facebookon vagy email-aláírásban, mert mindig friss.",
+          "Az egyedi ingatlan-oldal (Ingatlanok listán a 'Nyilvános oldal' gomb) egyetlen ingatlant mutat be, érdeklődő-űrlappal. A katalógus-link (Beállítások → Nyilvános ingatlan-katalógus) az iroda ÖSSZES elérhető ingatlanát listázza egy állandó linken — érdemes ezt megosztani Facebookon vagy email-aláírásban, mert mindig friss.",
       },
       {
-        question: "Miért nincs lead-űrlap egy 'Eladva'/'Kiadva' ingatlan publikus oldalán?",
+        question: "Miért nincs érdeklődő-űrlap egy 'Eladva'/'Kiadva' ingatlan publikus oldalán?",
         answer:
           "Tudatos döntés: egy már lezárt ingatlanra értelmetlen lenne érdeklődést gyűjteni. 'Foglalás alatt' státusznál viszont marad az űrlap, mert a foglalás még nem végleges, backup-érdeklődőt érdemes gyűjteni.",
       },
@@ -95,12 +97,12 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Milyen AI-funkciók vannak a rendszerben?",
         answer:
-          "Ingatlanleírás-generálás, follow-up email/SMS vázlat, lead-pontozás, hívás/megtekintés-jegyzet összefoglalása, ingatlan-ügyfél párosítás javaslat, ingatlan-összehasonlítás, és a 'Kérdezd a CRM-et' asszisztens egy deal oldalán. Mindegyik gombon a csillag (✨) ikon jelzi, hogy AI-funkció.",
+          "Ingatlanleírás-generálás, follow-up email/SMS vázlat, érdeklődő-pontozás, hívás/megtekintés-jegyzet összefoglalása, ingatlan-ügyfél párosítás javaslat, ingatlan-összehasonlítás, és a 'Kérdezd a CRM-et' asszisztens egy üzlet oldalán. Mindegyik gombon a csillag (✨) ikon jelzi, hogy AI-funkció.",
       },
       {
         question: "Mi az a 'Kérdezd a CRM-et' asszisztens?",
         answer:
-          "Egy deal részletező oldalán található kiemelt panel, ahol szabad szöveggel kérdezhetsz az adott üzletről (kontakt, ingatlan, jegyzetek, jutalék, aktivitás-történet) — az AI a teljes kontextust ismeri, és többfordulós beszélgetést is folytat.",
+          "Egy üzlet részletező oldalán található kiemelt panel, ahol szabad szöveggel kérdezhetsz az adott üzletről (kontakt, ingatlan, jegyzetek, jutalék, aktivitás-történet) — az AI a teljes kontextust ismeri, és többfordulós beszélgetést is folytat.",
       },
       {
         question: "Miért nem működik egy AI-gomb?",
@@ -120,7 +122,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mit csinál a Webhook-integráció?",
         answer:
-          "Ha megadsz egy saját URL-t a Beállítások oldalon, minden új, weboldalról érkező érdeklődőnél (a szokásos email/SMS-értesítés MELLETT) egy POST-kérés is elmegy erre a címre — ezzel egy külső rendszerbe (pl. Zapier, saját integráció) is bekapcsolható a lead-adat.",
+          "Ha megadsz egy saját URL-t a Beállítások oldalon, minden új, weboldalról érkező érdeklődőnél (a szokásos email/SMS-értesítés MELLETT) egy POST-kérés is elmegy erre a címre — ezzel egy külső rendszerbe (pl. Zapier, saját integráció) is bekapcsolható az érdeklődő-adat.",
       },
       {
         question: "Miért 'Nincs beállítva' egy integráció a Beállítások oldalon?",
@@ -135,7 +137,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mi a különbség a tulajdonos, admin és tag szerep között?",
         answer:
-          "A tulajdonos (owner) mindent lát/csinálhat, beleértve az előfizetést és a szerepek kiosztását. Egy admin kezelheti a csapatot (sima tagokat), a pipeline-szakaszokat és a brandinget, DE nem éri el a számlázást, és nem nevezhet ki/fokozhat le másik admint. A sima tag a napi munkára (kontaktok/ingatlanok/dealek) korlátozódik.",
+          `A tulajdonos (owner) mindent lát/csinálhat, beleértve ${PRIVATE_EDITION ? "" : "az előfizetést és "}a szerepek kiosztását. Egy admin kezelheti a csapatot (sima tagokat), az üzlet-szakaszokat és a brandinget, DE ${PRIVATE_EDITION ? "" : "nem éri el a számlázást, és "}nem nevezhet ki/fokozhat le másik admint. A sima tag a napi munkára (kontaktok/ingatlanok/üzletek) korlátozódik.`,
       },
       {
         question: "Hogyan léptetek elő valakit adminná?",
@@ -150,7 +152,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mit jelent a 'Várható bevétel' a Riportok oldalon?",
         answer:
-          "A nyitott dealek összesített értékét szorozza egy, a pipeline-szakasz pozíciója alapján becsült záródási valószínűséggel (a záráshoz közelebbi szakasz magasabb %-ot kap) — ez egy durva, de hasznos becslés, nem garantált bevétel.",
+          "A nyitott üzletek összesített értékét szorozza egy, az üzlet-szakasz pozíciója alapján becsült záródási valószínűséggel (a záráshoz közelebbi szakasz magasabb %-ot kap) — ez egy durva, de hasznos becslés, nem garantált bevétel.",
       },
       {
         question: "Hogyan tölthetem le az összes adatomat?",
@@ -160,7 +162,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Van audit-napló?",
         answer:
-          "Igen, az 'Előzmények' oldal (oldalsáv) mutatja, ki mikor hozott létre/módosított/törölt egy kontaktot, ingatlant vagy dealt, a rekordra mutató linkkel együtt.",
+          "Igen, az 'Előzmények' oldal (oldalsáv) mutatja, ki mikor hozott létre/módosított/törölt egy kontaktot, ingatlant vagy üzletet, a rekordra mutató linkkel együtt.",
       },
     ],
   },

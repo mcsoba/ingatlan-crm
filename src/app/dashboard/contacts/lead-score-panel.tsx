@@ -52,7 +52,7 @@ export function LeadScorePanel({
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium text-foreground">
-          AI lead-pontszám
+          AI érdeklődő-pontszám
         </div>
         <div className="truncate text-sm text-muted">
           {reason ?? "Még nincs kiszámolva."}

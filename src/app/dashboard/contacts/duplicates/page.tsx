@@ -104,7 +104,7 @@ export default async function DuplicateContactsPage() {
       <PageHeader
         title="Duplikátum-kontaktok"
         description="Az összes kontaktot végigszkennelve, egy helyen mutatja a valószínű duplikátumokat."
-        helpText="Azonos email, telefonszám vagy név alapján csoportosítva. Válaszd ki, melyik kontaktot tartsd meg -- a többi adatai (hiányzó email/telefon/jegyzet, kapcsolódó dealek, aktivitások) átkerülnek rá, a duplikátumok pedig a lomtárba kerülnek."
+        helpText="Azonos email, telefonszám vagy név alapján csoportosítva. Válaszd ki, melyik kontaktot tartsd meg -- a többi adatai (hiányzó email/telefon/jegyzet, kapcsolódó üzletek, aktivitások) átkerülnek rá, a duplikátumok pedig a lomtárba kerülnek."
       />
 
       {clusters.length === 0 ? (

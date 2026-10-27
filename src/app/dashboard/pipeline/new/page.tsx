@@ -8,7 +8,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
 
-export default async function NewDealPage() {
+export default async function NewDealPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ contact?: string }>;
+}) {
+  // ?contact=<id>: a kontakt oldaláról indítva előre kiválasztva
+  const { contact: preselectedContact } = await searchParams;
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
@@ -32,9 +38,9 @@ export default async function NewDealPage() {
   if (!contacts || contacts.length === 0) {
     return (
       <div>
-        <PageHeader title="Új deal" />
+        <PageHeader title="Új üzlet" />
         <p className="mt-4 text-sm text-muted">
-          Deal létrehozásához előbb kell legalább egy kontakt.{" "}
+          Üzlet létrehozásához előbb kell legalább egy kontakt.{" "}
           <Link href="/dashboard/contacts/new" className={linkClass}>
             Új kontakt létrehozása
           </Link>
@@ -46,13 +52,13 @@ export default async function NewDealPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Új deal"
+        title="Új üzlet"
         action={
           <Link
             href="/dashboard/pipeline"
             className="text-sm text-muted hover:text-accent"
           >
-            ← Pipeline
+            ← Üzletek
           </Link>
         }
       />
@@ -64,7 +70,7 @@ export default async function NewDealPage() {
             <select
               name="contact_id"
               required
-              defaultValue=""
+              defaultValue={preselectedContact ?? ""}
               className={inputClass}
             >
               <option value="" disabled>

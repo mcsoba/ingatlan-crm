@@ -33,7 +33,7 @@ const TYPE_LABELS: Record<string, string> = {
   call: "Hívás",
   viewing: "Megtekintés",
   reminder: "Emlékeztető",
-  checklist: "Checklist",
+  checklist: "Ellenőrzőlista",
 };
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
@@ -214,7 +214,7 @@ export function ActivityPanel({
               <option value="call">Hívás</option>
               <option value="viewing">Megtekintés</option>
               <option value="reminder">Emlékeztető</option>
-              <option value="checklist">Checklist</option>
+              <option value="checklist">Ellenőrzőlista</option>
             </select>
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">

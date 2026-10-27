@@ -30,7 +30,7 @@ export async function uploadAttachment(formData: FormData) {
   }
   const entityId = contactId ?? dealId;
   if (!entityId) {
-    throw new Error("Hiányzó kontakt vagy deal azonosító");
+    throw new Error("Hiányzó kontakt vagy üzlet azonosító");
   }
 
   const path = `${profile.agency_id}/${entityId}/${randomUUID()}-${file.name}`;

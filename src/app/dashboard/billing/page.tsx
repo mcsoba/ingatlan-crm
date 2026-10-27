@@ -7,16 +7,16 @@ import { Button } from "@/components/ui/button";
 
 const FREE_FEATURES = [
   "Kontaktok és ingatlanok kezelése",
-  "Pipeline kanban tábla",
+  "Üzletek kanban-táblán",
   "AI ingatlanleírás és follow-up email",
 ];
 
 const PRO_FEATURES = [
   "Minden az Ingyenes csomagból",
   "Korlátlan csapattag-meghívás",
-  "AI lead-pontozás és 'Kérdezd a CRM-et' asszisztens",
+  "AI érdeklődő-pontozás és 'Kérdezd a CRM-et' asszisztens",
   "Csapat-teljesítmény riportok",
-  "Nyilvános ingatlan-oldalak és lead-befogó űrlap",
+  "Nyilvános ingatlan-oldalak és érdeklődő-űrlap",
 ];
 
 export default async function BillingPage({

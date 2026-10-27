@@ -268,7 +268,7 @@ export function PipelineBoard({
           </button>
         ))}
         <span className="text-muted">
-          Nyitott dealek: <b className="text-foreground">{openCards.length}</b>
+          Nyitott üzletek: <b className="text-foreground">{openCards.length}</b>
         </span>
         <span className="text-muted">
           Összérték:{" "}
@@ -278,7 +278,7 @@ export function PipelineBoard({
         </span>
         {needsAttention > 0 && (
           <span className="text-warning">
-            {needsAttention} deal-hez nincs (vagy lejárt) teendő
+            {needsAttention} üzlethez nincs (vagy lejárt) teendő
           </span>
         )}
       </div>

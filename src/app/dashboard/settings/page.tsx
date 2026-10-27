@@ -93,7 +93,7 @@ export default async function SettingsPage({
       name: "AI-funkciók (Claude)",
       icon: Sparkles,
       description:
-        "Ingatlanleírás-generálás, lead-pontozás, follow-up email/SMS vázlat, „Kérdezd a CRM-et” asszisztens.",
+        "Ingatlanleírás-generálás, érdeklődő-pontozás, follow-up email/SMS vázlat, „Kérdezd a CRM-et” asszisztens.",
       whatBreaks: "Az összes Sparkles-ikonos AI-gomb hibát ad.",
       configured: Boolean(process.env.ANTHROPIC_API_KEY),
       setupUrl: "https://platform.claude.com/settings/billing",
@@ -114,7 +114,7 @@ export default async function SettingsPage({
       name: "Resend (email-küldés)",
       icon: Mail,
       description:
-        "Follow-up email tényleges elküldése, új lead értesítés, napi összefoglaló, email-kampányok (drip).",
+        "Follow-up email tényleges elküldése, új érdeklődő értesítés, napi összefoglaló, email-kampányok (drip).",
       whatBreaks: "Az email-küldő gombok és a napi/kampány-cron barátságos hibaüzenetet ad, de nem küld.",
       configured: Boolean(process.env.RESEND_API_KEY),
       setupUrl: "https://resend.com/api-keys",
@@ -124,7 +124,7 @@ export default async function SettingsPage({
       key: "twilio",
       name: "Twilio (SMS-küldés)",
       icon: MessageSquare,
-      description: "Gyors SMS kontaktnak, csapat SMS-értesítés új leadről, megtekintés-emlékeztető SMS.",
+      description: "Gyors SMS kontaktnak, csapat SMS-értesítés új érdeklődőről, megtekintés-emlékeztető SMS.",
       whatBreaks: "Az SMS-küldő gombok és az emlékeztető-cron barátságos hibaüzenetet ad, de nem küld.",
       configured: Boolean(
         process.env.TWILIO_ACCOUNT_SID &&
@@ -339,7 +339,7 @@ export default async function SettingsPage({
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Webhook érdeklődőkhöz</div>
           <p className="text-xs text-muted">
-            Minden új, publikus lead-űrlapról érkező érdeklődőnél a rendszer POST kérést küld erre
+            Minden új, publikus érdeklődő-űrlapról érkező érdeklődőnél a rendszer POST kérést küld erre
             a címre (az email/SMS-értesítés MELLETT, nem helyette) — pl. Zapier/Make automatizáláshoz.
           </p>
         </div>
@@ -380,9 +380,9 @@ export default async function SettingsPage({
 
       <div>
         <div className="mb-2">
-          <div className="text-sm font-medium text-foreground">Automatikus lead-kiosztás</div>
+          <div className="text-sm font-medium text-foreground">Automatikus érdeklődő-kiosztás</div>
           <p className="text-xs text-muted">
-            Bekapcsolva minden új, publikus lead-űrlapról érkező érdeklődő automatikusan egy
+            Bekapcsolva minden új, publikus érdeklődő-űrlapról érkező érdeklődő automatikusan egy
             csapattaghoz kerül (körbeosztással, a legkevesebb hozzárendelt kontakttal rendelkező
             kapja) — az értesítés is elsődlegesen neki megy. Kikapcsolva senkihez sincs kiosztva,
             az egész csapat egyszerre kap értesítést, mint eddig.
@@ -402,7 +402,7 @@ export default async function SettingsPage({
                     defaultChecked={agencyBranding?.auto_assign_leads ?? false}
                     className="h-4 w-4 rounded border-border"
                   />
-                  Új lead-ek automatikus kiosztása csapattagok között
+                  Új érdeklődők automatikus kiosztása csapattagok között
                 </label>
                 <Button type="submit" variant="secondary" size="sm" className="self-start">
                   Mentés
@@ -422,7 +422,7 @@ export default async function SettingsPage({
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Adataim exportálása</div>
           <p className="text-xs text-muted">
-            Az iroda összes kontaktja, ingatlana, dealje és aktivitása egy letölthető JSON-fájlban
+            Az iroda összes kontaktja, ingatlana, üzlete és aktivitása egy letölthető JSON-fájlban
             (adathordozhatósághoz, biztonsági mentéshez).
           </p>
         </div>

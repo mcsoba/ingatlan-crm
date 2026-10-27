@@ -423,7 +423,7 @@ export async function deleteStage(formData: FormData) {
   if (error) {
     if (error.code === "23503") {
       throw new Error(
-        "Ez a szakasz nem törölhető, mert vannak hozzá tartozó dealek — mozgasd át őket egy másik szakaszba előbb.",
+        "Ez a szakasz nem törölhető, mert vannak hozzá tartozó üzletek — mozgasd át őket egy másik szakaszba előbb.",
       );
     }
     throw error;
@@ -479,7 +479,7 @@ export async function generateDealFollowUp(input: {
 
   const name = input.contactName.trim();
   if (!name) {
-    throw new Error("Nincs kontakt ehhez a dealhez");
+    throw new Error("Nincs kontakt ehhez az üzlethez");
   }
 
   const details = [
@@ -499,7 +499,7 @@ export async function generateDealFollowUp(input: {
         role: "user",
         content:
           "Írj egy rövid, barátságos, magyar nyelvű follow-up emailt egy ingatlanos ügynök nevében " +
-          "ennek az ügyletnek (deal) a kontaktjához, a jelenlegi szakasz és a jegyzet alapján igazítva a hangnemet. " +
+          "ennek az üzletnek a kontaktjához, a jelenlegi szakasz és a jegyzet alapján igazítva a hangnemet. " +
           "Ne találj ki konkrét adatot, ami nem szerepel az adatok között. " +
           "Az első sor legyen 'Tárgy: ...', utána egy üres sor, majd az email törzse " +
           "(megszólítás, 2-4 rövid bekezdés, elköszönés — aláírás/név nélkül, azt az ügynök pótolja).\n\n" +
@@ -547,7 +547,7 @@ export async function askDealAssistant(
       .limit(30),
   ]);
 
-  if (!deal) throw new Error("A deal nem található");
+  if (!deal) throw new Error("Az üzlet nem található");
 
   const contact = deal.contacts as unknown as {
     name: string;
@@ -573,8 +573,8 @@ export async function askDealAssistant(
 
   const context = [
     `Mai dátum: ${new Date().toLocaleDateString("hu-HU")}`,
-    `Pipeline szakasz: ${stageName}`,
-    `Deal jegyzet: ${deal.notes?.trim() || "nincs"}`,
+    `Szakasz: ${stageName}`,
+    `Üzlet jegyzete: ${deal.notes?.trim() || "nincs"}`,
     deal.deal_amount ? `Végleges ár: ${deal.deal_amount.toLocaleString("hu-HU")} Ft` : null,
     deal.commission_rate ? `Jutalék: ${deal.commission_rate}%` : null,
     "",
@@ -611,7 +611,7 @@ export async function askDealAssistant(
     model: AI_MODEL,
     max_tokens: 500,
     system:
-      "Egy ingatlanos CRM beépített asszisztense vagy, egy konkrét ügylet (deal) oldalán. " +
+      "Egy ingatlanos CRM beépített asszisztense vagy, egy konkrét üzlet oldalán. " +
       "Az alábbi adatok az egész kontextusod erről az ügyletről — csak ezekre támaszkodj, ne találj ki adatot, " +
       "ami nem szerepel bennük. Válaszolj magyarul, tömören (max 3-4 mondat, hacsak nem kérnek listát), " +
       "és ha kérdezik mi legyen a következő lépés, adj konkrét, az adatokból következő javaslatot.\n\n" +

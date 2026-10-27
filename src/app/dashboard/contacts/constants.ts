@@ -19,7 +19,7 @@ export const STATUS_LABELS: Record<string, string> = {
 export const STATUS_HELP: Record<string, string> = {
   new: "Még senki nem kereste. Hívd fel minél előbb!",
   contacted: "Már beszéltetek, de még nem derült ki, mennyire komoly.",
-  qualified: "Komoly érdeklődő: tudod, mit keres, és van rá kerete. Érdemes üzletet nyitni neki a Pipeline-on.",
+  qualified: "Komoly érdeklődő: tudod, mit keres, és van rá kerete. Érdemes üzletet nyitni neki az Üzletek táblán.",
   inactive: "Egy ideje nem reagál, vagy már nem keres. Nem jelenik meg a teendők között.",
 };
 

@@ -137,7 +137,7 @@ export default async function DealDetailPage({
               href="/dashboard/pipeline"
               className="text-sm text-muted hover:text-accent"
             >
-              ← Pipeline
+              ← Üzletek
             </Link>
           </div>
         }
@@ -231,7 +231,7 @@ export default async function DealDetailPage({
                 <form action={seedChecklistWithId}>
                   <Button type="submit" variant="secondary" size="sm">
                     <ClipboardCheck className="h-3.5 w-3.5" />
-                    Tranzakciós checklist létrehozása
+                    Adásvételi ellenőrzőlista létrehozása
                   </Button>
                 </form>
               )}

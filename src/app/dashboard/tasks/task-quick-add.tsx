@@ -32,7 +32,7 @@ export function TaskQuickAdd() {
         <input
           name="content"
           required
-          placeholder="Új önálló teendő (nem kötött kontakthoz/dealhez)…"
+          placeholder="Új önálló teendő (nem kötött kontakthoz/üzlethez)…"
           className={`${inputClass} min-w-[240px] flex-1 py-1.5`}
         />
         <Button type="submit" size="sm">

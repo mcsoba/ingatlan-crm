@@ -39,7 +39,7 @@ export function StageProgress({
   return (
     <div
       role="group"
-      aria-label="Deal szakasza"
+      aria-label="Üzlet szakasza"
       className={`flex gap-1 overflow-x-auto ${isPending ? "opacity-70" : ""}`}
     >
       {stages.map((stage, index) => {

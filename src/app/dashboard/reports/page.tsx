@@ -114,8 +114,8 @@ export default async function ReportsPage() {
 
   const sourceChartData = sourceRows.map((row) => ({ label: row.label, count: row.rate }));
 
-  // Elveszett-deal indoklás elemzés: melyik ok fordul elő leggyakrabban,
-  // hogy az ügynök mintázatot ismerjen fel ("miért veszítjük a dealeket").
+  // Elveszett üzlet indoklás elemzés: melyik ok fordul elő leggyakrabban,
+  // hogy az ügynök mintázatot ismerjen fel ("miért veszítjük az üzleteket").
   const lostReasonCounts = new Map<string, number>();
   for (const deal of (deals ?? []) as DealRow[]) {
     if (deal.status !== "lost") continue;
@@ -222,7 +222,7 @@ export default async function ReportsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Riportok"
-        description="Csapat-teljesítmény a pipeline dealek alapján."
+        description="Csapat-teljesítmény a pipeline üzletek alapján."
       />
 
       {allDeals.length > 0 && (
@@ -250,7 +250,7 @@ export default async function ReportsPage() {
               </div>
               <div className="text-sm text-muted">Ebben a hónapban lezárt</div>
               <div className="mt-1 text-xs text-muted-subtle">
-                {wonDeals.length} lezárt deal összesen
+                {wonDeals.length} lezárt üzlet összesen
               </div>
             </Card>
           </div>
@@ -258,7 +258,7 @@ export default async function ReportsPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="p-5">
               <div className="mb-3 text-sm font-semibold text-foreground">
-                Nyitott dealek szakaszonként
+                Nyitott üzletek szakaszonként
               </div>
               <BarListChart items={funnelData} />
             </Card>
@@ -284,10 +284,10 @@ export default async function ReportsPage() {
         <Card className="p-5">
           <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
             Súlyozott pipeline-előrejelzés
-            <HelpTooltip text="Minden nyitott deal összegét megszorozza a szakaszához tartozó, a szakasz pozíciója alapján becsült záródási valószínűséggel (a záró szakasz 100%). Ez egy egyszerű heurisztika, nem garantált bevétel." />
+            <HelpTooltip text="Minden nyitott üzlet összegét megszorozza a szakaszához tartozó, a szakasz pozíciója alapján becsült záródási valószínűséggel (a záró szakasz 100%). Ez egy egyszerű heurisztika, nem garantált bevétel." />
           </div>
           <p className="mb-3 text-xs text-muted">
-            A nyitott dealek nyers összege a szakaszhoz tartozó záródási eséllyel súlyozva.
+            A nyitott üzletek nyers összege a szakaszhoz tartozó záródási eséllyel súlyozva.
           </p>
           <div className="mb-4 flex flex-wrap gap-6">
             <div>
@@ -328,7 +328,7 @@ export default async function ReportsPage() {
       {sourceRows.length > 0 && (
         <Card className="p-5">
           <div className="mb-1 text-sm font-semibold text-foreground">
-            Konverzió lead-forrásonként
+            Konverzió érdeklődő-forrásonként
           </div>
           <p className="mb-3 text-xs text-muted">
             A kontaktok hány százaléka jutott el lezárt dealig, forrásonként.
@@ -340,11 +340,11 @@ export default async function ReportsPage() {
       {lostReasonChartData.length > 0 && (
         <Card className="p-5">
           <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            Elveszett dealek — leggyakoribb okok
-            <HelpTooltip text="Az elveszettnek jelölt dealeknél megadott indokok gyakorisága, a leggyakoribbal kezdve." />
+            Elveszett üzletek — leggyakoribb okok
+            <HelpTooltip text="Az elveszettnek jelölt üzleteknél megadott indokok gyakorisága, a leggyakoribbal kezdve." />
           </div>
           <p className="mb-3 text-xs text-muted">
-            Segít felismerni, mi miatt veszítjük a legtöbb dealt.
+            Segít felismerni, mi miatt veszítjük a legtöbb üzletet.
           </p>
           <BarListChart items={lostReasonChartData} />
         </Card>
@@ -356,7 +356,7 @@ export default async function ReportsPage() {
             <thead>
               <tr className="border-b border-border-subtle text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Ügynök</th>
-                <th className="px-4 py-3 font-medium">Összes deal</th>
+                <th className="px-4 py-3 font-medium">Összes üzlet</th>
                 <th className="px-4 py-3 font-medium">Lezárt</th>
                 <th className="px-4 py-3 font-medium">Elveszett</th>
                 <th className="px-4 py-3 font-medium">Összes jutalék</th>

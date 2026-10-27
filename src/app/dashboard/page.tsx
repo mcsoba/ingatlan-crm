@@ -82,7 +82,7 @@ export default async function DashboardPage() {
   const checklist: ChecklistItem[] = [
     { label: "Adj hozzá egy kontaktot", done: (contactCount ?? 0) > 0, href: "/dashboard/contacts/new" },
     { label: "Adj hozzá egy ingatlant", done: (propertyCount ?? 0) > 0, href: "/dashboard/properties/new" },
-    { label: "Hozz létre egy dealt a pipeline-on", done: (dealCount ?? 0) > 0, href: "/dashboard/pipeline/new" },
+    { label: "Hozz létre egy üzletet az Üzletek táblán", done: (dealCount ?? 0) > 0, href: "/dashboard/pipeline/new" },
     { label: "Hívj meg egy csapattagot", done: (memberCount ?? 0) > 1, href: "/dashboard/team" },
     {
       label: PRIVATE_EDITION
@@ -157,9 +157,9 @@ export default async function DashboardPage() {
           <Card className="p-5">
             <div className="mb-3 flex items-center gap-1.5">
               <h2 className="text-sm font-semibold text-foreground">
-                Pipeline áttekintés
+                Üzletek szakaszonként
               </h2>
-              <HelpTooltip text="Hány folyamatban lévő deal van jelenleg az egyes pipeline-szakaszokban. Segít látni, hol torlódnak fel az ügyek." />
+              <HelpTooltip text="Hány folyamatban lévő üzlet van jelenleg az egyes szakaszokban. Segít látni, hol torlódnak fel az ügyek." />
             </div>
             <BarListChart items={funnelData} />
           </Card>
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
               <h2 className="text-sm font-semibold text-foreground">
                 Új érdeklődők (14 nap)
               </h2>
-              <HelpTooltip text="Az elmúlt 14 napban naponta hány új kontakt került fel a rendszerbe — akár kézzel, akár a publikus ingatlan-oldal lead-űrlapjáról." />
+              <HelpTooltip text="Az elmúlt 14 napban naponta hány új kontakt került fel a rendszerbe — akár kézzel, akár a publikus ingatlan-oldal érdeklődő-űrlapjáról." />
             </div>
             <TrendBarChart points={trendData} />
           </Card>
@@ -178,8 +178,8 @@ export default async function DashboardPage() {
       {hotLeads && hotLeads.length > 0 && (
         <div>
           <div className="mb-3 flex items-center gap-1.5">
-            <h2 className="text-sm font-semibold text-foreground">Forró lead-ek</h2>
-            <HelpTooltip text="Az AI lead-pontszám alapján legmagasabbra értékelt, még nyitott (nem inaktív) kontaktok — velük érdemes most foglalkozni." />
+            <h2 className="text-sm font-semibold text-foreground">Forró érdeklődők</h2>
+            <HelpTooltip text="Az AI érdeklődő-pontszám alapján legmagasabbra értékelt, még nyitott (nem inaktív) kontaktok — velük érdemes most foglalkozni." />
           </div>
           <div className="flex flex-col gap-2">
             {hotLeads.map((lead) => (

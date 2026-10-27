@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 const TABLE_LABELS: Record<string, string> = {
   contacts: "Kontakt",
   properties: "Ingatlan",
-  deals: "Deal",
+  deals: "Üzlet",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -77,7 +77,7 @@ export default async function AuditLogPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Előzmények"
-        description="Kik és mikor hoztak létre, módosítottak vagy töröltek kontaktot, ingatlant vagy dealt."
+        description="Kik és mikor hoztak létre, módosítottak vagy töröltek kontaktot, ingatlant vagy üzletet."
         helpText="Az utolsó 100 esemény, legújabb elöl. A 'Rendszer' bejegyzések automatikus forrásból jöttek (pl. weboldali érdeklődés, ütemezett feladat), nem egy csapattag műveletéből."
       />
 
@@ -85,7 +85,7 @@ export default async function AuditLogPage() {
         <EmptyState
           icon={History}
           title="Még nincs rögzített esemény"
-          description="Amint valaki kontaktot, ingatlant vagy dealt hoz létre, módosít vagy töröl, itt fog megjelenni."
+          description="Amint valaki kontaktot, ingatlant vagy üzletet hoz létre, módosít vagy töröl, itt fog megjelenni."
         />
       ) : (
         <Card className="overflow-hidden">

@@ -282,7 +282,7 @@ export function ContactsTable({
                 <th className="px-4 py-3 font-medium">
                   <span className="inline-flex items-center gap-1">
                     Ügynök
-                    <HelpTooltip text="Automatikus lead-kiosztás esetén az a csapattag, akihez a kontakt körbeosztással került. Kikapcsolt kiosztásnál, vagy kézzel felvett kontaktnál üres." />
+                    <HelpTooltip text="Automatikus érdeklődő-kiosztás esetén az a csapattag, akihez a kontakt körbeosztással került. Kikapcsolt kiosztásnál, vagy kézzel felvett kontaktnál üres." />
                   </span>
                 </th>
               )}

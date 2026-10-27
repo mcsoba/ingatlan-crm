@@ -122,9 +122,9 @@ export default async function PipelinePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Pipeline"
-        description="Húzd a kártyákat a szakaszok között."
-        helpText="A pipeline minden folyamatban lévő üzletet (deal-t) mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
+        title="Üzletek"
+        description="Minden folyamatban lévő vételi és bérlési ügy, szakaszonként. Ahogy halad az ügy, húzd a kártyát a következő szakaszba."
+        helpText="A pipeline minden folyamatban lévő üzletet mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
         action={
           <>
             {/* Plain <a>, not <Link> — this must be a full browser navigation
@@ -150,7 +150,7 @@ export default async function PipelinePage() {
               className={buttonVariants("primary")}
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
-              Új deal
+              Új üzlet
             </Link>
           </>
         }
@@ -162,7 +162,7 @@ export default async function PipelinePage() {
         <div>
           <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <XCircle className="h-4 w-4 text-danger" strokeWidth={1.75} />
-            Elveszett dealek
+            Elveszett üzletek
           </div>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">

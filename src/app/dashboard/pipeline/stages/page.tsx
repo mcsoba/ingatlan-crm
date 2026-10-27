@@ -23,14 +23,14 @@ export default async function PipelineStagesPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title="Pipeline szakaszok"
+        title="Üzlet-szakaszok"
         description="Az üzletek lépései, és hogy mit kell tenni az egyes lépésekben. Az útmutató az üzlet oldalán, a weben és a mobilon is megjelenik."
         action={
           <Link
             href="/dashboard/pipeline"
             className="text-sm text-muted hover:text-accent"
           >
-            ← Pipeline
+            ← Üzletek
           </Link>
         }
       />

@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { PRIVATE_EDITION } from "@/lib/edition";
 import { Badge } from "@/components/ui/badge";
 
 type Entry = { date: string; title: string; items: string[] };
@@ -7,11 +8,11 @@ type Entry = { date: string; title: string; items: string[] };
 const ENTRIES: Entry[] = [
   {
     date: "2026-09-18",
-    title: "Won/Lost gyorsgombok, Lomtár, automatikus lead-kiosztás",
+    title: "Nyertes/elveszett gyorsgombok, Lomtár, automatikus érdeklődő-kiosztás",
     items: [
-      "Egy kattintással zárható egy deal nyertesre vagy vesztesre a deal-oldal tetejéről",
-      "Törölt kontaktok/ingatlanok/dealek 30 napig a Lomtárban maradnak, onnan visszaállíthatók",
-      "Új publikus lead automatikusan, körbeforgó sorrendben kap felelős ügynököt",
+      "Egy kattintással zárható egy üzlet nyertesre vagy vesztesre az üzlet oldalának tetejéről",
+      "Törölt kontaktok/ingatlanok/üzletek 30 napig a Lomtárban maradnak, onnan visszaállíthatók",
+      "Új publikus érdeklődő automatikusan, körbeforgó sorrendben kap felelős ügynököt",
       "Élőben frissülő értesítési harang — nem kell oldalt újratölteni",
       "Duplikátum-kontaktok kereső oldal, testreszabható lista-oszlopok",
     ],
@@ -25,7 +26,7 @@ const ENTRIES: Entry[] = [
       "Előzmények (audit-log): ki mit módosított kontaktokon/ingatlanokon/dealeken",
       "Köztes „admin” csapat-szerep — a tulajdonos delegálhat anélkül, hogy mindent átadna",
       "Ingatlan- és kontakt-CSV import, megtekintés-számláló, GDPR adat-export",
-      "Nyomtatható deal-összefoglaló, lead-webhook külső rendszerekhez",
+      "Nyomtatható üzlet-összefoglaló, érdeklődő-webhook külső rendszerekhez",
     ],
   },
   {
@@ -36,7 +37,7 @@ const ENTRIES: Entry[] = [
       "AI ingatlan-összehasonlító, megosztható linkkel ügyfeleknek",
       "Sötét/világos téma, mobil-oldalsáv, dashboard-grafikonok",
       "Tömeges műveletek listákon, dedikált Teendők oldal",
-      "Elveszett-deal nyomon követés, ingatlan-státusz, deal-érték összesítés",
+      "Elveszett üzlet nyomon követés, ingatlan-státusz, üzletérték összesítés",
     ],
   },
   {
@@ -45,7 +46,7 @@ const ENTRIES: Entry[] = [
     items: [
       "Kontaktok, ingatlanok, pipeline (Kanban-tábla) többfelhasználós, iroda-szintű elkülönítéssel",
       "AI ingatlanleírás, follow-up email/SMS-vázlat, „Kérdezd a CRM-et” asszisztens",
-      "Stripe-előfizetés, email- (Resend) és SMS- (Twilio) integráció",
+      PRIVATE_EDITION ? "Email- (Resend) és SMS- (Twilio) integráció" : "Stripe-előfizetés, email- (Resend) és SMS- (Twilio) integráció",
       "Google Naptár szinkron (kétirányú), riportok, csapatkezelés",
     ],
   },

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SidebarNav } from "./sidebar-nav";
 import { SignOutButton } from "./sign-out-button";
 import { SearchTrigger } from "./search-trigger";
+import { QuickCreate } from "./quick-create";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPanel } from "./notifications-panel";
 import { MobileNavShell } from "./mobile-nav-shell";
@@ -46,6 +47,7 @@ export default async function DashboardLayout({
                   {profile.agencies.name}
                 </span>
               </div>
+              <QuickCreate />
               <SearchTrigger />
               <SidebarNav badges={{ "/dashboard/leads": newLeadCount ?? 0 }} />
             </div>

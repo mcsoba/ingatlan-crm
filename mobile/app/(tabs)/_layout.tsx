@@ -21,7 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: "Ma", tabBarIcon: ({ color }) => <CalendarCheck color={color} size={22} /> }} />
       <Tabs.Screen name="contacts" options={{ title: "Kontaktok", tabBarIcon: ({ color }) => <Users color={color} size={22} /> }} />
       <Tabs.Screen name="properties" options={{ title: "Ingatlanok", tabBarIcon: ({ color }) => <Building color={color} size={22} /> }} />
-      <Tabs.Screen name="pipeline" options={{ title: "Pipeline", tabBarIcon: ({ color }) => <Kanban color={color} size={22} /> }} />
+      <Tabs.Screen name="pipeline" options={{ title: "Üzletek", tabBarIcon: ({ color }) => <Kanban color={color} size={22} /> }} />
     </Tabs>
   );
 }

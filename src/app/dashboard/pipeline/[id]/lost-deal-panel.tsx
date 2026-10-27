@@ -24,7 +24,7 @@ export function LostDealPanel({ dealId, status, lostReason, lostAt }: LostDealPa
       <Card className="border-danger/30 bg-danger-soft p-4 text-sm">
         <div className="flex items-center gap-1.5 font-medium text-danger">
           <XCircle className="h-4 w-4" strokeWidth={1.75} />
-          Elveszett deal
+          Elveszett üzlet
         </div>
         {lostAt && (
           <div className="mt-1 text-xs text-muted">

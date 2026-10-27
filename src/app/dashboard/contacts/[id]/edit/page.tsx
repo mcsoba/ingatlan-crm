@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Kanban } from "lucide-react";
+import { Kanban, Mail, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { listTeamMembers } from "@/lib/team";
@@ -16,6 +16,8 @@ import { TagPicker } from "../../../tags/tag-picker";
 import { listAgencyTags } from "../../../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { STATUS_LABELS } from "../../constants";
 import { sectionLabelClass } from "@/components/ui/styles";
 
 type ContactDealRow = {
@@ -24,10 +26,11 @@ type ContactDealRow = {
   properties: { address: string } | null;
 };
 
+// Az első fül a napi munka (teendők, üzletek) — az adatok szerkesztése ritkább
 const TABS = [
-  { id: "adatlap", label: "Adatlap" },
-  { id: "kommunikacio", label: "Kommunikáció" },
-  { id: "kapcsolodo", label: "Kapcsolódó" },
+  { id: "kapcsolodo", label: "Teendők és üzletek" },
+  { id: "adatlap", label: "Adatok" },
+  { id: "kommunikacio", label: "E-mail és SMS" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -42,7 +45,7 @@ export default async function EditContactPage({
   const { tab } = await searchParams;
   const activeTab: TabId = TABS.some((t) => t.id === tab)
     ? (tab as TabId)
-    : "adatlap";
+    : "kapcsolodo";
   const supabase = await createClient();
 
   const [
@@ -58,7 +61,7 @@ export default async function EditContactPage({
     supabase
       .from("contacts")
       .select(
-        "id, name, email, phone, source, status, notes, lead_score, lead_score_reason",
+        "id, name, email, phone, source, status, notes, lead_score, lead_score_reason, owner_id",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -93,7 +96,10 @@ export default async function EditContactPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title={contact.name}
-        description="Kontakt szerkesztése"
+        description={[
+          STATUS_LABELS[contact.status] ?? contact.status,
+          `Felelős: ${teamMembers.find((m) => m.id === contact.owner_id)?.name ?? "nincs kijelölve"}`,
+        ].join(" · ")}
         action={
           <Link
             href="/dashboard/contacts"
@@ -103,6 +109,23 @@ export default async function EditContactPage({
           </Link>
         }
       />
+
+      {(contact.phone || contact.email) && (
+        <div className="flex flex-wrap gap-2">
+          {contact.phone && (
+            <a href={`tel:${contact.phone.replace(/[^d+]/g, "")}`} className={buttonVariants("secondary", "sm")}>
+              <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
+              {contact.phone}
+            </a>
+          )}
+          {contact.email && (
+            <a href={`mailto:${contact.email}`} className={buttonVariants("secondary", "sm")}>
+              <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
+              {contact.email}
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-1 border-b border-border">
         {TABS.map((t) => (
@@ -189,10 +212,18 @@ export default async function EditContactPage({
 
           <aside className="flex min-w-0 flex-col gap-6">
             <div>
-              <h2 className={`mb-2 ${sectionLabelClass}`}>Dealek</h2>
+              <div className="mb-2 flex items-center justify-between">
+              <h2 className={sectionLabelClass}>Üzletek</h2>
+              <Link
+                href={`/dashboard/pipeline/new?contact=${contact.id}`}
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                + Új üzlet
+              </Link>
+            </div>
               {contactDeals.length === 0 ? (
                 <p className="text-sm text-muted">
-                  Ehhez a kontakthoz még nincs deal.
+                  Ehhez a kontakthoz még nincs üzlet.
                 </p>
               ) : (
                 <div className="flex flex-col gap-2">

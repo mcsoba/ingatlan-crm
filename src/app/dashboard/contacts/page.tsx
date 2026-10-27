@@ -184,7 +184,7 @@ export default async function ContactsPage({
           description={
             hasFilters
               ? "Próbálj más keresőszót vagy szűrőt."
-              : "Vegyél fel egy kontaktot, hogy elkezdhesd a pipeline-t építeni."
+              : "Vegyél fel egy kontaktot, hogy elkezdhesd az üzleteidet építeni."
           }
         />
       ) : (
