@@ -22,6 +22,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { PRIVATE_EDITION } from "@/lib/edition";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label: string | null; items: NavItem[] };
@@ -54,7 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Fiók",
     items: [
       { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
-      { href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard },
+      ...(PRIVATE_EDITION ? [] : [{ href: "/dashboard/billing", label: "Előfizetés", icon: CreditCard }]),
       { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
       { href: "/dashboard/audit-log", label: "Előzmények", icon: History },
       { href: "/dashboard/trash", label: "Lomtár", icon: Trash2 },

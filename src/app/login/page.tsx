@@ -9,6 +9,7 @@ import { translateAuthError } from "@/lib/auth-errors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
+import { PRIVATE_EDITION } from "@/lib/edition";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -155,12 +156,14 @@ export default function LoginPage() {
         </form>
       </Card>
 
-      <p className="text-center text-sm text-muted">
-        Nincs még fiókod?{" "}
-        <Link href="/signup" className={linkClass}>
-          Regisztráció
-        </Link>
-      </p>
+      {!PRIVATE_EDITION && (
+        <p className="text-center text-sm text-muted">
+          Nincs még fiókod?{" "}
+          <Link href="/signup" className={linkClass}>
+            Regisztráció
+          </Link>
+        </p>
+      )}
     </main>
   );
 }

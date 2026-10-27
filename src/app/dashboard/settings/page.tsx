@@ -28,6 +28,7 @@ import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { MfaPanel } from "./mfa-panel";
 import { PasswordPanel } from "./password-panel";
 import { PageHeader } from "@/components/ui/page-header";
+import { PRIVATE_EDITION } from "@/lib/edition";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -133,7 +134,7 @@ export default async function SettingsPage({
       setupUrl: "https://console.twilio.com",
       setupLabel: "console.twilio.com",
     },
-  ];
+  ].filter((i) => !(PRIVATE_EDITION && i.key === "stripe"));
 
   const missingCount = integrations.filter((i) => !i.configured).length;
 

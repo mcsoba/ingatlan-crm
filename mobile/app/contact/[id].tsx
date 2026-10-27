@@ -1,16 +1,20 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Mail, MessageSquare, Phone } from "lucide-react-native";
+import { Briefcase, Mail, MessageSquare, Pencil, Phone } from "lucide-react-native";
 import { supabase } from "../../lib/supabase";
 import { useColors } from "../../lib/theme";
-import { formatDue, initials, isOverdue } from "../../lib/format";
-import { ACTIVITY_TYPE_LABELS, CONTACT_STATUS_LABELS } from "../../lib/labels";
+import { initials } from "../../lib/format";
+import { CONTACT_SOURCE_LABELS, CONTACT_STATUS_LABELS } from "../../lib/labels";
 import { callPhone, sendEmail, smsPhone } from "../../lib/contact-actions";
-import { Badge, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
+import { Badge, Button, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
 import { ActivityComposer } from "../../components/ActivityComposer";
 import { NextStepSheet } from "../../components/NextStepSheet";
 import { CONTACT_STATUS_HELP } from "../../lib/process";
+import { memberName, useTeam } from "../../lib/team";
+import { useAuth } from "../../context/AuthContext";
+import { ActivityEditSheet } from "../../components/ActivityEditSheet";
+import { ACTIVITY_COLUMNS, ActivityHistory, type HistoryActivity } from "../../components/ActivityHistory";
 
 type Contact = {
   id: string;
@@ -19,8 +23,10 @@ type Contact = {
   email: string | null;
   status: string;
   notes: string | null;
+  source: string | null;
+  owner_id: string | null;
 };
-type Activity = { id: string; type: string; content: string; due_at: string | null; done: boolean; created_at: string };
+type Activity = HistoryActivity;
 type Deal = {
   id: string;
   deal_type: string;
@@ -37,13 +43,16 @@ export default function ContactDetail() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<Activity | null>(null);
+  const team = useTeam();
+  const { profile } = useAuth();
 
   const load = useCallback(async () => {
     const [cRes, aRes, dRes] = await Promise.all([
-      supabase.from("contacts").select("id, name, phone, email, status, notes").eq("id", id).maybeSingle(),
+      supabase.from("contacts").select("id, name, phone, email, status, notes, source, owner_id").eq("id", id).maybeSingle(),
       supabase
         .from("activities")
-        .select("id, type, content, due_at, done, created_at")
+        .select(ACTIVITY_COLUMNS)
         .eq("contact_id", id)
         .order("created_at", { ascending: false })
         .limit(100),
@@ -105,7 +114,21 @@ export default function ContactDetail() {
         />
       }
     >
-      <Stack.Screen options={{ title: contact.name }} />
+      <Stack.Screen
+        options={{
+          title: contact.name,
+          headerRight: () => (
+            <Pressable
+              accessibilityLabel="Kontakt szerkesztése"
+              hitSlop={10}
+              onPress={() => router.push({ pathname: "/contact/edit/[id]", params: { id: contact.id } })}
+              style={{ padding: 4 }}
+            >
+              <Pencil size={22} color={c.accent} />
+            </Pressable>
+          ),
+        }}
+      />
       {error ? <ErrorBox message={error} /> : null}
 
       <View style={styles.head}>
@@ -115,6 +138,10 @@ export default function ContactDetail() {
         <Text style={[styles.name, { color: c.text }]}>{contact.name}</Text>
         {contact.phone ? <Text style={{ color: c.muted }}>{contact.phone}</Text> : null}
         {contact.email ? <Text style={{ color: c.muted }}>{contact.email}</Text> : null}
+        <Text style={{ color: c.muted, fontSize: 13, marginTop: 4 }}>
+          Felelős: {memberName(team, contact.owner_id, profile?.id)}
+          {contact.source ? ` · ${CONTACT_SOURCE_LABELS[contact.source] ?? contact.source}` : ""}
+        </Text>
       </View>
 
       <View style={styles.actions}>
@@ -166,9 +193,9 @@ export default function ContactDetail() {
         </>
       ) : null}
 
+      <SectionTitle>Üzletek</SectionTitle>
       {deals.length ? (
         <>
-          <SectionTitle>Üzletek</SectionTitle>
           {deals.map((d) => (
             <Pressable key={d.id} onPress={() => router.push({ pathname: "/deal/[id]", params: { id: d.id } })}>
               <Card style={{ marginBottom: 8, gap: 4 }}>
@@ -181,44 +208,33 @@ export default function ContactDetail() {
             </Pressable>
           ))}
         </>
-      ) : null}
+      ) : (
+        <Text style={{ color: c.muted, marginBottom: 8 }}>
+          Ha komoly érdeklődő, nyiss neki üzletet, így végigkövethető a pipeline-on.
+        </Text>
+      )}
+      <Button
+        label="Új üzlet nyitása"
+        variant="secondary"
+        icon={<Briefcase size={18} color={c.text} />}
+        onPress={() => router.push({ pathname: "/deal/new", params: { contactId: contact.id, contactName: contact.name } })}
+      />
+      <Pressable onPress={() => router.push({ pathname: "/contact/edit/[id]", params: { id: contact.id } })} style={{ alignItems: "center", paddingVertical: 12 }}>
+        <Text style={{ color: c.accent, fontWeight: "600" }}>Adatok szerkesztése (név, telefon, felelős…)</Text>
+      </Pressable>
 
       <SectionTitle>Jegyzet vagy teendő rögzítése</SectionTitle>
       <ActivityComposer contactId={contact.id} onSaved={load} />
 
       <SectionTitle>Előzmények</SectionTitle>
-      {activities.length === 0 ? (
-        <Text style={{ color: c.muted }}>Még nincs bejegyzés.</Text>
-      ) : (
-        activities.map((a) => (
-          <Card key={a.id} style={{ marginBottom: 8, gap: 6 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <Badge label={ACTIVITY_TYPE_LABELS[a.type] ?? a.type} tone="accent" />
-              {a.due_at ? (
-                <Pressable onPress={() => toggleDone(a)} hitSlop={8}>
-                  <Badge
-                    label={a.done ? "✓ Kész" : `${formatDue(a.due_at)} – jelöld késznek`}
-                    tone={a.done ? "success" : isOverdue(a.due_at) ? "danger" : "warning"}
-                  />
-                </Pressable>
-              ) : (
-                <Text style={{ color: c.muted, fontSize: 12 }}>
-                  {new Date(a.created_at).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
-                </Text>
-              )}
-            </View>
-            <Text
-              style={{
-                color: a.done ? c.muted : c.text,
-                lineHeight: 21,
-                textDecorationLine: a.done ? "line-through" : "none",
-              }}
-            >
-              {a.content}
-            </Text>
-          </Card>
-        ))
-      )}
+      <ActivityHistory activities={activities} emptyText="Még nincs bejegyzés." onToggleDone={toggleDone} onEdit={setEditing} />
+      <ActivityEditSheet
+        activity={editing}
+        onClose={(changed) => {
+          setEditing(null);
+          if (changed) load();
+        }}
+      />
 
       <NextStepSheet
         visible={sheetOpen}

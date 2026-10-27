@@ -10,6 +10,7 @@ import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { BarListChart, TrendBarChart } from "@/components/ui/charts";
 import { STATUS_LABELS, STATUS_VARIANTS } from "@/app/dashboard/contacts/constants";
 import { TodayPanel } from "./today-panel";
+import { PRIVATE_EDITION, planLabel } from "@/lib/edition";
 
 type ChecklistItem = { label: string; done: boolean; href: string };
 
@@ -76,7 +77,7 @@ export default async function DashboardPage() {
   });
 
   const hasIntegration = Boolean(
-    process.env.STRIPE_SECRET_KEY || process.env.RESEND_API_KEY || process.env.TWILIO_ACCOUNT_SID,
+    (!PRIVATE_EDITION && process.env.STRIPE_SECRET_KEY) || process.env.RESEND_API_KEY || process.env.TWILIO_ACCOUNT_SID,
   );
   const checklist: ChecklistItem[] = [
     { label: "Adj hozzá egy kontaktot", done: (contactCount ?? 0) > 0, href: "/dashboard/contacts/new" },
@@ -84,7 +85,9 @@ export default async function DashboardPage() {
     { label: "Hozz létre egy dealt a pipeline-on", done: (dealCount ?? 0) > 0, href: "/dashboard/pipeline/new" },
     { label: "Hívj meg egy csapattagot", done: (memberCount ?? 0) > 1, href: "/dashboard/team" },
     {
-      label: "Kapcsolj be legalább egy integrációt (email, SMS vagy fizetés)",
+      label: PRIVATE_EDITION
+        ? "Kapcsolj be legalább egy integrációt (email vagy SMS)"
+        : "Kapcsolj be legalább egy integrációt (email, SMS vagy fizetés)",
       done: hasIntegration,
       href: "/dashboard/settings",
     },
@@ -95,7 +98,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title={`Üdv, ${profile.full_name?.split(" ")[0] || user.email?.split("@")[0]}!`}
-        description={`${profile.agencies.name} · ${profile.agencies.plan_tier === "pro" ? "Pro csomag" : "Ingyenes csomag"}`}
+        description={[profile.agencies.name, planLabel(profile.agencies.plan_tier)].filter(Boolean).join(" · ")}
       />
 
       {!checklistDone && (

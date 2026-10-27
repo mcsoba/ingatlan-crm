@@ -8,6 +8,7 @@ import { useColors } from "../../lib/theme";
 import { useAuth } from "../../context/AuthContext";
 import { pickPhotos, uploadPropertyPhotos } from "../../lib/photos";
 import { formatHuf } from "../../lib/format";
+import { confirmDestructive } from "../../lib/confirm";
 import {
   CONDITION_LABELS,
   HEATING_LABELS,
@@ -258,6 +259,19 @@ export default function PropertyDetail() {
             <Text style={{ color: c.muted, fontSize: 15, lineHeight: 22 }}>{p.features.notes}</Text>
           </>
         ) : null}
+
+        <Pressable
+          onPress={() =>
+            confirmDestructive("Törlöd ezt az ingatlant?", "A Lomtárba kerül, onnan a weben 30 napig visszaállítható.", "Törlés", async () => {
+              const { error: err } = await supabase.rpc("soft_delete_properties", { p_ids: [p.id] });
+              if (err) Alert.alert("Nem sikerült törölni.");
+              else router.back();
+            })
+          }
+          style={{ alignItems: "center", paddingVertical: 20 }}
+        >
+          <Text style={{ color: c.danger, fontWeight: "700" }}>Ingatlan törlése</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

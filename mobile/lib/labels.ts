@@ -126,3 +126,18 @@ export function floorLabel(floor: number | null | undefined): string | null {
   if (floor === 0) return "Földszint";
   return `${floor}. emelet`;
 }
+
+export const RECURRENCE_LABELS: Record<string, string> = {
+  none: "Nem ismétlődik",
+  daily: "Naponta",
+  weekly: "Hetente",
+  monthly: "Havonta",
+};
+
+export const CONTACT_SOURCE_LABELS: Record<string, string> = {
+  website: "Weboldal",
+  referral: "Ajánlás",
+  phone: "Telefon",
+  walk_in: "Betérő",
+  other: "Egyéb",
+};

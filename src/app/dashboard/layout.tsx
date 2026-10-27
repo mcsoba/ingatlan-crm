@@ -9,6 +9,7 @@ import { NotificationsPanel } from "./notifications-panel";
 import { MobileNavShell } from "./mobile-nav-shell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast";
+import { planLabel } from "@/lib/edition";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -56,9 +57,9 @@ export default async function DashboardLayout({
                   <div className="truncate text-xs font-medium text-sidebar-foreground">
                     {ROLE_LABELS[profile.role] ?? profile.role}
                   </div>
-                  <div className="text-[11px] text-sidebar-muted">
-                    {profile.agencies.plan_tier === "pro" ? "Pro csomag" : "Ingyenes csomag"}
-                  </div>
+                  {planLabel(profile.agencies.plan_tier) && (
+                    <div className="text-[11px] text-sidebar-muted">{planLabel(profile.agencies.plan_tier)}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <ThemeToggle />

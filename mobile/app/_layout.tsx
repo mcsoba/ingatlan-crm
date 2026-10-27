@@ -60,6 +60,9 @@ function RootNavigator() {
           <Stack.Screen name="property/edit/[id]" options={{ title: "Ingatlan szerkesztése", presentation: "modal" }} />
           <Stack.Screen name="property/[id]" options={{ title: "Ingatlan" }} />
           <Stack.Screen name="deal/[id]" options={{ title: "Üzlet" }} />
+          <Stack.Screen name="deal/new" options={{ title: "Új üzlet", presentation: "modal" }} />
+          <Stack.Screen name="deal/edit/[id]" options={{ title: "Üzlet szerkesztése", presentation: "modal" }} />
+          <Stack.Screen name="contact/edit/[id]" options={{ title: "Kontakt szerkesztése", presentation: "modal" }} />
         </Stack.Protected>
         <Stack.Protected guard={!session}>
           <Stack.Screen name="login" options={{ headerShown: false }} />
