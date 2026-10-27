@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { User, Building2, ClipboardCheck, Percent, Printer, CheckCircle2, Compass, CalendarClock, AlertTriangle } from "lucide-react";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { stageGuidance } from "@/lib/stage-guidance";
+import { formatDue } from "@/lib/time";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -171,7 +172,7 @@ export default async function DealDetailPage({
                   <div className="text-foreground">{nextTask.content}</div>
                   <div className={`text-xs font-medium ${nextTaskOverdue ? "text-danger" : "text-muted"}`}>
                     {nextTaskOverdue ? "Lejárt: " : ""}
-                    {new Date(nextTask.due_at!).toLocaleDateString("hu-HU")}
+                    {formatDue(nextTask.due_at!)}
                   </div>
                 </div>
               </div>
