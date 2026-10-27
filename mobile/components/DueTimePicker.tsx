@@ -132,7 +132,7 @@ export function DueTimePicker({
             <Text style={{ color: c.accent, fontWeight: "700" }}>Pontos idő</Text>
           </Pressable>
           {Platform.OS === "web" ? (
-            <WebExactInput value={value} onChange={onChange} />
+            <WebExactInput key={value.getTime()} value={value} onChange={onChange} />
           ) : null}
         </>
       ) : (

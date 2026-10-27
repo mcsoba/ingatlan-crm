@@ -12,9 +12,21 @@ import { formatDue } from "@/lib/time";
 
 type Body = { kind: "task" | "deal" | "contact"; id: string };
 
+// A natív app nem küld CORS-előkérést; a böngészős előnézet (más porton) igen.
+// A hitelesítés tokennel történik (nem sütivel), így a "*" origin biztonságos.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, content-type",
+};
+
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 export async function POST(request: Request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer /, "");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS });
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } },
@@ -23,11 +35,11 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser(token);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS });
 
   const body = (await request.json().catch(() => null)) as Body | null;
   if (!body?.id || !["task", "deal", "contact"].includes(body.kind)) {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+    return NextResponse.json({ error: "Bad request" }, { status: 400, headers: CORS });
   }
 
   const { data: me } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
@@ -73,5 +85,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ sent });
+  return NextResponse.json({ sent }, { headers: CORS });
 }

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { router, Stack } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme, View } from "react-native";
+import { Platform, useColorScheme, View } from "react-native";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { Loading } from "../components/ui";
 import { useColors } from "../lib/theme";
@@ -19,18 +19,6 @@ function RootNavigator() {
   const { session, loading } = useAuth();
   const c = useColors();
   const scheme = useColorScheme();
-  const lastResponse = Notifications.useLastNotificationResponse();
-
-  // Értesítésre koppintva a hozzá tartozó képernyő nyílik meg (pl. az új érdeklődő)
-  useEffect(() => {
-    if (!session || !lastResponse) return;
-    const url = lastResponse.notification.request.content.data?.url;
-    if (typeof url === "string" && url.startsWith("/")) {
-      router.push(url as never);
-      Notifications.clearLastNotificationResponseAsync().catch(() => {});
-    }
-  }, [session, lastResponse]);
-
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, justifyContent: "center" }}>
@@ -42,6 +30,7 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      {session && Platform.OS !== "web" ? <NotificationOpener /> : null}
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: c.surface },
@@ -70,4 +59,19 @@ function RootNavigator() {
       </Stack>
     </>
   );
+}
+
+// Értesítésre koppintva a hozzá tartozó képernyő nyílik meg (pl. az új érdeklődő).
+// Csak natívon: a böngészős előnézetben az expo-notifications ezt nem támogatja.
+function NotificationOpener() {
+  const lastResponse = Notifications.useLastNotificationResponse();
+  useEffect(() => {
+    if (!lastResponse) return;
+    const url = lastResponse.notification.request.content.data?.url;
+    if (typeof url === "string" && url.startsWith("/")) {
+      router.push(url as never);
+      Notifications.clearLastNotificationResponseAsync().catch(() => {});
+    }
+  }, [lastResponse]);
+  return null;
 }
