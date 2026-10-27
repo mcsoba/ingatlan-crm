@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppState, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { BellOff, Check, ChevronRight, LogOut, Phone, PhoneCall } from "lucide-react-native";
@@ -9,7 +9,7 @@ import { useColors } from "../../lib/theme";
 import { formatDue, isOverdue } from "../../lib/format";
 import { ACTIVITY_TYPE_LABELS } from "../../lib/labels";
 import { callPhone } from "../../lib/contact-actions";
-import { getPushStatus, type PushStatus } from "../../lib/push";
+import { getPushStatus, onPushStatusChange, registerForPush, type PushStatus } from "../../lib/push";
 import { Badge, Card, ErrorBox, Loading } from "../../components/ui";
 import { NextStepSheet } from "../../components/NextStepSheet";
 
@@ -46,6 +46,15 @@ export default function TodayScreen() {
 
   useEffect(() => {
     getPushStatus().then(setPush).catch(() => {});
+    const unsubscribe = onPushStatusChange(setPush);
+    // A Beállításokból visszatérve újra próbáljuk (ott kapcsolhatta be)
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") registerForPush().then(setPush).catch(() => {});
+    });
+    return () => {
+      unsubscribe();
+      sub.remove();
+    };
   }, [profile]);
 
   const load = useCallback(async () => {

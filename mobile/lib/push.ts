@@ -16,6 +16,18 @@ Notifications.setNotificationHandler({
 
 let registeredToken: string | null = null;
 
+// A Ma fül sávja feliratkozik, hogy a regisztráció végén frissüljön
+// (az engedélykérés a fül első betöltése után fejeződik be)
+const listeners = new Set<(s: PushStatus) => void>();
+export function onPushStatusChange(fn: (s: PushStatus) => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+function notify(s: PushStatus): PushStatus {
+  for (const fn of listeners) fn(s);
+  return s;
+}
+
 function projectId(): string | undefined {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 }
@@ -39,14 +51,14 @@ export async function registerForPush(): Promise<PushStatus> {
 
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") status = (await Notifications.requestPermissionsAsync()).status;
-  if (status !== "granted") return "denied";
+  if (status !== "granted") return notify("denied");
 
   try {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: id })).data;
     const { error } = await supabase.rpc("register_push_token", { p_token: token, p_platform: Platform.OS });
     if (error) return "unavailable";
     registeredToken = token;
-    return "enabled";
+    return notify("enabled");
   } catch {
     // Pl. Androidon az Expo Go nem támogat távoli értesítést (SDK 53 óta)
     return "unavailable";
@@ -56,7 +68,9 @@ export async function registerForPush(): Promise<PushStatus> {
 export async function getPushStatus(): Promise<PushStatus> {
   if (Platform.OS === "web" || !Device.isDevice || !projectId()) return "unavailable";
   const { status } = await Notifications.getPermissionsAsync();
-  return status === "granted" ? (registeredToken ? "enabled" : "unavailable") : "denied";
+  // "undetermined": még nem kérdeztük meg — ez nem tiltás, ne jelezzünk
+  if (status === "granted") return registeredToken ? "enabled" : "unavailable";
+  return status === "denied" ? "denied" : "unavailable";
 }
 
 // Kijelentkezéskor: erre az eszközre ne jöjjön több értesítés ennek a felhasználónak
