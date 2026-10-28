@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
+import { getResend, EMAIL_FROM, EMAIL_REPLY_TO, textToHtml } from "@/lib/resend";
 
 function fillTemplate(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{(\w+)\}\}/g, (match, key: string) => vars[key] ?? match);
@@ -77,6 +77,7 @@ export async function GET(request: Request) {
     try {
       const { error: sendError } = await getResend().emails.send({
         from: EMAIL_FROM,
+        replyTo: EMAIL_REPLY_TO,
         to: contact.email,
         subject,
         html: textToHtml(body),

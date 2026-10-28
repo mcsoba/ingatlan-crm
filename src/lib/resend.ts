@@ -23,6 +23,10 @@ export function getResend(): Resend {
 export const EMAIL_FROM =
   process.env.RESEND_FROM_EMAIL || `${BRAND.name} <onboarding@resend.dev>`;
 
+// Az iroda postafiókja az automatikus (nem ügynökhöz kötött) levelek
+// válaszaihoz — a feladó cím jellemzően csak küldésre van beállítva.
+export const EMAIL_REPLY_TO = process.env.RESEND_REPLY_TO || undefined;
+
 export function textToHtml(text: string): string {
   const escaped = text
     .replace(/&/g, "&amp;")
