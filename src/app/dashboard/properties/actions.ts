@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
+import { readOwnerId, notifyNewOwner } from "@/lib/owner";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { parseCsv } from "@/lib/csv";
 import {
@@ -120,6 +121,7 @@ async function uploadPhotoIfPresent(
 }
 
 export async function createProperty(formData: FormData) {
+  const ownerId = readOwnerId(formData);
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
@@ -142,11 +144,18 @@ export async function createProperty(formData: FormData) {
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
       ...parseListingFields(formData),
+      ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
     })
     .select("id")
     .single();
 
   if (error) throw error;
+
+  await notifyNewOwner(ownerId, profile, {
+    title: "Új ingatlant bíztak rád",
+    body: `${profile.full_name || "Egy kollégád"} rád bízta: ${address}`,
+    url: `/property/${property.id}`,
+  });
 
   await uploadPhotoIfPresent(supabase, profile.agency_id, property.id, formData);
 
@@ -155,6 +164,7 @@ export async function createProperty(formData: FormData) {
 }
 
 export async function updateProperty(id: string, formData: FormData) {
+  const ownerId = readOwnerId(formData);
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
@@ -166,6 +176,7 @@ export async function updateProperty(id: string, formData: FormData) {
   const notes = String(formData.get("notes") ?? "").trim();
   const aiDescription = String(formData.get("ai_description") ?? "").trim();
 
+  const { data: before } = await supabase.from("properties").select("owner_id").eq("id", id).maybeSingle();
   const { error } = await supabase
     .from("properties")
     .update({
@@ -176,10 +187,19 @@ export async function updateProperty(id: string, formData: FormData) {
       features: notes ? { notes } : {},
       ai_description: aiDescription || null,
       ...parseListingFields(formData),
+      ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
     })
     .eq("id", id);
 
   if (error) throw error;
+
+  if (ownerId && ownerId !== before?.owner_id) {
+    await notifyNewOwner(ownerId, profile, {
+      title: "Új ingatlant bíztak rád",
+      body: `${profile.full_name || "Egy kollégád"} rád bízta: ${address}`,
+      url: `/property/${id}`,
+    });
+  }
 
   await uploadPhotoIfPresent(supabase, profile.agency_id, id, formData);
 

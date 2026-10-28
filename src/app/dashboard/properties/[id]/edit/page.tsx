@@ -11,6 +11,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { sectionLabelClass } from "@/components/ui/styles";
 import { SIMPLE_MODE } from "@/lib/edition";
+import { ensureCurrentUserProfile } from "@/lib/agency";
+import { listTeamMembers } from "@/lib/team";
 
 export default async function EditPropertyPage({
   params,
@@ -19,12 +21,12 @@ export default async function EditPropertyPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: property }, { data: photoRows }, { data: propertyTagRows }, allTags] =
+  const [{ data: property }, { data: photoRows }, { data: propertyTagRows }, allTags, teamMembers, { profile }] =
     await Promise.all([
       supabase
         .from("properties")
         .select(
-          "id, address, price, size_sqm, status, features, ai_description, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost, min_lease_months, pets_allowed",
+          "id, owner_id, address, price, size_sqm, status, features, ai_description, listing_type, property_type, city, postal_code, plot_sqm, rooms, half_rooms, floor, building_floors, year_built, condition, heating, energy_rating, parking, balcony_sqm, has_lift, has_air_conditioning, has_garden_access, is_furnished, monthly_common_cost, min_lease_months, pets_allowed",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -35,6 +37,8 @@ export default async function EditPropertyPage({
         .order("position", { ascending: true }),
       supabase.from("property_tags").select("tag_id").eq("property_id", id),
       listAgencyTags(),
+      listTeamMembers(),
+      ensureCurrentUserProfile(),
     ]);
 
   if (!property) notFound();
@@ -78,6 +82,8 @@ export default async function EditPropertyPage({
             action={updateWithId}
             defaultValues={property}
             submitLabel="Mentés"
+            teamMembers={teamMembers}
+            currentUserId={profile.id}
           />
         </div>
         <aside className="flex min-w-0 flex-col gap-6">

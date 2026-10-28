@@ -152,6 +152,8 @@ export default async function EditContactPage({
               contactId={contact.id}
               defaultValues={contact}
               submitLabel="Mentés"
+              teamMembers={teamMembers}
+              currentUserId={profile.id}
             />
           </div>
           <aside className="flex min-w-0 flex-col gap-4">

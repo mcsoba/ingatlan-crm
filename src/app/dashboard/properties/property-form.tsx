@@ -24,8 +24,11 @@ import {
 } from "@/components/ui/styles";
 import { queueToast } from "@/components/ui/toast";
 import { formatThousands } from "@/components/ui/formatted-number-input";
+import { OwnerSelect } from "@/components/owner-select";
+import type { TeamMember } from "@/lib/team";
 
 export type PropertyFormValues = {
+  owner_id?: string | null;
   address?: string;
   price?: number | null;
   size_sqm?: number | null;
@@ -60,6 +63,8 @@ type PropertyFormProps = {
   action: (formData: FormData) => void;
   defaultValues?: PropertyFormValues;
   submitLabel: string;
+  teamMembers: TeamMember[];
+  currentUserId: string;
 };
 
 const FLOOR_OPTIONS = [-1, ...Array.from({ length: 21 }, (_, i) => i)];
@@ -156,6 +161,8 @@ export function PropertyForm({
   action,
   defaultValues,
   submitLabel,
+  teamMembers,
+  currentUserId,
 }: PropertyFormProps) {
   const d = defaultValues ?? {};
   const formRef = useRef<HTMLFormElement>(null);
@@ -298,6 +305,12 @@ export function PropertyForm({
             </select>
           </label>
         </div>
+
+        <OwnerSelect
+          teamMembers={teamMembers}
+          currentUserId={currentUserId}
+          defaultOwnerId={defaultValues ? (d.owner_id ?? null) : currentUserId}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           <label className={fieldGroupClass}>
