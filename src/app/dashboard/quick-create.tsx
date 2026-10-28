@@ -42,7 +42,7 @@ export function QuickCreate() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-cta px-3 py-2 text-sm font-semibold text-cta-foreground transition-colors hover:bg-cta-hover"
       >
         <Plus className="h-4 w-4" strokeWidth={2.25} />
         Új felvétele
