@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ingatlan CRM",
+    "name": "Bluegate Housing",
     "slug": "ingatlan-crm",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#12181D",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -39,7 +39,7 @@
       [
         "expo-notifications",
         {
-          "color": "#6366f1"
+          "color": "#12181D"
         }
       ],
       "@react-native-community/datetimepicker"

@@ -1,12 +1,12 @@
 {
-  "name": "Ingatlan CRM",
-  "short_name": "Ingatlan CRM",
-  "description": "AI-alapú CRM ingatlanos ügynököknek és irodáknak",
+  "name": "Bluegate Housing",
+  "short_name": "Bluegate",
+  "description": "A Bluegate Housing ügyfél- és ingatlankezelő rendszere",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "theme_color": "#12181D",
   "lang": "hu",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

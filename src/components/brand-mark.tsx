@@ -4,7 +4,7 @@ import { BRAND } from "@/lib/brand";
 const SIZES = {
   sm: { box: "h-7 w-7 rounded-md", icon: "h-4 w-4" },
   md: { box: "h-9 w-9 rounded-md", icon: "h-5 w-5" },
-  lg: { box: "h-14 w-14 rounded-2xl", icon: "h-7 w-7" },
+  lg: { box: "h-20 w-20 rounded-2xl", icon: "h-9 w-9" },
 };
 
 // A márka logója (BRAND.logoSrc), ennek hiányában az általános épület-ikon.

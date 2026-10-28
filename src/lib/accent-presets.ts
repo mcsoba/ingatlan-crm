@@ -11,7 +11,7 @@ export type AccentPreset = {
 };
 
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { id: "indigo", label: "Indigó (alap)", accent: "#6366f1", hover: "#4f52e0", soft: "#eef0fe" },
+  { id: "indigo", label: "Bluegate kék (alap)", accent: "#2e6ff2", hover: "#1f5bd8", soft: "#eaf1fe" },
   { id: "emerald", label: "Smaragd", accent: "#059669", hover: "#047857", soft: "#e6f6ef" },
   { id: "rose", label: "Rózsa", accent: "#e11d48", hover: "#be123c", soft: "#fde8ec" },
   { id: "amber", label: "Borostyán", accent: "#d97706", hover: "#b45309", soft: "#fdf1e0" },
