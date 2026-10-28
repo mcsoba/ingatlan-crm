@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { Building2 } from "lucide-react-native";
 import { useAuth } from "../context/AuthContext";
 import { Button, ErrorBox } from "../components/ui";
 import { useColors } from "../lib/theme";
+import { BRAND } from "../lib/brand";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -33,10 +34,14 @@ export default function LoginScreen() {
       style={[styles.wrap, { backgroundColor: c.bg }]}
     >
       <View style={styles.inner}>
-        <View style={[styles.logo, { backgroundColor: c.accent }]}>
-          <Building2 color="#fff" size={28} strokeWidth={2.25} />
-        </View>
-        <Text style={[styles.title, { color: c.text }]}>Ingatlan CRM</Text>
+        {BRAND.logo ? (
+          <Image source={BRAND.logo} style={styles.logoImage} resizeMode="contain" />
+        ) : (
+          <View style={[styles.logo, { backgroundColor: c.accent }]}>
+            <Building2 color="#fff" size={28} strokeWidth={2.25} />
+          </View>
+        )}
+        <Text style={[styles.title, { color: c.text }]}>{BRAND.name}</Text>
         <Text style={[styles.sub, { color: c.muted }]}>
           Lépj be ugyanazzal a fiókkal, amit a számítógépen használsz.
         </Text>
@@ -76,6 +81,7 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: "center" },
   inner: { paddingHorizontal: 24, gap: 12, width: "100%", maxWidth: 440, alignSelf: "center" },
   logo: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: 8 },
+  logoImage: { width: 88, height: 88, alignSelf: "center", marginBottom: 8 },
   title: { fontSize: 26, fontWeight: "800", textAlign: "center" },
   sub: { fontSize: 15, textAlign: "center", lineHeight: 21, marginBottom: 12 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, minHeight: 50, fontSize: 16 },

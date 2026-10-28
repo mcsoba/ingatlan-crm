@@ -5,6 +5,7 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/lib/google";
+import { BRAND } from "@/lib/brand";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -64,7 +65,7 @@ export async function syncActivityForConnection(
   const date = new Date(activity.due_at).toISOString().slice(0, 10);
 
   const eventId = await createCalendarEvent(accessToken, {
-    summary: `[Ingatlan CRM] ${activity.content}`,
+    summary: `[${BRAND.name}] ${activity.content}`,
     description: `Típus: ${TYPE_LABELS[activity.type] ?? activity.type}`,
     date,
   });
@@ -103,7 +104,7 @@ export async function syncActivityStatusChange(
     .single();
   if (!activity) return;
 
-  const summary = `[Ingatlan CRM]${done ? " [Kész]" : ""} ${activity.content}`;
+  const summary = `[${BRAND.name}]${done ? " [Kész]" : ""} ${activity.content}`;
   const description = `Típus: ${TYPE_LABELS[activity.type] ?? activity.type}`;
 
   for (const link of links) {

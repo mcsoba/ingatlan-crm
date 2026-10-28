@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { BRAND } from "@/lib/brand";
 
 let resendInstance: Resend | null = null;
 
@@ -20,7 +21,7 @@ export function getResend(): Resend {
 // Resend teszt módban (nincs saját verifikált domain) csak erről a címről
 // lehet küldeni, és csak a fiók tulajdonosának saját email címére.
 export const EMAIL_FROM =
-  process.env.RESEND_FROM_EMAIL || "Ingatlan CRM <onboarding@resend.dev>";
+  process.env.RESEND_FROM_EMAIL || `${BRAND.name} <onboarding@resend.dev>`;
 
 export function textToHtml(text: string): string {
   const escaped = text

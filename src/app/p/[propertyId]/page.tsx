@@ -16,6 +16,7 @@ import {
   PROPERTY_TYPE_LABELS,
   floorLabel,
 } from "@/app/dashboard/properties/constants";
+import { BRAND } from "@/lib/brand";
 
 const loadProperty = cache(async (propertyId: string) => {
   const admin = createAdminClient();
@@ -183,7 +184,7 @@ export default async function PublicPropertyPage({
             </Link>
           ) : (
             <span className="text-sm font-semibold text-foreground">
-              {agency?.name ?? "Ingatlan CRM"}
+              {agency?.name ?? BRAND.name}
             </span>
           )}
         </div>

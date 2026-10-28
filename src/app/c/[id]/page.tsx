@@ -7,6 +7,7 @@ import { Building2, Ruler, Wallet, Check, X, Sparkles } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAccentPreset } from "@/lib/accent-presets";
 import { Card } from "@/components/ui/card";
+import { BRAND } from "@/lib/brand";
 
 type Analysis = {
   perProperty: { id: string; pros: string[]; cons: string[] }[];
@@ -48,7 +49,7 @@ export async function generateMetadata({
   const { agency, properties } = await loadComparison(id);
   if (!properties.length) return { title: "Összehasonlítás nem található" };
 
-  const title = `Ingatlan-összehasonlítás — ${agency?.name ?? "Ingatlan CRM"}`;
+  const title = `Ingatlan-összehasonlítás — ${agency?.name ?? BRAND.name}`;
   const description = `${properties.length} kiválasztott ingatlan összevetése.`;
 
   return { title, description, openGraph: { title, description } };
@@ -99,7 +100,7 @@ export default async function PublicComparisonPage({
           </Link>
         ) : (
           <h1 className="text-lg font-semibold text-foreground">
-            {agency?.name ?? "Ingatlan CRM"}
+            {agency?.name ?? BRAND.name}
           </h1>
         )}
       </div>

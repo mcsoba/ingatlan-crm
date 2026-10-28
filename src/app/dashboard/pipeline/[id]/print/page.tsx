@@ -14,6 +14,7 @@ import { ensureCurrentUserProfile } from "@/lib/agency";
 import { getAccentPreset } from "@/lib/accent-presets";
 import { Card } from "@/components/ui/card";
 import { PrintButton } from "./print-button";
+import { BRAND } from "@/lib/brand";
 
 const TYPE_LABELS: Record<string, string> = {
   note: "Jegyzet",
@@ -112,7 +113,7 @@ export default async function DealPrintPage({
         )}
         <div>
           <div className="text-sm font-semibold text-foreground">
-            {agencyBranding?.name ?? "Ingatlan CRM"}
+            {agencyBranding?.name ?? BRAND.name}
           </div>
           <div className="text-xs text-muted">
             Deal-összefoglaló ·{" "}

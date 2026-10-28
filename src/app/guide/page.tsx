@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { GuideContent } from "../dashboard/guide/guide-content";
+import { BRAND } from "@/lib/brand";
 
-export const metadata: Metadata = { title: "Használati útmutató · Ingatlan CRM" };
+export const metadata: Metadata = { title: `Használati útmutató · ${BRAND.name}` };
 
 // Belépés nélkül is olvasható (nincs benne ügyféladat) — a mobilapp
 // „Használati útmutató” linkje ezt nyitja meg a telefon böngészőjében.

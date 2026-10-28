@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStripe, PRO_PLAN_PRICE_HUF } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
+import { BRAND } from "@/lib/brand";
 
 export async function POST(request: Request) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
         {
           price_data: {
             currency: "huf",
-            product_data: { name: "Ingatlan CRM — Pro csomag" },
+            product_data: { name: `${BRAND.name} — Pro csomag` },
             unit_amount: PRO_PLAN_PRICE_HUF * 100,
             recurring: { interval: "month" },
           },

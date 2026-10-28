@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { translateAuthError } from "@/lib/auth-errors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
 import { PRIVATE_EDITION } from "@/lib/edition";
+import { BRAND } from "@/lib/brand";
+import { BrandMark } from "@/components/brand-mark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -111,10 +112,9 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <Link href="/" className="flex items-center justify-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
-          <Building2 className="h-4 w-4" strokeWidth={2.25} />
-        </div>
+      <Link href="/" className="flex flex-col items-center justify-center gap-3">
+        <BrandMark size="lg" />
+        <span className="text-xl font-semibold text-foreground">{BRAND.name}</span>
       </Link>
 
       <Card className="p-6">

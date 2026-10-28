@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
 import { SidebarNav } from "./sidebar-nav";
@@ -40,9 +40,7 @@ export default async function DashboardLayout({
           <>
             <div>
               <div className="flex items-center gap-2 px-2 pt-1 pb-6">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent text-white">
-                  <Building2 className="h-4 w-4" strokeWidth={2.25} />
-                </div>
+                <BrandMark />
                 <span className="truncate text-sm font-semibold text-sidebar-foreground">
                   {profile.agencies.name}
                 </span>
