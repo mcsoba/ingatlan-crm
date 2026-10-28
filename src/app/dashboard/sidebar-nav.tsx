@@ -62,7 +62,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/dashboard/trash", label: "Lomtár", icon: Trash2 },
       { href: "/dashboard/guide", label: "Használati útmutató", icon: BookOpen },
       { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
-      { href: "/dashboard/whats-new", label: "Újdonságok", icon: Sparkles },
+      // A fejlesztési napló egy irodának átadott telepítésben nem releváns
+      ...(PRIVATE_EDITION ? [] : [{ href: "/dashboard/whats-new", label: "Újdonságok", icon: Sparkles }]),
     ],
   },
 ];
