@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { SIMPLE_MODE } from "@/lib/edition";
+import { DeleteDealButton } from "./[id]/delete-deal-button";
 
 // The Supabase client infers embedded-resource joins as arrays without
 // generated Database types; contact_id/property_id are single foreign
@@ -178,6 +179,7 @@ export default async function PipelinePage() {
                     <th className="px-4 py-3 font-medium">Ingatlan</th>
                     <th className="px-4 py-3 font-medium">Indok</th>
                     <th className="px-4 py-3 font-medium">Dátum</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -204,6 +206,13 @@ export default async function PipelinePage() {
                         {deal.lost_at
                           ? new Date(deal.lost_at).toLocaleDateString("hu-HU")
                           : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <DeleteDealButton
+                          compact
+                          dealId={deal.id}
+                          dealTitle={deal.contacts?.name ?? "Ismeretlen kontakt"}
+                        />
                       </td>
                     </tr>
                   ))}

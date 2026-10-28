@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Building2, Clock, MessageSquarePlus } from "lucide-react";
 import { logDealActivity, moveDeal, scheduleDealFollowUp } from "./actions";
 import { Card } from "@/components/ui/card";
+import { DeleteDealButton } from "./[id]/delete-deal-button";
 
 export type DealCard = {
   id: string;
@@ -409,7 +410,9 @@ export function PipelineBoard({
                       )}
                     </div>
                   )}
-                  <div className="flex justify-end pt-1">
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    {/* Lezárt (utolsó szakaszban lévő) üzlet innen is törölhető */}
+                    {card.isClosed ? <DeleteDealButton compact dealId={card.id} dealTitle={card.contactName} /> : <span />}
                     <QuickLog onLog={(type, text) => logActivity(card.id, type, text)} />
                   </div>
                 </Card>

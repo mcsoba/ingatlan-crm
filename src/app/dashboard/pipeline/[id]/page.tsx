@@ -125,7 +125,11 @@ export default async function DealDetailPage({
         title={contact?.name ?? "Ismeretlen kontakt"}
         description={`${dealRow.deal_type === "rent" ? "Bérlés" : "Eladás"} · ${stageName}${dealRow.deal_amount != null ? ` · ${dealRow.deal_amount.toLocaleString("hu-HU")} Ft` : ""}`}
         action={
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <DeleteDealButton
+              dealId={dealRow.id}
+              dealTitle={contact?.name ?? "Ismeretlen kontakt"}
+            />
             <Link
               href={`/dashboard/pipeline/${id}/print`}
               className="flex items-center gap-1.5 text-sm text-muted hover:text-accent"
@@ -410,12 +414,6 @@ export default async function DealDetailPage({
             />
           </Card>
 
-          <div className="border-t border-border-subtle pt-4">
-            <DeleteDealButton
-              dealId={dealRow.id}
-              dealTitle={contact?.name ?? "Ismeretlen kontakt"}
-            />
-          </div>
         </aside>
       </div>
     </div>
