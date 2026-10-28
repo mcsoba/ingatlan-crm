@@ -18,6 +18,7 @@ import { restoreRecord } from "../trash/actions";
 import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 import { ColumnPicker, useVisibleColumns } from "./column-picker";
 import { useToast } from "@/components/ui/toast";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 type ContactRow = {
   id: string;
@@ -251,15 +252,18 @@ export function ContactsTable({
         </div>
       )}
 
-      <div className="flex justify-end">
-        <ColumnPicker />
-      </div>
+      {!SIMPLE_MODE && (
+        <div className="flex justify-end">
+          <ColumnPicker />
+        </div>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs text-muted">
+              {!SIMPLE_MODE && (
               <th className="w-10 px-4 py-3">
                 <input
                   type="checkbox"
@@ -269,6 +273,7 @@ export function ContactsTable({
                   className="h-3.5 w-3.5 accent-[var(--accent)]"
                 />
               </th>
+              )}
               <th className="px-4 py-3 font-medium">
                 <span className="inline-flex items-center gap-1">
                   Név
@@ -308,6 +313,7 @@ export function ContactsTable({
                 key={contact.id}
                 className="border-b border-border-subtle last:border-0 hover:bg-background"
               >
+                {!SIMPLE_MODE && (
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
@@ -317,6 +323,7 @@ export function ContactsTable({
                     className="h-3.5 w-3.5 accent-[var(--accent)]"
                   />
                 </td>
+                )}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
                     <Link

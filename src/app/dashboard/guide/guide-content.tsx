@@ -22,6 +22,7 @@ import { linkClass } from "@/components/ui/styles";
 import { DEFAULT_STAGE_GUIDANCE } from "@/lib/stage-guidance";
 import { STATUS_HELP, STATUS_LABELS } from "../contacts/constants";
 import { PrintButton } from "./print-button";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 // Használati útmutató az iroda munkatársainak, szerepek és feladatok szerint.
 // A szakasz-útmutatók és az állapot-magyarázatok ugyanazokból a forrásokból
@@ -369,13 +370,17 @@ export function GuideContent() {
             <b>Véletlenül töröltél?</b> A törölt ügyfelek, ingatlanok és üzletek <b>30 napig</b> a{" "}
             <Ref href="/dashboard/trash">Lomtárban</Ref> maradnak, onnan visszaállíthatók.
           </li>
-          <li>
-            <b>Kétszer vettél fel valakit?</b> A Kontaktok oldalon a <b>„Duplikátumok”</b> gombbal összevonhatók.
-          </li>
-          <li>
-            <b>Ki módosította?</b> Az <Ref href="/dashboard/audit-log">Előzmények</Ref> oldal mutatja, ki mikor mit hozott
-            létre, módosított vagy törölt.
-          </li>
+          {!SIMPLE_MODE && (
+            <>
+              <li>
+                <b>Kétszer vettél fel valakit?</b> A Kontaktok oldalon a <b>„Duplikátumok”</b> gombbal összevonhatók.
+              </li>
+              <li>
+                <b>Ki módosította?</b> Az <Ref href="/dashboard/audit-log">Előzmények</Ref> oldal mutatja, ki mikor mit
+                hozott létre, módosított vagy törölt.
+              </li>
+            </>
+          )}
           <li>
             Egy funkcióval kapcsolatos részletes kérdésre a <Ref href="/dashboard/help">Súgó</Ref> válaszol.
           </li>
@@ -389,19 +394,31 @@ export function GuideContent() {
             szerepkörrel a kolléga a csapatot és a szakaszokat is kezelheti.
           </li>
           <li>
-            <b>Ki kinek a felelőse</b>: az ügyfél és az üzlet adatainál a „Felelős” mező; a Kontaktok listán több ügyfél
-            egyszerre is kiosztható. A weboldalról érkező érdeklődők automatikusan, sorban is kioszthatók (
-            <Ref href="/dashboard/settings">Beállítások</Ref> → Iroda).
+            <b>Ki kinek a felelőse</b>: az ügyfél és az üzlet adatainál a „Felelős” mező.
+            {!SIMPLE_MODE && (
+              <>
+                {" "}A Kontaktok listán több ügyfél egyszerre is kiosztható. A weboldalról érkező érdeklődők automatikusan,
+                sorban is kioszthatók (<Ref href="/dashboard/settings">Beállítások</Ref> → Iroda).
+              </>
+            )}
           </li>
+          {!SIMPLE_MODE && (
           <li>
             <b>Szakaszok és útmutatók</b>: a <Ref href="/dashboard/pipeline/stages">Szakaszok</Ref> oldalon átnevezhetők,
             sorrendezhetők, és megírható, mit kell bennük tenni — ez jelenik meg mindenkinél a „Mit kell most tenned?”
             dobozban.
           </li>
+          )}
           <li>
-            <b>Áttekintés</b>: az Áttekintés oldalon a „Mai teendőid” mellett az iroda számai, a{" "}
-            <Ref href="/dashboard/reports">Riportok</Ref> oldalon pedig a csapat teljesítménye, a várható bevétel és az
-            elvesztett üzletek okai látszanak.
+            <b>Áttekintés</b>: az Áttekintés oldalon a „Mai teendőid” mellett az iroda számai látszanak
+            {SIMPLE_MODE ? (
+              "."
+            ) : (
+              <>
+                , a <Ref href="/dashboard/reports">Riportok</Ref> oldalon pedig a csapat teljesítménye, a várható bevétel
+                és az elvesztett üzletek okai.
+              </>
+            )}
           </li>
           <li>
             A <Ref href="/dashboard/tasks">Teendők</Ref> oldalon a „Kié” szűrővel az egész iroda feladatai is

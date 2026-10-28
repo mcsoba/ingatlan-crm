@@ -1,8 +1,10 @@
-import { PRIVATE_EDITION } from "@/lib/edition";
+import { PRIVATE_EDITION, SIMPLE_MODE } from "@/lib/edition";
 
 export type FaqItem = {
   question: string;
   answer: string;
+  // Egyszerű módban elrejtett funkcióról szól
+  advanced?: boolean;
 };
 
 export type FaqSection = {
@@ -10,7 +12,7 @@ export type FaqSection = {
   items: FaqItem[];
 };
 
-export const FAQ_SECTIONS: FaqSection[] = [
+const ALL_FAQ_SECTIONS: FaqSection[] = [
   {
     category: "Üzletek és teendők",
     items: [
@@ -45,7 +47,8 @@ export const FAQ_SECTIONS: FaqSection[] = [
           "Az AI 0-100 közötti pontszámmal értékeli, mennyire tűnik komoly érdeklődőnek egy kontakt a jegyzetek és aktivitás-előzmény alapján (zöld ≥70, sárga 40-69, szürke <40). A kontakt oldalán az indoklás is megjelenik.",
       },
       {
-        question: "Mire jó a citimkék rendszer?",
+        question: "Mire jó a címkék rendszer?",
+        advanced: true,
         answer:
           "A címkék kontaktokra és ingatlanokra is felragaszthatók, közös készletből (pl. ugyanaz a 'VIP' címke mindkettőn használható). Szűrésre, és kampány-célzásra (csak egy adott címkével rendelkező kontaktok tömeges beiratkoztatására) is használhatók. A Címkék oldalon (oldalsáv) kezelheted központilag: átnevezés, szín, törlés.",
       },
@@ -66,6 +69,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
     items: [
       {
         question: "Mi a különbség az egyedi ingatlan-link és a katalógus-link között?",
+        advanced: true,
         answer:
           "Az egyedi ingatlan-oldal (Ingatlanok listán a 'Nyilvános oldal' gomb) egyetlen ingatlant mutat be, érdeklődő-űrlappal. A katalógus-link (Beállítások → Nyilvános ingatlan-katalógus) az iroda ÖSSZES elérhető ingatlanát listázza egy állandó linken — érdemes ezt megosztani Facebookon vagy email-aláírásban, mert mindig friss.",
       },
@@ -86,6 +90,7 @@ export const FAQ_SECTIONS: FaqSection[] = [
       },
       {
         question: "Mire jó az AI ingatlan-összehasonlító?",
+        advanced: true,
         answer:
           "Az Ingatlanok oldalról 2-3 ingatlant kiválasztva az AI ár/méret/jellemzők alapján elemzést és ajánlást ad. A 'Megosztás ügyféllel' gombbal egy publikus, bejelentkezés nélküli linket is generálhatsz belőle, amit elküldhetsz az érdeklődőnek.",
       },
@@ -116,16 +121,19 @@ export const FAQ_SECTIONS: FaqSection[] = [
     items: [
       {
         question: "Hogyan küldök tömeges emailt egy csoportnak?",
+        advanced: true,
         answer:
           "A Kampányok oldalon hozz létre egy email-sorozatot (lépésekkel: nap-késleltetés + tárgy + szöveg), majd a kontakt oldalán egyenként, VAGY egy címke alapján tömegesen is beiratkoztathatod a megfelelő kontaktokat.",
       },
       {
         question: "Mit csinál a Webhook-integráció?",
+        advanced: true,
         answer:
           "Ha megadsz egy saját URL-t a Beállítások oldalon, minden új, weboldalról érkező érdeklődőnél (a szokásos email/SMS-értesítés MELLETT) egy POST-kérés is elmegy erre a címre — ezzel egy külső rendszerbe (pl. Zapier, saját integráció) is bekapcsolható az érdeklődő-adat.",
       },
       {
         question: "Miért 'Nincs beállítva' egy integráció a Beállítások oldalon?",
+        advanced: true,
         answer:
           "A Stripe/Resend/Twilio/Google integrációk mindegyikéhez saját API-kulcs kell a szerver környezetében. Amíg ez hiányzik, az adott funkció (fizetés/email-küldés/SMS/Google Naptár) barátságos hibaüzenetet ad kattintásra, nem hibázik le csúnyán — ez fejlesztői teendő, nem a felületen állítható.",
       },
@@ -151,19 +159,26 @@ export const FAQ_SECTIONS: FaqSection[] = [
     items: [
       {
         question: "Mit jelent a 'Várható bevétel' a Riportok oldalon?",
+        advanced: true,
         answer:
           "A nyitott üzletek összesített értékét szorozza egy, az üzlet-szakasz pozíciója alapján becsült záródási valószínűséggel (a záráshoz közelebbi szakasz magasabb %-ot kap) — ez egy durva, de hasznos becslés, nem garantált bevétel.",
       },
       {
         question: "Hogyan tölthetem le az összes adatomat?",
+        advanced: true,
         answer:
           "A Beállítások oldalon (tulajdonosi jogosultsággal) az 'Összes adatom exportálása' gombbal letöltheted az iroda összes kontaktját, ingatlanát, dealjét és aktivitását.",
       },
       {
         question: "Van audit-napló?",
+        advanced: true,
         answer:
           "Igen, az 'Előzmények' oldal (oldalsáv) mutatja, ki mikor hozott létre/módosított/törölt egy kontaktot, ingatlant vagy üzletet, a rekordra mutató linkkel együtt.",
       },
     ],
   },
 ];
+
+export const FAQ_SECTIONS: FaqSection[] = SIMPLE_MODE
+  ? ALL_FAQ_SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => !i.advanced) })).filter((s) => s.items.length > 0)
+  : ALL_FAQ_SECTIONS;

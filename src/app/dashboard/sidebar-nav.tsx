@@ -23,7 +23,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { PRIVATE_EDITION } from "@/lib/edition";
+import { PRIVATE_EDITION, SIMPLE_MODE } from "@/lib/edition";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label: string | null; items: NavItem[] };
@@ -68,6 +68,26 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// Egyszerű mód: egyetlen, rövid lista a napi munkához
+const SIMPLE_NAV_GROUPS: NavGroup[] = [
+  {
+    label: null,
+    items: [
+      { href: "/dashboard", label: "Áttekintés", icon: LayoutDashboard },
+      { href: "/dashboard/tasks", label: "Teendők", icon: ListChecks },
+      { href: "/dashboard/leads", label: "Új érdeklődők", icon: Inbox },
+      { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
+      { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
+      { href: "/dashboard/pipeline", label: "Üzletek", icon: Kanban },
+      { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
+      { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
+      { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
+      { href: "/dashboard/trash", label: "Lomtár", icon: Trash2 },
+      { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
+    ],
+  },
+];
+
 export function SidebarNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
 
@@ -77,7 +97,7 @@ export function SidebarNav({ badges = {} }: { badges?: Record<string, number> })
 
   return (
     <nav className="flex flex-col gap-3">
-      {NAV_GROUPS.map((group, i) => (
+      {(SIMPLE_MODE ? SIMPLE_NAV_GROUPS : NAV_GROUPS).map((group, i) => (
         <div key={i} className="flex flex-col gap-0.5">
           {group.label && (
             <div className="px-3 pt-2 pb-1 text-[10.5px] font-semibold tracking-wide text-sidebar-muted/70 uppercase">

@@ -6,6 +6,7 @@ import { PipelineBoard, type DealCard } from "./board";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 // The Supabase client infers embedded-resource joins as arrays without
 // generated Database types; contact_id/property_id are single foreign
@@ -133,6 +134,8 @@ export default async function PipelinePage() {
                 page-pattern matching with the sibling dynamic route
                 /dashboard/pipeline/[id] (Next.js itself resolves the more
                 specific static segment first, so there's no real conflict). */}
+            {!SIMPLE_MODE && (
+            <>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/dashboard/pipeline/export" className={buttonVariants("secondary")}>
               <Download className="h-4 w-4" strokeWidth={1.75} />
@@ -145,6 +148,8 @@ export default async function PipelinePage() {
               <Settings2 className="h-4 w-4" strokeWidth={1.75} />
               Szakaszok
             </Link>
+            </>
+            )}
             <Link
               href="/dashboard/pipeline/new"
               className={buttonVariants("primary")}
