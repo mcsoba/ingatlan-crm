@@ -12,6 +12,7 @@ import { bulkAssignPropertyTag, type TagRow } from "../tags/actions";
 import { restoreRecord } from "../trash/actions";
 import { STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 import { useToast } from "@/components/ui/toast";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 type PropertyRow = {
   id: string;
@@ -209,6 +210,7 @@ export function PropertiesGrid({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {properties.map((property) => (
           <Card key={property.id} className="relative overflow-hidden p-3">
+            {!SIMPLE_MODE && (
             <label className="absolute top-2 left-2 z-10 flex h-5 w-5 items-center justify-center rounded-md bg-surface/90 shadow-sm">
               <input
                 type="checkbox"
@@ -218,6 +220,7 @@ export function PropertiesGrid({
                 className="h-3.5 w-3.5 accent-[var(--accent)]"
               />
             </label>
+            )}
             <Link href={`/dashboard/properties/${property.id}/edit`}>
               {property.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element

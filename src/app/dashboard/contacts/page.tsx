@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export default async function ContactsPage({
   searchParams,
@@ -109,6 +110,8 @@ export default async function ContactsPage({
         description="Érdeklődők és ügyfelek egy helyen."
         action={
           <>
+            {!SIMPLE_MODE && (
+            <>
             <Link href="/dashboard/contacts/duplicates" className={buttonVariants("secondary")}>
               <Users2 className="h-4 w-4" strokeWidth={1.75} />
               Duplikátumok
@@ -118,6 +121,8 @@ export default async function ContactsPage({
               Export CSV
             </a>
             <ImportContactsButton />
+            </>
+            )}
             <Link
               href="/dashboard/contacts/new"
               className={buttonVariants("primary")}
@@ -147,6 +152,7 @@ export default async function ContactsPage({
           <option value="qualified">Minősített</option>
           <option value="inactive">Inaktív</option>
         </select>
+        {!SIMPLE_MODE && (
         <select name="source" defaultValue={source ?? ""} className={inputClass}>
           <option value="">Minden forrás</option>
           <option value="website">Weboldal</option>
@@ -155,7 +161,8 @@ export default async function ContactsPage({
           <option value="walk_in">Betérő</option>
           <option value="other">Egyéb</option>
         </select>
-        {allTags.length > 0 && (
+        )}
+        {!SIMPLE_MODE && allTags.length > 0 && (
           <select name="tag" defaultValue={tag ?? ""} className={inputClass}>
             <option value="">Minden címke</option>
             {allTags.map((t) => (
@@ -175,7 +182,9 @@ export default async function ContactsPage({
         )}
       </form>
 
-      <SavedViewsBar entityType="contacts" views={savedViews} currentFilters={{ q, status, source, tag }} />
+      {!SIMPLE_MODE && (
+        <SavedViewsBar entityType="contacts" views={savedViews} currentFilters={{ q, status, source, tag }} />
+      )}
 
       {contacts.length === 0 ? (
         <EmptyState

@@ -10,7 +10,7 @@ import { NotificationsPanel } from "./notifications-panel";
 import { MobileNavShell } from "./mobile-nav-shell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast";
-import { planLabel } from "@/lib/edition";
+import { planLabel, SIMPLE_MODE } from "@/lib/edition";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -34,7 +34,7 @@ export default async function DashboardLayout({
 
   return (
     <ToastProvider>
-      <CommandPalette />
+      {!SIMPLE_MODE && <CommandPalette />}
       <MobileNavShell
         sidebar={
           <>
@@ -46,7 +46,7 @@ export default async function DashboardLayout({
                 </span>
               </div>
               <QuickCreate />
-              <SearchTrigger />
+              {!SIMPLE_MODE && <SearchTrigger />}
               <SidebarNav badges={{ "/dashboard/leads": newLeadCount ?? 0 }} />
             </div>
 

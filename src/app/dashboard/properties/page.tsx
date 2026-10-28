@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export default async function PropertiesPage({
   searchParams,
@@ -87,6 +88,8 @@ export default async function PropertiesPage({
         description="Az iroda aktuális kínálata."
         action={
           <>
+            {!SIMPLE_MODE && (
+            <>
             <a
               href="/dashboard/properties/export"
               className={buttonVariants("secondary")}
@@ -95,6 +98,8 @@ export default async function PropertiesPage({
               Export CSV
             </a>
             <ImportPropertiesButton />
+            </>
+            )}
             <Link
               href="/dashboard/properties/new"
               className={buttonVariants("primary")}
@@ -117,6 +122,8 @@ export default async function PropertiesPage({
             className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm placeholder:text-muted-subtle"
           />
         </div>
+        {!SIMPLE_MODE && (
+        <>
         <input
           type="number"
           name="priceMin"
@@ -131,6 +138,8 @@ export default async function PropertiesPage({
           placeholder="Árig (Ft)"
           className={`${inputClass} w-32`}
         />
+        </>
+        )}
         <select name="status" defaultValue={status ?? ""} className={inputClass}>
           <option value="">Minden státusz</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -139,7 +148,7 @@ export default async function PropertiesPage({
             </option>
           ))}
         </select>
-        {allTags.length > 0 && (
+        {!SIMPLE_MODE && allTags.length > 0 && (
           <select name="tag" defaultValue={tag ?? ""} className={inputClass}>
             <option value="">Minden címke</option>
             {allTags.map((t) => (
@@ -162,11 +171,13 @@ export default async function PropertiesPage({
         )}
       </form>
 
-      <SavedViewsBar
-        entityType="properties"
-        views={savedViews}
-        currentFilters={{ q, priceMin, priceMax, status, tag }}
-      />
+      {!SIMPLE_MODE && (
+        <SavedViewsBar
+          entityType="properties"
+          views={savedViews}
+          currentFilters={{ q, priceMin, priceMax, status, tag }}
+        />
+      )}
 
       {properties.length === 0 ? (
         <EmptyState

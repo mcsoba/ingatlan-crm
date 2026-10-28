@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { linkClass } from "@/components/ui/styles";
-import { PRIVATE_EDITION } from "@/lib/edition";
+import { PRIVATE_EDITION, SIMPLE_MODE } from "@/lib/edition";
 import { HelpContent } from "./help-content";
 
 export default function HelpPage() {
@@ -11,6 +11,15 @@ export default function HelpPage() {
         title="Súgó"
         description="Gyakori kérdések a CRM funkcióiról — keress kulcsszóra, vagy görgesd végig a kategóriákat."
       />
+      {SIMPLE_MODE && (
+        <p className="-mt-4 text-sm text-muted">
+          Lépésről lépésre, feladatok szerint:{" "}
+          <Link href="/dashboard/guide" className={linkClass}>
+            Használati útmutató
+          </Link>
+          .
+        </p>
+      )}
       {!PRIVATE_EDITION && (
         <p className="-mt-4 text-sm text-muted">
           Azt keresed, mi változott legutóbb?{" "}

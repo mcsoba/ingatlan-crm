@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { STATUS_LABELS } from "../../constants";
 import { sectionLabelClass } from "@/components/ui/styles";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 type ContactDealRow = {
   id: string;
@@ -154,12 +155,14 @@ export default async function EditContactPage({
             />
           </div>
           <aside className="flex min-w-0 flex-col gap-4">
+            {!SIMPLE_MODE && (
             <TagPicker
               entityType="contact"
               entityId={contact.id}
               allTags={allTags}
               initialTagIds={(contactTagRows ?? []).map((r) => r.tag_id)}
             />
+            )}
             <LeadScorePanel
               contactId={contact.id}
               initialScore={contact.lead_score}
@@ -181,12 +184,14 @@ export default async function EditContactPage({
             notes={contact.notes}
           />
 
+          {!SIMPLE_MODE && (
           <aside className="min-w-0">
             <CampaignPanel
               contactId={contact.id}
               hasEmail={Boolean(contact.email)}
             />
           </aside>
+          )}
         </div>
       )}
 

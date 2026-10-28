@@ -3,6 +3,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { Columns3 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export const OPTIONAL_COLUMNS = [
   { key: "email", label: "Elérhetőség" },
@@ -49,9 +50,12 @@ function parseVisible(raw: string | null): ColumnKey[] {
   }
 }
 
+// Egyszerű módban fix, rövid oszlopkészlet (nincs oszlopválasztó)
+const SIMPLE_VISIBLE: ColumnKey[] = ["email", "owner", "status", "lastActivity"];
+
 export function useVisibleColumns(): Set<ColumnKey> {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  return useMemo(() => new Set(parseVisible(raw)), [raw]);
+  return useMemo(() => new Set(SIMPLE_MODE ? SIMPLE_VISIBLE : parseVisible(raw)), [raw]);
 }
 
 function setVisible(keys: ColumnKey[]) {

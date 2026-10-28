@@ -28,7 +28,7 @@ import { ACCENT_PRESETS, getAccentPreset } from "@/lib/accent-presets";
 import { MfaPanel } from "./mfa-panel";
 import { PasswordPanel } from "./password-panel";
 import { PageHeader } from "@/components/ui/page-header";
-import { PRIVATE_EDITION } from "@/lib/edition";
+import { PRIVATE_EDITION, SIMPLE_MODE } from "@/lib/edition";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -58,7 +58,9 @@ export default async function SettingsPage({
   searchParams: Promise<{ error?: string; google?: string; tab?: string }>;
 }) {
   const { error, google, tab } = await searchParams;
-  const activeTab: TabId = TABS.some((t) => t.id === tab) ? (tab as TabId) : "profil";
+  // Egyszerű módban nincs Integrációk fül (a kulcsokat a telepítő állítja be)
+  const tabs = SIMPLE_MODE ? TABS.filter((t) => t.id !== "integraciok") : TABS;
+  const activeTab: TabId = tabs.some((t) => t.id === tab) ? (tab as TabId) : "profil";
   const { user, profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
@@ -159,7 +161,7 @@ export default async function SettingsPage({
         </Card>
       )}
 
-      {missingCount > 0 && (
+      {!SIMPLE_MODE && missingCount > 0 && (
         <Card className="flex items-center gap-2.5 border-warning/30 bg-warning-soft p-4 text-sm text-warning">
           <CircleAlert className="h-4 w-4 shrink-0" />
           {missingCount} integráció még nincs beállítva — a hozzájuk tartozó funkciók a kódban készen állnak,
@@ -168,7 +170,7 @@ export default async function SettingsPage({
       )}
 
       <div className="flex gap-1 border-b border-border">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <Link
             key={t.id}
             href={`/dashboard/settings?tab=${t.id}`}
@@ -209,7 +211,7 @@ export default async function SettingsPage({
               </Button>
             </form>
             <PasswordPanel email={user.email ?? ""} />
-            <MfaPanel initialFactor={verifiedMfaFactor} />
+            {!SIMPLE_MODE && <MfaPanel initialFactor={verifiedMfaFactor} />}
           </div>
         </Card>
       </div>
@@ -286,6 +288,8 @@ export default async function SettingsPage({
         </Card>
       </div>
 
+      {!SIMPLE_MODE && (
+      <>
       <div>
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Nyilvános ingatlan-katalógus</div>
@@ -445,6 +449,8 @@ export default async function SettingsPage({
       </div>
       </>
       )}
+      </>
+      )}
 
       {activeTab === "integraciok" && (
       <>
@@ -489,7 +495,7 @@ export default async function SettingsPage({
       </>
       )}
 
-      {activeTab === "profil" && (
+      {activeTab === "profil" && !SIMPLE_MODE && (
       <div>
         <div className="mb-2">
           <div className="text-sm font-medium text-foreground">Személyes integrációk</div>

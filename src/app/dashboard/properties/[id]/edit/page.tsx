@@ -10,6 +10,7 @@ import { listAgencyTags } from "../../../tags/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { sectionLabelClass } from "@/components/ui/styles";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export default async function EditPropertyPage({
   params,
@@ -80,12 +81,14 @@ export default async function EditPropertyPage({
           />
         </div>
         <aside className="flex min-w-0 flex-col gap-6">
+          {!SIMPLE_MODE && (
           <TagPicker
             entityType="property"
             entityId={property.id}
             allTags={allTags}
             initialTagIds={(propertyTagRows ?? []).map((r) => r.tag_id)}
           />
+          )}
           {photos.length > 0 && (
             <div>
               <h2 className={`mb-2 ${sectionLabelClass}`}>
