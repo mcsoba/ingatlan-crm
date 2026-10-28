@@ -107,7 +107,8 @@ export default async function DashboardPage() {
         }
       />
 
-      {!checklistDone && (
+      {/* Átadott (privát) telepítésben az irodát mi állítjuk be, nincs bevezető lista */}
+      {!PRIVATE_EDITION && !checklistDone && (
         <Card className="flex flex-col gap-3 p-5">
           <div>
             <div className="text-sm font-medium text-foreground">Első lépések</div>
