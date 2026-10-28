@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { PRIVATE_EDITION } from "@/lib/edition";
@@ -53,6 +54,8 @@ const ENTRIES: Entry[] = [
 ];
 
 export default function WhatsNewPage() {
+  if (PRIVATE_EDITION) notFound();
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
