@@ -152,7 +152,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           href="/dashboard/pipeline"
-          label="Deal"
+          label="Üzlet"
           value={dealCount ?? 0}
           icon={Kanban}
         />

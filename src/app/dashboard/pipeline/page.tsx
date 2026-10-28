@@ -124,7 +124,7 @@ export default async function PipelinePage() {
       <PageHeader
         title="Üzletek"
         description="Minden folyamatban lévő vételi és bérlési ügy, szakaszonként. Ahogy halad az ügy, húzd a kártyát a következő szakaszba."
-        helpText="A pipeline minden folyamatban lévő üzletet mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
+        helpText="Ez a tábla minden folyamatban lévő üzletet mutat kártyaként. Ahogy egy érdeklődő közelebb kerül a vásárláshoz/eladáshoz, húzd a kártyáját a következő szakaszba — így mindig látod, hol tart minden ügy."
         action={
           <>
             {/* Plain <a>, not <Link> — this must be a full browser navigation

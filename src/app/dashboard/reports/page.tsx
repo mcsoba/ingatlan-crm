@@ -222,7 +222,7 @@ export default async function ReportsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Riportok"
-        description="Csapat-teljesítmény a pipeline üzletek alapján."
+        description="Csapat-teljesítmény az üzletek alapján."
       />
 
       {allDeals.length > 0 && (
