@@ -9,6 +9,8 @@ import { Card } from "@/components/ui/card";
 import { inputClass, labelClass, fieldGroupClass } from "@/components/ui/styles";
 import { queueToast } from "@/components/ui/toast";
 import { STATUS_HELP } from "./constants";
+import { OwnerSelect } from "@/components/owner-select";
+import type { TeamMember } from "@/lib/team";
 
 type ContactFormProps = {
   action: (formData: FormData) => void;
@@ -20,8 +22,11 @@ type ContactFormProps = {
     source?: string;
     status?: string;
     notes?: string | null;
+    owner_id?: string | null;
   };
   submitLabel: string;
+  teamMembers: TeamMember[];
+  currentUserId: string;
 };
 
 export function ContactForm({
@@ -29,6 +34,8 @@ export function ContactForm({
   contactId,
   defaultValues,
   submitLabel,
+  teamMembers,
+  currentUserId,
 }: ContactFormProps) {
   const [name, setName] = useState(defaultValues?.name ?? "");
   const [email, setEmail] = useState(defaultValues?.email ?? "");
@@ -200,6 +207,12 @@ export function ContactForm({
             </select>
             {STATUS_HELP[status] && <span className="text-xs text-muted">{STATUS_HELP[status]}</span>}
           </div>
+
+          <OwnerSelect
+            teamMembers={teamMembers}
+            currentUserId={currentUserId}
+            defaultOwnerId={contactId ? (defaultValues?.owner_id ?? null) : currentUserId}
+          />
 
           <div className={fieldGroupClass}>
             <span className={labelClass}>Jegyzet (opcionális)</span>

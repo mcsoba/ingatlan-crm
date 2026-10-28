@@ -10,6 +10,7 @@ import { getResend, EMAIL_FROM, textToHtml } from "@/lib/resend";
 import { sendSms } from "@/lib/twilio";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToProfiles } from "@/lib/push";
+import { readOwnerId, notifyNewOwner } from "@/lib/owner";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -54,32 +55,46 @@ export async function createContact(formData: FormData) {
     throw new Error("A név megadása kötelező");
   }
 
+  const ownerId = readOwnerId(formData);
   const supabase = await createClient();
-  const { error } = await supabase.from("contacts").insert({
-    agency_id: profile.agency_id,
-    name: input.name,
-    email: input.email || null,
-    phone: input.phone || null,
-    source: input.source,
-    status: input.status,
-    notes: input.notes || null,
-  });
+  const { data: created, error } = await supabase
+    .from("contacts")
+    .insert({
+      agency_id: profile.agency_id,
+      name: input.name,
+      email: input.email || null,
+      phone: input.phone || null,
+      source: input.source,
+      status: input.status,
+      notes: input.notes || null,
+      ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
+
+  await notifyNewOwner(ownerId, profile, {
+    title: "Új ügyfelet kaptál",
+    body: `${profile.full_name || "Egy kollégád"} rád bízta: ${input.name}`,
+    url: `/contact/${created.id}`,
+  });
 
   revalidatePath("/dashboard/contacts");
   redirect("/dashboard/contacts");
 }
 
 export async function updateContact(id: string, formData: FormData) {
-  await ensureCurrentUserProfile();
+  const { profile } = await ensureCurrentUserProfile();
   const input = readContactInput(formData);
 
   if (!input.name) {
     throw new Error("A név megadása kötelező");
   }
 
+  const ownerId = readOwnerId(formData);
   const supabase = await createClient();
+  const { data: before } = await supabase.from("contacts").select("owner_id").eq("id", id).maybeSingle();
   const { error } = await supabase
     .from("contacts")
     .update({
@@ -89,10 +104,19 @@ export async function updateContact(id: string, formData: FormData) {
       source: input.source,
       status: input.status,
       notes: input.notes || null,
+      ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
     })
     .eq("id", id);
 
   if (error) throw error;
+
+  if (ownerId && ownerId !== before?.owner_id) {
+    await notifyNewOwner(ownerId, profile, {
+      title: "Új ügyfelet kaptál",
+      body: `${profile.full_name || "Egy kollégád"} rád bízta: ${input.name}`,
+      url: `/contact/${id}`,
+    });
+  }
 
   revalidatePath("/dashboard/contacts");
   redirect("/dashboard/contacts");
