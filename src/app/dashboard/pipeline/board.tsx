@@ -125,6 +125,13 @@ export function PipelineBoard({
   currentUserId: string;
 }) {
   const [cards, setCards] = useState(deals);
+  // Ha a szerver friss listát küld (pl. törlés vagy más módosítás után),
+  // a helyi (húzás miatti) állapot igazodjon hozzá.
+  const [prevDeals, setPrevDeals] = useState(deals);
+  if (deals !== prevDeals) {
+    setPrevDeals(deals);
+    setCards(deals);
+  }
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverStageId, setHoverStageId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
