@@ -7,7 +7,7 @@ const base =
   "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-white hover:bg-accent-hover",
+  primary: "bg-cta text-cta-foreground hover:bg-cta-hover",
   secondary:
     "bg-surface border border-border text-foreground hover:bg-background",
   ghost: "text-muted hover:text-foreground hover:bg-background",

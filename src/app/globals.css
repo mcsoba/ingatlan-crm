@@ -16,6 +16,10 @@
   --accent: #6366f1;
   --accent-hover: #4f52e0;
   --accent-soft: #eef0fe;
+  /* Elsődleges gomb (CTA): alapból az accent; irodára szabott branch külön színt adhat neki */
+  --cta: var(--accent);
+  --cta-hover: var(--accent-hover);
+  --cta-foreground: #ffffff;
   --danger: #dc2626;
   --danger-soft: #fef2f2;
   --success: #16a34a;
@@ -87,6 +91,9 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-soft: var(--accent-soft);
+  --color-cta: var(--cta);
+  --color-cta-hover: var(--cta-hover);
+  --color-cta-foreground: var(--cta-foreground);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
