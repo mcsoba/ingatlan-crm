@@ -8,6 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
 import { TasksList, type TaskRow } from "./tasks-list";
 import { TaskQuickAdd } from "./task-quick-add";
+import { TasksViewSwitch } from "./view-switch";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export default async function TasksPage({
   searchParams,
@@ -42,6 +44,8 @@ export default async function TasksPage({
         helpText="A „Kié” szűrővel átválthatsz az egész iroda teendőire. Egy teendő felelősét a felvételkor a „Kinek a feladata?” mezőben adhatod meg."
       />
 
+      <TasksViewSwitch active="list" />
+
       <TaskQuickAdd />
 
       <form className="flex flex-wrap gap-2">
@@ -56,7 +60,7 @@ export default async function TasksPage({
         </select>
         <select name="type" defaultValue={type ?? ""} className={inputClass}>
           <option value="">Minden típus</option>
-          <option value="note">Jegyzet</option>
+          {!SIMPLE_MODE && <option value="note">Jegyzet</option>}
           <option value="call">Hívás</option>
           <option value="viewing">Megtekintés</option>
           <option value="reminder">Emlékeztető</option>

@@ -29,10 +29,11 @@ const ALL_FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mi a különbség a Teendők oldal és a Naptár között?",
         answer:
-          "A Teendők oldal az iroda összes nyitott/kész tennivalóját listázza szűrhetően (lejárt, ma esedékes, jövőbeli). A Naptár havi rácsban mutatja ugyanezeket, dátum szerint elrendezve — ugyanaz az adat, más nézet.",
+          "A Teendők oldal az iroda összes nyitott/kész tennivalóját listázza szűrhetően (lejárt, ma esedékes, jövőbeli). A Naptár havi rácsban mutatja ugyanezeket, dátum szerint elrendezve — ugyanaz az adat, más nézet. A Teendők oldal tetején egy kattintással válthatsz a kettő között.",
       },
       {
         question: "Lehet egy teendőt ismétlődővé tenni?",
+        advanced: true,
         answer:
           "Igen — új teendő felvitelekor válaszd ki az 'Ismétlődés' legördülőt (Naponta/Hetente/Havonta). A rendszer a határidő elteltével automatikusan létrehozza a következő előfordulást.",
       },

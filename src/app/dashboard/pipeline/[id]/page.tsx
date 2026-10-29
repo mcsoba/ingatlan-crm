@@ -209,13 +209,13 @@ export default async function DealDetailPage({
               {isLastStage ? (
                 <span className="flex items-center gap-1.5 text-sm font-medium text-success">
                   <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
-                  Nyertes ügylet
+                  Sikeresen lezárva
                 </span>
               ) : (
                 <form action={markWonWithId}>
                   <Button type="submit" variant="success">
                     <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />
-                    Nyertesnek jelölés
+                    Sikeres lezárás
                   </Button>
                 </form>
               )}

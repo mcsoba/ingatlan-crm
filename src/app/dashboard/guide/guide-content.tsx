@@ -106,7 +106,7 @@ export function GuideContent() {
               ["Ki kinek a felelőse (kiosztás)", "vezetoknek"],
               ["Szakaszok és útmutatók testreszabása", "uzlet"],
               ["Elakadt üzletek, riportok", "vezetoknek"],
-              ["Lezárás: nyertes / elveszett", "lezaras"],
+              ["Lezárás: sikeres / elveszett", "lezaras"],
             ]}
           />
         </div>
@@ -224,14 +224,18 @@ export function GuideContent() {
             <>
               <b>Kinek a feladata?</b> — alapból te, de átadhatod egy kollégának; ő értesítést kap róla.
             </>,
-            <>
-              Ha rendszeres (pl. hetente visszahívni), állíts be <b>ismétlődést</b>.
-            </>,
+            ...(SIMPLE_MODE
+              ? []
+              : [
+                  <>
+                    Ha rendszeres (pl. hetente visszahívni), állíts be <b>ismétlődést</b>.
+                  </>,
+                ]),
           ]}
         />
         <Tip>
           A határidő előtt kb. egy órával a telefonod emlékeztet. Az összes teendőd a{" "}
-          <Ref href="/dashboard/tasks">Teendők</Ref> oldalon és a <Ref href="/dashboard/calendar">Naptárban</Ref> is látod.
+          <Ref href="/dashboard/tasks">Teendők</Ref> oldalon látod, a tetején listaként vagy <Ref href="/dashboard/calendar">naptárként</Ref>.
         </Tip>
       </Section>
 
@@ -316,7 +320,7 @@ export function GuideContent() {
         <Steps
           items={[
             <>
-              <b>Sikeres üzlet</b>: az üzlet oldalán <b>„Nyertesnek jelölés”</b>. Előtte add meg a <b>végleges árat</b> és a{" "}
+              <b>Sikeres üzlet</b>: húzd a kártyát a <b>Zárás</b> oszlopba, vagy az üzlet oldalán kattints a <b>„Sikeres lezárás”</b> gombra — a kettő ugyanaz. Előtte add meg a <b>végleges árat</b> és a{" "}
               <b>jutalék %-át</b> — a rendszer kiszámolja a jutalékot, és megjelenik a riportokban.
             </>,
             <>
@@ -368,7 +372,8 @@ export function GuideContent() {
           </li>
           <li>
             <b>Véletlenül töröltél?</b> A törölt ügyfelek, ingatlanok és üzletek <b>30 napig</b> a{" "}
-            <Ref href="/dashboard/trash">Lomtárban</Ref> maradnak, onnan visszaállíthatók.
+            <Ref href="/dashboard/trash">Lomtárban</Ref> maradnak, onnan visszaállíthatók
+            {SIMPLE_MODE ? " (Beállítások oldal alja)." : "."}
           </li>
           {!SIMPLE_MODE && (
             <>

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { TasksViewSwitch } from "../tasks/view-switch";
 
 type CalendarActivity = {
   id: string;
@@ -111,6 +112,8 @@ export default async function CalendarPage({
           </div>
         }
       />
+
+      <TasksViewSwitch active="calendar" />
 
       <div className="text-sm font-medium capitalize text-foreground">{monthLabel}</div>
 

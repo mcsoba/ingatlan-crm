@@ -75,23 +75,33 @@ const SIMPLE_NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/dashboard", label: "Áttekintés", icon: LayoutDashboard },
       { href: "/dashboard/tasks", label: "Teendők", icon: ListChecks },
-      { href: "/dashboard/leads", label: "Új érdeklődők", icon: Inbox },
       { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
       { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
       { href: "/dashboard/pipeline", label: "Üzletek", icon: Kanban },
-      { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
       { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
       { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
-      { href: "/dashboard/trash", label: "Lomtár", icon: Trash2 },
       { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
     ],
   },
 ];
 
+// Egyszerű módban a menüből kivett oldalak: rajtuk ez a menüpont legyen kiemelve.
+// (Új érdeklődők: Áttekintés „Hívd fel őket”; Naptár: Teendők nézetváltó;
+// Lomtár: Beállítások alja.)
+const SIMPLE_PARENT: Record<string, string> = {
+  "/dashboard/leads": "/dashboard",
+  "/dashboard/calendar": "/dashboard/tasks",
+  "/dashboard/trash": "/dashboard/settings",
+};
+
 export function SidebarNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname();
 
   function isActive(href: string) {
+    const parent = SIMPLE_MODE
+      ? Object.entries(SIMPLE_PARENT).find(([path]) => pathname.startsWith(path))?.[1]
+      : undefined;
+    if (parent) return href === parent;
     return href === "/dashboard" ? pathname === href : pathname.startsWith(href);
   }
 

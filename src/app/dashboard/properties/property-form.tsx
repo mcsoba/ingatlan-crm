@@ -26,6 +26,7 @@ import { queueToast } from "@/components/ui/toast";
 import { formatThousands } from "@/components/ui/formatted-number-input";
 import { OwnerSelect } from "@/components/owner-select";
 import type { TeamMember } from "@/lib/team";
+import { SIMPLE_MODE } from "@/lib/edition";
 
 export type PropertyFormValues = {
   owner_id?: string | null;
@@ -212,6 +213,21 @@ export function PropertyForm({
 
   const heating = new Set(d.heating ?? []);
 
+  // Egyszerű módban ezek is a lenyitható „Részletek” részbe kerülnek.
+  const postalCodeField = (
+    <label className={fieldGroupClass}>
+      <span className={labelClass}>Irányítószám</span>
+      <input
+        name="postal_code"
+        inputMode="numeric"
+        maxLength={4}
+        defaultValue={d.postal_code ?? ""}
+        className={inputClass}
+      />
+    </label>
+  );
+  const halfRoomsField = <NumberField name="half_rooms" label="Félszobák" value={d.half_rooms} />;
+
   return (
     <Card className="max-w-3xl p-5">
       <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -262,17 +278,8 @@ export function PropertyForm({
           />
         </label>
 
-        <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
-          <label className={fieldGroupClass}>
-            <span className={labelClass}>Irányítószám</span>
-            <input
-              name="postal_code"
-              inputMode="numeric"
-              maxLength={4}
-              defaultValue={d.postal_code ?? ""}
-              className={inputClass}
-            />
-          </label>
+        <div className={`grid gap-4 ${SIMPLE_MODE ? "" : "sm:grid-cols-[1fr_2fr]"}`}>
+          {!SIMPLE_MODE && postalCodeField}
           <label className={fieldGroupClass}>
             <span className={labelClass}>Település</span>
             <input name="city" defaultValue={d.city ?? ""} className={inputClass} />
@@ -312,7 +319,7 @@ export function PropertyForm({
           defaultOwnerId={defaultValues ? (d.owner_id ?? null) : currentUserId}
         />
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className={`grid gap-4 ${SIMPLE_MODE ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
           <label className={fieldGroupClass}>
             <span className={labelClass}>Alapterület (m²)</span>
             <input
@@ -326,18 +333,27 @@ export function PropertyForm({
             />
           </label>
           <NumberField name="rooms" label="Szobák" value={d.rooms} />
-          <NumberField name="half_rooms" label="Félszobák" value={d.half_rooms} />
+          {!SIMPLE_MODE && halfRoomsField}
         </div>
 
         {/* ── Hirdetési részletek ── */}
-        <details className="rounded-lg border border-border p-4" open={isEditing}>
+        <details className="rounded-lg border border-border p-4" open={!SIMPLE_MODE && isEditing}>
           <summary className={`cursor-pointer ${sectionLabelClass}`}>
-            Részletek a hirdetéshez (állapot, fűtés, emelet, felszereltség…)
+            {SIMPLE_MODE
+              ? "További adatok (nem kötelező) – kattints a lenyitáshoz"
+              : "Részletek a hirdetéshez (állapot, fűtés, emelet, felszereltség…)"}
           </summary>
           <p className="mt-2 text-xs text-muted">
             Nem kötelező, de minél több adat van kitöltve, annál pontosabb az AI-leírás, és
             ezekből készül majd a hirdetés az ingatlanportálokra is.
           </p>
+
+          {SIMPLE_MODE && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              {postalCodeField}
+              {halfRoomsField}
+            </div>
+          )}
 
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <label className={fieldGroupClass}>

@@ -47,7 +47,7 @@ export default async function DashboardLayout({
               </div>
               <QuickCreate />
               {!SIMPLE_MODE && <SearchTrigger />}
-              <SidebarNav badges={{ "/dashboard/leads": newLeadCount ?? 0 }} />
+              <SidebarNav badges={{ [SIMPLE_MODE ? "/dashboard" : "/dashboard/leads"]: newLeadCount ?? 0 }} />
             </div>
 
             <div>
