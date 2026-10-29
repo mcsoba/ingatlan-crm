@@ -419,7 +419,14 @@ export function PipelineBoard({
                   )}
                   <div className="flex items-center justify-between gap-2 pt-1">
                     {/* Lezárt (utolsó szakaszban lévő) üzlet innen is törölhető */}
-                    {card.isClosed ? <DeleteDealButton compact dealId={card.id} dealTitle={card.contactName} /> : <span />}
+                    {card.isClosed ? (
+                      <span className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-success">✓ Sikeresen lezárva</span>
+                        <DeleteDealButton compact dealId={card.id} dealTitle={card.contactName} />
+                      </span>
+                    ) : (
+                      <span />
+                    )}
                     <QuickLog onLog={(type, text) => logActivity(card.id, type, text)} />
                   </div>
                 </Card>

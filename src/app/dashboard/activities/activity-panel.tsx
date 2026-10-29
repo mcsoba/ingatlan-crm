@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SIMPLE_MODE } from "@/lib/edition";
 import { inputClass } from "@/components/ui/styles";
 import { formatDue } from "@/lib/time";
 
@@ -214,7 +215,7 @@ export function ActivityPanel({
               <option value="call">Hívás</option>
               <option value="viewing">Megtekintés</option>
               <option value="reminder">Emlékeztető</option>
-              <option value="checklist">Ellenőrzőlista</option>
+              {!SIMPLE_MODE && <option value="checklist">Ellenőrzőlista</option>}
             </select>
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">
@@ -245,6 +246,7 @@ export function ActivityPanel({
                 </select>
               </label>
             )}
+            {!SIMPLE_MODE && (
             <label className="flex flex-col gap-1 text-xs text-muted">
             Ismétlődés
             <select
@@ -259,6 +261,7 @@ export function ActivityPanel({
               <option value="monthly">Havonta</option>
             </select>
             </label>
+            )}
           </div>
           <textarea
             name="content"

@@ -314,7 +314,7 @@ export default function DealDetail() {
         <>
           <SectionTitle>Lezárás</SectionTitle>
           <View style={{ gap: 8 }}>
-            <Button label="Nyertesnek jelölés (Zárás)" icon={<Trophy size={18} color="#fff" />} onPress={markWon} />
+            <Button label="Sikeres lezárás (Zárás)" icon={<Trophy size={18} color="#fff" />} onPress={markWon} />
             {lostOpen ? (
               <Card style={{ gap: 10 }}>
                 <Text style={{ color: c.text, fontWeight: "700" }}>Miért veszett el? (nem kötelező)</Text>

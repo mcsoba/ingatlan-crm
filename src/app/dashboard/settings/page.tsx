@@ -12,6 +12,7 @@ import {
   Webhook,
   Download,
   Shuffle,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -553,6 +554,23 @@ export default async function SettingsPage({
           </div>
         </Card>
       </div>
+      )}
+
+      {SIMPLE_MODE && (
+        <Card className="flex items-center gap-3.5 p-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-hover">
+            <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-foreground">Lomtár</div>
+            <p className="text-xs text-muted">
+              Véletlenül töröltél valamit? A törölt ügyfelek, ingatlanok és üzletek 30 napig innen visszaállíthatók.
+            </p>
+          </div>
+          <Link href="/dashboard/trash" className={buttonVariants("secondary")}>
+            Megnyitás
+          </Link>
+        </Card>
       )}
     </div>
   );
