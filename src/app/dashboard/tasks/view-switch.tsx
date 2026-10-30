@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ListChecks, CalendarDays } from "lucide-react";
+import { ListChecks, CalendarDays, Palmtree } from "lucide-react";
 
-// Lista / Naptár váltó a Teendők és a Naptár oldal tetején — ugyanaz az adat,
-// két nézetben (egyszerű módban a Naptár nincs külön a menüben).
-export function TasksViewSwitch({ active }: { active: "list" | "calendar" }) {
+// Lista / Naptár / Szabadságok váltó a Teendők, a Naptár és a Szabadságok oldal
+// tetején (egyszerű módban a Naptár nincs külön a menüben).
+export function TasksViewSwitch({ active }: { active: "list" | "calendar" | "leave" }) {
   const item = (isActive: boolean) =>
     `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
       isActive ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground"
@@ -17,6 +17,10 @@ export function TasksViewSwitch({ active }: { active: "list" | "calendar" }) {
       <Link href="/dashboard/calendar" className={item(active === "calendar")}>
         <CalendarDays className="h-4 w-4" strokeWidth={1.75} />
         Naptár
+      </Link>
+      <Link href="/dashboard/leave" className={item(active === "leave")}>
+        <Palmtree className="h-4 w-4" strokeWidth={1.75} />
+        Szabadságok
       </Link>
     </div>
   );

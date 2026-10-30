@@ -15,6 +15,8 @@ type CalendarActivity = {
   deals: { id: string } | null;
 };
 
+type CalendarLeave = { id: string; start_date: string; end_date: string; profiles: { full_name: string | null } | null };
+
 const WEEKDAY_LABELS = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
 
 const TYPE_CHIP_CLASS: Record<string, string> = {
@@ -70,6 +72,22 @@ export default async function CalendarPage({
 
   if (error) throw error;
 
+  // Szabadságok (0041_leave.sql) — ha a tábla még nincs meg, a naptár nélküle működik tovább
+  const { data: leaveRows } = await supabase
+    .from("leaves")
+    .select("id, start_date, end_date, profiles!leaves_profile_id_fkey(full_name)")
+    .lte("start_date", dateKey(gridEnd))
+    .gte("end_date", dateKey(gridStart));
+  const leavesByDay = new Map<string, CalendarLeave[]>();
+  for (const leave of (leaveRows ?? []) as unknown as CalendarLeave[]) {
+    for (const day of gridDays) {
+      const key = dateKey(day);
+      const dow = day.getDay();
+      if (key < leave.start_date || key > leave.end_date || dow === 0 || dow === 6) continue;
+      leavesByDay.set(key, [...(leavesByDay.get(key) ?? []), leave]);
+    }
+  }
+
   const byDay = new Map<string, CalendarActivity[]>();
   for (const activity of (activities ?? []) as unknown as CalendarActivity[]) {
     const key = dateKey(new Date(activity.due_at));
@@ -87,7 +105,7 @@ export default async function CalendarPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Naptár"
-        description="A felvitt hívások, megtekintések és emlékeztetők havi nézete."
+        description="A felvitt hívások, megtekintések, emlékeztetők és a csapat szabadságai havi nézetben."
         action={
           <div className="flex items-center gap-2">
             <Link
@@ -149,6 +167,16 @@ export default async function CalendarPage({
                 {day.getDate()}
               </span>
               <div className="flex flex-col gap-0.5">
+                {(leavesByDay.get(key) ?? []).map((leave) => (
+                  <Link key={leave.id} href="/dashboard/leave">
+                    <span
+                      className="block truncate rounded bg-success-soft px-1 py-0.5 text-[11px] leading-tight text-success"
+                      title={`Szabadság: ${leave.profiles?.full_name || "munkatárs"}`}
+                    >
+                      🌴 {leave.profiles?.full_name || "Szabadság"}
+                    </span>
+                  </Link>
+                ))}
                 {visible.map((activity) => {
                   const href = activity.deals
                     ? `/dashboard/pipeline/${activity.deals.id}`

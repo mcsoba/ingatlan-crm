@@ -91,6 +91,7 @@ const SIMPLE_NAV_GROUPS: NavGroup[] = [
 const SIMPLE_PARENT: Record<string, string> = {
   "/dashboard/leads": "/dashboard",
   "/dashboard/calendar": "/dashboard/tasks",
+  "/dashboard/leave": "/dashboard/tasks",
   "/dashboard/trash": "/dashboard/settings",
 };
 
