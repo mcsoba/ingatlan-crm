@@ -11,6 +11,8 @@ import { MobileNavShell } from "./mobile-nav-shell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider } from "@/components/ui/toast";
 import { planLabel, SIMPLE_MODE } from "@/lib/edition";
+import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
+import { CompanySwitcher } from "./company-switcher";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
@@ -28,10 +30,11 @@ export default async function DashboardLayout({
   // Unprocessed-lead count for the sidebar badge (RLS scopes it to the
   // agency and hides soft-deleted contacts).
   const supabase = await createClient();
-  const { count: newLeadCount } = await supabase
-    .from("contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "new");
+  const [{ count: newLeadCount }, companies, selectedCompanyId] = await Promise.all([
+    supabase.from("contacts").select("id", { count: "exact", head: true }).eq("status", "new"),
+    listCompanies(),
+    getSelectedCompanyId(),
+  ]);
 
   return (
     <ToastProvider>
@@ -47,6 +50,7 @@ export default async function DashboardLayout({
                 </span>
               </div>
               <QuickCreate />
+              <CompanySwitcher companies={companies} selectedId={selectedCompanyId} />
               {!SIMPLE_MODE && <SearchTrigger />}
               <SidebarNav
                 badges={{ [SIMPLE_MODE ? "/dashboard" : "/dashboard/leads"]: newLeadCount ?? 0 }}

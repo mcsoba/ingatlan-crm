@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { loadFormOptions } from "../../data";
+import { getSelectedCompanyId } from "@/lib/companies";
 import { InvoiceForm } from "../../invoice-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { linkClass } from "@/components/ui/styles";
@@ -10,7 +11,9 @@ export default async function NewInvoicePage({
 }: {
   searchParams: Promise<{ company?: string; dir?: string }>;
 }) {
-  const { company, dir } = await searchParams;
+  const sp = await searchParams;
+  const company = sp.company ?? (await getSelectedCompanyId()) ?? undefined;
+  const dir = sp.dir;
   const supabase = await createClient();
   const options = await loadFormOptions(supabase);
 

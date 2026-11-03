@@ -11,6 +11,8 @@ import { queueToast } from "@/components/ui/toast";
 import { STATUS_HELP } from "./constants";
 import { OwnerSelect } from "@/components/owner-select";
 import type { TeamMember } from "@/lib/team";
+import { CompanyPicker } from "@/components/company-picker";
+import type { Company } from "@/lib/company-shared";
 
 type ContactFormProps = {
   action: (formData: FormData) => void;
@@ -23,10 +25,14 @@ type ContactFormProps = {
     status?: string;
     notes?: string | null;
     owner_id?: string | null;
+    company_ids?: string[];
   };
   submitLabel: string;
   teamMembers: TeamMember[];
   currentUserId: string;
+  companies?: Company[];
+  /** Új kontaktnál az oldalsávban kiválasztott cég */
+  defaultCompanyId?: string | null;
 };
 
 export function ContactForm({
@@ -36,6 +42,8 @@ export function ContactForm({
   submitLabel,
   teamMembers,
   currentUserId,
+  companies = [],
+  defaultCompanyId,
 }: ContactFormProps) {
   const [name, setName] = useState(defaultValues?.name ?? "");
   const [email, setEmail] = useState(defaultValues?.email ?? "");
@@ -207,6 +215,12 @@ export function ContactForm({
             </select>
             {STATUS_HELP[status] && <span className="text-xs text-muted">{STATUS_HELP[status]}</span>}
           </div>
+
+          <CompanyPicker
+            companies={companies}
+            multiple
+            defaultIds={contactId ? (defaultValues?.company_ids ?? []) : [defaultCompanyId]}
+          />
 
           <OwnerSelect
             teamMembers={teamMembers}

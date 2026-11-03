@@ -7,7 +7,11 @@ import {
   removeTeamMember,
   updateMyPhone,
   updateTeamMemberRole,
+  updateMemberCompanies,
 } from "./actions";
+import { listCompanies } from "@/lib/companies";
+import { CompanyBadges } from "@/components/company-badges";
+import { CompanyPicker } from "@/components/company-picker";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,10 +29,10 @@ export default async function TeamPage() {
   const canManageTeam = profile.role === "owner" || profile.role === "admin";
   const supabase = await createClient();
 
-  const { data: members, error } = await supabase
-    .from("profiles")
-    .select("id, role, full_name, phone")
-    .order("created_at");
+  const [{ data: members, error }, companies] = await Promise.all([
+    supabase.from("profiles").select("id, role, full_name, phone, company_ids").order("created_at"),
+    listCompanies(),
+  ]);
 
   if (error) throw error;
 
@@ -74,7 +78,17 @@ export default async function TeamPage() {
                 {member.id !== profile.id && member.phone && (
                   <span className="truncate">· {member.phone}</span>
                 )}
+                {!canManageTeam && <CompanyBadges companies={companies} ids={member.company_ids} />}
               </div>
+              {canManageTeam && companies.length > 0 && (
+                <form action={updateMemberCompanies} className="mt-2 flex flex-wrap items-end gap-2 text-xs">
+                  <input type="hidden" name="id" value={member.id} />
+                  <CompanyPicker companies={companies} multiple defaultIds={member.company_ids ?? []} label="Melyik cég munkatársa" />
+                  <button type="submit" className="pb-2 text-xs text-muted hover:text-accent">
+                    Mentés
+                  </button>
+                </form>
+              )}
               {member.id === profile.id && (
                 <form action={updateMyPhone} className="mt-1.5 flex items-center gap-1.5">
                   <Phone className="h-3 w-3 shrink-0 text-muted-subtle" />

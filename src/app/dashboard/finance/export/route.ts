@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnerOrAdmin } from "@/lib/agency";
 import { loadInvoices, type InvoiceFilters } from "../data";
+import { getSelectedCompanyId } from "@/lib/companies";
 import {
   DOC_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -27,7 +28,11 @@ export async function GET(request: Request) {
   await requireOwnerOrAdmin();
   const supabase = await createClient();
   const params = Object.fromEntries(new URL(request.url).searchParams) as InvoiceFilters;
-  const filters = { ...params, year: params.year ?? String(new Date().getFullYear()) };
+  const filters = {
+    ...params,
+    company: params.company ?? (await getSelectedCompanyId()) ?? undefined,
+    year: params.year ?? String(new Date().getFullYear()),
+  };
   const [invoices, { data: companies }] = await Promise.all([
     loadInvoices(supabase, filters),
     supabase.from("finance_companies").select("id, name"),

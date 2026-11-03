@@ -11,6 +11,7 @@ import { sendSms } from "@/lib/twilio";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToProfiles } from "@/lib/push";
 import { readOwnerId, notifyNewOwner } from "@/lib/owner";
+import { readCompanyIds } from "@/lib/company-shared";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "új, még nem vettük fel vele a kapcsolatot",
@@ -56,6 +57,7 @@ export async function createContact(formData: FormData) {
   }
 
   const ownerId = readOwnerId(formData);
+  const companyIds = readCompanyIds(formData);
   const supabase = await createClient();
   const { data: created, error } = await supabase
     .from("contacts")
@@ -68,6 +70,7 @@ export async function createContact(formData: FormData) {
       status: input.status,
       notes: input.notes || null,
       ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
+      ...(companyIds !== undefined ? { company_ids: companyIds } : {}),
     })
     .select("id")
     .single();
@@ -93,6 +96,7 @@ export async function updateContact(id: string, formData: FormData) {
   }
 
   const ownerId = readOwnerId(formData);
+  const companyIds = readCompanyIds(formData);
   const supabase = await createClient();
   const { data: before } = await supabase.from("contacts").select("owner_id").eq("id", id).maybeSingle();
   const { error } = await supabase
@@ -105,6 +109,7 @@ export async function updateContact(id: string, formData: FormData) {
       status: input.status,
       notes: input.notes || null,
       ...(ownerId !== undefined ? { owner_id: ownerId } : {}),
+      ...(companyIds !== undefined ? { company_ids: companyIds } : {}),
     })
     .eq("id", id);
 

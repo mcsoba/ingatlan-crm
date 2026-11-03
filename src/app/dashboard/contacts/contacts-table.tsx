@@ -19,6 +19,8 @@ import { SOURCE_LABELS, STATUS_LABELS, STATUS_VARIANTS } from "./constants";
 import { ColumnPicker, useVisibleColumns } from "./column-picker";
 import { useToast } from "@/components/ui/toast";
 import { SIMPLE_MODE } from "@/lib/edition";
+import { CompanyBadges } from "@/components/company-badges";
+import type { Company } from "@/lib/company-shared";
 
 type ContactRow = {
   id: string;
@@ -33,6 +35,7 @@ type ContactRow = {
   isNeglected: boolean;
   daysSinceActivity: number;
   created_at: string;
+  company_ids?: string[];
 };
 
 const tagVariant = (color: string) =>
@@ -44,10 +47,12 @@ export function ContactsTable({
   contacts,
   allTags,
   owners,
+  companies = [],
 }: {
   contacts: ContactRow[];
   allTags: TagRow[];
   owners: { id: string; label: string }[];
+  companies?: Company[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -332,6 +337,7 @@ export function ContactsTable({
                     >
                       {contact.name}
                     </Link>
+                    <CompanyBadges companies={companies} ids={contact.company_ids} />
                     {contact.isNeglected && (
                       <span title={`${contact.daysSinceActivity} napja nincs aktivitás`}>
                         <Clock

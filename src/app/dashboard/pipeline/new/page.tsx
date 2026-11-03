@@ -7,6 +7,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass, labelClass, fieldGroupClass, linkClass } from "@/components/ui/styles";
+import { CompanyPicker } from "@/components/company-picker";
+import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
 
 export default async function NewDealPage({
   searchParams,
@@ -18,11 +20,13 @@ export default async function NewDealPage({
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
-  const [{ data: contacts }, { data: properties }, { data: members }] =
+  const [{ data: contacts }, { data: properties }, { data: members }, companies, selectedCompanyId] =
     await Promise.all([
       supabase.from("contacts").select("id, name").order("name"),
       supabase.from("properties").select("id, address").order("address"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
+      listCompanies(),
+      getSelectedCompanyId(),
     ]);
 
   const emailById = new Map<string, string>();
@@ -103,6 +107,8 @@ export default async function NewDealPage({
               <option value="rent">Bérlés</option>
             </select>
           </div>
+
+          <CompanyPicker companies={companies} defaultIds={[selectedCompanyId]} label="Cég (kinek a nevében)" />
 
           <div className={fieldGroupClass}>
             <span className={labelClass}>Felelős ügynök</span>

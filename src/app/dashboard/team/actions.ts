@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ensureCurrentUserProfile, requireOwner, requireOwnerOrAdmin } from "@/lib/agency";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { readCompanyIds } from "@/lib/company-shared";
 
 export async function inviteTeamMember(formData: FormData) {
   const profile = await requireOwnerOrAdmin();
@@ -114,4 +115,28 @@ export async function updateMyPhone(formData: FormData) {
   if (error) throw error;
 
   revalidatePath("/dashboard/team");
+}
+
+/** Munkatárs cége(i) (melyik cég alkalmazottja) — csak irodavezető állíthatja. */
+export async function updateMemberCompanies(formData: FormData) {
+  const profile = await requireOwnerOrAdmin();
+  const id = String(formData.get("id") ?? "");
+  const companyIds = readCompanyIds(formData) ?? [];
+
+  const admin = createAdminClient();
+  const { data: target, error: targetError } = await admin
+    .from("profiles")
+    .select("agency_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (targetError) throw targetError;
+  if (!target || target.agency_id !== profile.agency_id) {
+    throw new Error("Ez a felhasználó nem található az irodádban");
+  }
+
+  const { error } = await admin.from("profiles").update({ company_ids: companyIds }).eq("id", id);
+  if (error) throw error;
+
+  revalidatePath("/dashboard/team");
+  revalidatePath("/dashboard/leave");
 }

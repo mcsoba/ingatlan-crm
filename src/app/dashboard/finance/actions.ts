@@ -42,6 +42,11 @@ function revalidateFinance() {
   revalidatePath("/dashboard");
 }
 
+// A cégek az oldalsáv cégválasztójában és minden listán megjelennek
+function revalidateCompanies() {
+  revalidatePath("/dashboard", "layout");
+}
+
 /** Visszaút a listára a szűrők megtartásával (a form `return_to` mezőjéből, csak belső útvonal). */
 function returnTo(fd: FormData, fallback: string): string {
   const v = text(fd, "return_to");
@@ -67,7 +72,7 @@ export async function saveCompany(formData: FormData) {
     ? await supabase.from("finance_companies").update(payload).eq("id", id)
     : await supabase.from("finance_companies").insert({ ...payload, agency_id: profile.agency_id });
   if (error) throw error;
-  revalidateFinance();
+  revalidateCompanies();
 }
 
 export async function deleteCompany(formData: FormData) {
@@ -84,7 +89,7 @@ export async function deleteCompany(formData: FormData) {
   }
   const { error } = await supabase.from("finance_companies").delete().eq("id", id);
   if (error) throw error;
-  revalidateFinance();
+  revalidateCompanies();
 }
 
 // ---------- számlák / tételek ----------

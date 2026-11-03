@@ -16,6 +16,8 @@ export type DealCard = {
   ownerId: string | null;
   ownerName: string | null;
   dealType: "sale" | "rent";
+  /** A cég, amelynek a nevében az üzlet fut (ha az irodának több cége van) */
+  company?: { name: string; color: string } | null;
   activityStatus: "overdue" | "today" | "scheduled" | "none";
   isClosed: boolean;
   isStale: boolean;
@@ -342,6 +344,12 @@ export function PipelineBoard({
                       {card.dealType === "rent" && (
                         <span className="ml-1.5 rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent align-middle">
                           Bérlés
+                        </span>
+                      )}
+                      {card.company && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-px align-middle text-[10px] font-medium text-muted">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: card.company.color }} />
+                          {card.company.name}
                         </span>
                       )}
                     </div>

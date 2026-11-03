@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
+import { getSelectedCompanyId } from "@/lib/companies";
 
 type Leave = {
   id: string;
@@ -41,8 +42,8 @@ export default async function LeavePage({
   const isManager = profile.role === "owner" || profile.role === "admin";
   const supabase = await createClient();
 
-  const [membersRes, allowancesRes, leavesRes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").order("created_at"),
+  const [membersRes, allowancesRes, leavesRes, selectedCompanyId] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, company_ids").order("created_at"),
     supabase.from("leave_allowances").select("profile_id, days").eq("year", year),
     supabase
       .from("leaves")
@@ -50,6 +51,7 @@ export default async function LeavePage({
       .gte("start_date", `${year}-01-01`)
       .lte("start_date", `${year}-12-31`)
       .order("start_date", { ascending: false }),
+    getSelectedCompanyId(),
   ]);
   if (membersRes.error) throw membersRes.error;
   // A 0041_leave.sql lefuttatása előtt a táblák még nem léteznek — ilyenkor tájékoztatunk, nem dobunk hibát
@@ -60,7 +62,11 @@ export default async function LeavePage({
     const { data: usersPage } = await createAdminClient().auth.admin.listUsers({ perPage: 200 });
     for (const user of usersPage?.users ?? []) emailById.set(user.id, user.email ?? "");
   }
-  const members = (membersRes.data ?? []).map((m) => ({
+  // Oldalsávban kiválasztott cég: csak az ő munkatársai (és a saját sorod)
+  const companyMembers = (membersRes.data ?? []).filter(
+    (m) => !selectedCompanyId || m.id === profile.id || ((m.company_ids as string[] | null) ?? []).includes(selectedCompanyId),
+  );
+  const members = companyMembers.map((m) => ({
     id: m.id as string,
     name: (m.full_name as string | null) || emailById.get(m.id) || "Munkatárs",
   }));
@@ -68,7 +74,8 @@ export default async function LeavePage({
 
   const allowanceById = new Map<string, number>();
   for (const a of allowancesRes.data ?? []) allowanceById.set(a.profile_id, Number(a.days));
-  const leaves = (leavesRes.data ?? []) as Leave[];
+  const memberIds = new Set(members.map((m) => m.id));
+  const leaves = ((leavesRes.data ?? []) as Leave[]).filter((l) => memberIds.has(l.profile_id));
   const usedById = new Map<string, number>();
   for (const l of leaves) usedById.set(l.profile_id, (usedById.get(l.profile_id) ?? 0) + Number(l.days));
 
