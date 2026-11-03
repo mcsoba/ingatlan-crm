@@ -110,7 +110,15 @@ export default async function InvoiceDetailPage({
         </Card>
       )}
 
-      <InvoiceForm invoice={inv} {...options} defaultDirection={inv.direction} returnTo={backHref} />
+      {/* A key miatt pipálás / kiállítás után az űrlap a friss adatokkal épül újra (különben egy
+          Mentés visszaírná a régi dátumokat) */}
+      <InvoiceForm
+        key={[inv.invoice_number, inv.is_planned, inv.issue_date, inv.paid_date, inv.paid_amount, inv.bank_booked_date].join("|")}
+        invoice={inv}
+        {...options}
+        defaultDirection={inv.direction}
+        returnTo={backHref}
+      />
 
       <ConfirmDelete
         action={deleteInvoice}
