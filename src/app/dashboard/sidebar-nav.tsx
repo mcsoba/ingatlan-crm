@@ -46,6 +46,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
       { href: "/dashboard/pipeline", label: "Üzletek", icon: Kanban },
       { href: "/dashboard/calendar", label: "Naptár", icon: CalendarDays },
+      FINANCE_ITEM,
     ],
   },
   {
@@ -82,6 +83,7 @@ const SIMPLE_NAV_GROUPS: NavGroup[] = [
       { href: "/dashboard/contacts", label: "Kontaktok", icon: Users },
       { href: "/dashboard/properties", label: "Ingatlanok", icon: Building2 },
       { href: "/dashboard/pipeline", label: "Üzletek", icon: Kanban },
+      FINANCE_ITEM,
       { href: "/dashboard/team", label: "Csapat", icon: UsersRound },
       { href: "/dashboard/settings", label: "Beállítások", icon: Settings },
       { href: "/dashboard/help", label: "Súgó", icon: HelpCircle },
