@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Repeat } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { generateDueInvoices } from "@/lib/finance-server";
 import { toggleSchedule } from "../actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,7 @@ export default async function FinanceSchedulesPage({
 }) {
   const { company } = await searchParams;
   const supabase = await createClient();
+  await generateDueInvoices(supabase);
   let query = supabase.from("finance_schedules").select(SCHEDULE_SELECT);
   if (company) query = query.eq("company_id", company);
   const [{ data }, { data: companies }] = await Promise.all([
@@ -97,7 +99,7 @@ export default async function FinanceSchedulesPage({
                         <td className="px-2 py-2 text-xs">{companyName.get(s.company_id)}</td>
                         <td className="px-2 py-2 text-xs">
                           {FREQUENCY_LABELS[s.frequency]}
-                          {s.frequency !== "once" && `, ${s.issue_day}-án/én`}
+                          {s.frequency !== "once" && <div className="text-muted">kiállítás: {s.issue_day}. napon</div>}
                           {s.end_date && <div className="text-muted">vége: {formatDate(s.end_date)}</div>}
                         </td>
                         <td className="whitespace-nowrap px-2 py-2 tabular-nums">

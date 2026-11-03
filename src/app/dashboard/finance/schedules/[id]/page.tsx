@@ -43,7 +43,7 @@ export default async function ScheduleDetailPage({ params }: { params: Promise<{
       </Link>
       <PageHeader title={schedule.counterparty_name} description={schedule.description} />
 
-      <ScheduleForm schedule={schedule} {...options} today={today} generatedCount={invoices.length} />
+      <ScheduleForm key={`${schedule.next_period_start}|${schedule.active}`} schedule={schedule} {...options} today={today} generatedCount={invoices.length} />
 
       {invoices.length > 0 && (
         <div className="flex flex-col gap-2">
