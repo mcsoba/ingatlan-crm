@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check, Download, Plus, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
+import { getSelectedCompanyId } from "@/lib/companies";
 import { markInvoice } from "../actions";
 import { STATUS_FILTERS, loadInvoices, type InvoiceFilters } from "../data";
 import { PageHeader } from "@/components/ui/page-header";
@@ -76,7 +77,11 @@ export default async function FinanceInvoicesPage({
   searchParams: Promise<InvoiceFilters>;
 }) {
   const sp = await searchParams;
-  const filters: InvoiceFilters = { ...sp, year: sp.year ?? String(new Date().getFullYear()) };
+  const filters: InvoiceFilters = {
+    ...sp,
+    company: sp.company ?? (await getSelectedCompanyId()) ?? undefined,
+    year: sp.year ?? String(new Date().getFullYear()),
+  };
   const supabase = await createClient();
   await generateDueInvoices(supabase);
   const invoices = await loadInvoices(supabase, filters);

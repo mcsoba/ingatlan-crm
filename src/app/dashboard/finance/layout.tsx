@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
@@ -11,11 +10,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
   if (profile.role !== "owner" && profile.role !== "admin") redirect("/dashboard");
 
   const supabase = await createClient();
-  const { data: companies, error } = await supabase
-    .from("finance_companies")
-    .select("id, name, color")
-    .order("sort_order")
-    .order("name");
+  const { error } = await supabase.from("finance_invoices").select("id", { head: true, count: "exact" }).limit(1);
 
   if (error) {
     return (
@@ -27,9 +22,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex flex-col gap-5">
-      <Suspense>
-        <FinanceNav companies={companies ?? []} />
-      </Suspense>
+      <FinanceNav />
       {children}
     </div>
   );

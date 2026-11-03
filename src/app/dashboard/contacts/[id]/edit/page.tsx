@@ -4,6 +4,8 @@ import { Kanban, Mail, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { listTeamMembers } from "@/lib/team";
+import { listCompanies } from "@/lib/companies";
+import { CompanyBadges } from "@/components/company-badges";
 import { updateContact } from "../../actions";
 import { ContactForm } from "../../contact-form";
 import { ContactCommsPanel } from "../../contact-comms-panel";
@@ -58,11 +60,12 @@ export default async function EditContactPage({
     allTags,
     teamMembers,
     { profile },
+    companies,
   ] = await Promise.all([
     supabase
       .from("contacts")
       .select(
-        "id, name, email, phone, source, status, notes, lead_score, lead_score_reason, owner_id",
+        "id, name, email, phone, source, status, notes, lead_score, lead_score_reason, owner_id, company_ids",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -83,6 +86,7 @@ export default async function EditContactPage({
     listAgencyTags(),
     listTeamMembers(),
     ensureCurrentUserProfile(),
+    listCompanies(),
   ]);
 
   if (dealsError) throw dealsError;
@@ -111,10 +115,12 @@ export default async function EditContactPage({
         }
       />
 
+      <CompanyBadges companies={companies} ids={contact.company_ids} />
+
       {(contact.phone || contact.email) && (
         <div className="flex flex-wrap gap-2">
           {contact.phone && (
-            <a href={`tel:${contact.phone.replace(/[^d+]/g, "")}`} className={buttonVariants("secondary", "sm")}>
+            <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className={buttonVariants("secondary", "sm")}>
               <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
               {contact.phone}
             </a>
@@ -154,6 +160,7 @@ export default async function EditContactPage({
               submitLabel="Mentés"
               teamMembers={teamMembers}
               currentUserId={profile.id}
+              companies={companies}
             />
           </div>
           <aside className="flex min-w-0 flex-col gap-4">

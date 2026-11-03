@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, FilePlus2, Landmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
+import { getSelectedCompanyId } from "@/lib/companies";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +129,7 @@ export default async function FinanceOverviewPage({
 }: {
   searchParams: Promise<{ company?: string }>;
 }) {
-  const { company } = await searchParams;
+  const company = (await searchParams).company ?? (await getSelectedCompanyId()) ?? undefined;
   const supabase = await createClient();
   await generateDueInvoices(supabase);
 

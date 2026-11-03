@@ -13,7 +13,10 @@ import {
   updateDealNotes,
   updateDealOwner,
   updateDealType,
+  updateDealCompany,
 } from "../actions";
+import { CompanyPicker } from "@/components/company-picker";
+import { listCompanies } from "@/lib/companies";
 import { DealFollowUpPanel } from "./follow-up-panel";
 import { AskAssistantPanel } from "./ask-assistant-panel";
 import { LostDealPanel } from "./lost-deal-panel";
@@ -37,6 +40,7 @@ type DealDetailRow = {
   stage_id: string;
   owner_id: string | null;
   deal_type: string;
+  company_id: string | null;
   notes: string | null;
   deal_amount: number | null;
   commission_rate: number | null;
@@ -61,7 +65,7 @@ export default async function DealDetailPage({
       supabase
         .from("deals")
         .select(
-          "id, stage_id, owner_id, deal_type, notes, deal_amount, commission_rate, status, lost_reason, lost_at, contacts(id, name, email, phone), properties(id, address, price)",
+          "id, stage_id, owner_id, deal_type, company_id, notes, deal_amount, commission_rate, status, lost_reason, lost_at, contacts(id, name, email, phone), properties(id, address, price)",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -91,6 +95,8 @@ export default async function DealDetailPage({
   const nextTaskOverdue = !!nextTask && new Date(nextTask.due_at!).getTime() < new Date().getTime();
   const updateOwnerWithId = updateDealOwner.bind(null, dealRow.id);
   const updateTypeWithId = updateDealType.bind(null, dealRow.id);
+  const updateCompanyWithId = updateDealCompany.bind(null, dealRow.id);
+  const companies = await listCompanies();
   const updateNotesWithId = updateDealNotes.bind(null, dealRow.id);
   const updateCommissionWithId = updateDealCommission.bind(null, dealRow.id);
   const seedChecklistWithId = seedTransactionChecklist.bind(null, dealRow.id);
@@ -339,6 +345,17 @@ export default async function DealDetailPage({
                 </Button>
               </div>
             </form>
+
+            {companies.length > 0 && (
+              <form action={updateCompanyWithId} className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <CompanyPicker companies={companies} defaultIds={[dealRow.company_id]} />
+                </div>
+                <Button type="submit" variant="secondary">
+                  Mentés
+                </Button>
+              </form>
+            )}
           </Card>
 
           <Card className="p-4">

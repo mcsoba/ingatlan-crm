@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { SIMPLE_MODE } from "@/lib/edition";
 import { DeleteDealButton } from "./[id]/delete-deal-button";
+import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
+import { companyColor } from "@/lib/company-shared";
 
 // The Supabase client infers embedded-resource joins as arrays without
 // generated Database types; contact_id/property_id are single foreign
@@ -22,6 +24,7 @@ type DealRow = {
   status: string;
   lost_reason: string | null;
   lost_at: string | null;
+  company_id: string | null;
   contacts: { name: string } | null;
   properties: { address: string } | null;
 };
@@ -31,6 +34,15 @@ const STALE_AFTER_DAYS = 14;
 export default async function PipelinePage() {
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
+  const [companies, selectedCompanyId] = await Promise.all([listCompanies(), getSelectedCompanyId()]);
+  let dealsQuery = supabase
+    .from("deals")
+    .select(
+      "id, stage_id, updated_at, deal_amount, owner_id, deal_type, status, lost_reason, lost_at, company_id, contacts(name), properties(address)",
+    )
+    .order("created_at", { ascending: false });
+  // Oldalsávban kiválasztott cég
+  if (selectedCompanyId) dealsQuery = dealsQuery.eq("company_id", selectedCompanyId);
 
   const [
     { data: stages, error: stagesError },
@@ -42,12 +54,7 @@ export default async function PipelinePage() {
       .from("pipeline_stages")
       .select("id, name, position")
       .order("position"),
-    supabase
-      .from("deals")
-      .select(
-        "id, stage_id, updated_at, deal_amount, owner_id, deal_type, status, lost_reason, lost_at, contacts(name), properties(address)",
-      )
-      .order("created_at", { ascending: false }),
+    dealsQuery,
     supabase
       .from("activities")
       .select("deal_id, due_at")
@@ -109,6 +116,10 @@ export default async function PipelinePage() {
         ownerId: deal.owner_id,
         ownerName: deal.owner_id ? (ownerNameById.get(deal.owner_id) ?? null) : null,
         dealType: deal.deal_type === "rent" ? "rent" : "sale",
+        company: (() => {
+          const c = companies.find((x) => x.id === deal.company_id);
+          return c ? { name: c.name, color: companyColor(companies, c.id) } : null;
+        })(),
         activityStatus: isClosed ? "none" : activityStatus(deal.id),
         isClosed,
         isStale: !isClosed && daysSinceUpdate >= STALE_AFTER_DAYS,

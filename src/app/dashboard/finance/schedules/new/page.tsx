@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { loadFormOptions } from "../../data";
+import { getSelectedCompanyId } from "@/lib/companies";
 import { ScheduleForm } from "../../schedule-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { linkClass } from "@/components/ui/styles";
@@ -11,7 +12,7 @@ export default async function NewSchedulePage({
 }: {
   searchParams: Promise<{ company?: string }>;
 }) {
-  const { company } = await searchParams;
+  const company = (await searchParams).company ?? (await getSelectedCompanyId()) ?? undefined;
   const supabase = await createClient();
   const options = await loadFormOptions(supabase);
 

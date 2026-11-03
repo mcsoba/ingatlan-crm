@@ -11,11 +11,15 @@ import { ConfirmDelete } from "../confirm-delete";
 
 function CompanyFields({ company }: { company?: CompanyRow }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
       <input name="name" required defaultValue={company?.name} placeholder="Cégnév (pl. Bluegate Housing Kft.)" className={inputClass} />
       <input name="tax_number" defaultValue={company?.tax_number ?? ""} placeholder="Adószám" className={inputClass} />
       <input name="bank_account" defaultValue={company?.bank_account ?? ""} placeholder="Bankszámlaszám" className={inputClass} />
       <input name="address" defaultValue={company?.address ?? ""} placeholder="Székhely" className={inputClass} />
+      <label className="flex items-center gap-2 text-xs text-muted" title="A cég színe a címkéken és a szűrőben">
+        Szín
+        <input type="color" name="color" defaultValue={company?.color ?? "#2e6ff2"} className="h-9 w-10 cursor-pointer rounded border border-border bg-surface" />
+      </label>
     </div>
   );
 }
@@ -33,7 +37,7 @@ export default async function FinanceCompaniesPage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Cégek"
-        description="Azok a cégek, amelyeknek a számláit itt vezetitek. Minden számla és törzs egy céghez tartozik, és fent cégenként szűrhető minden nézet."
+        description="Az iroda cégei. Egy céghez tartozik minden számla, törzs és üzlet; a kontaktok és a munkatársak több céghez is tartozhatnak. Az oldalsáv cégválasztójával minden lista szűrhető."
       />
 
       {companies.length === 0 && (

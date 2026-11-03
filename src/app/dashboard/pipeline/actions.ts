@@ -7,6 +7,7 @@ import { ensureCurrentUserProfile, requireOwnerOrAdmin } from "@/lib/agency";
 import { anthropic, AI_MODEL } from "@/lib/claude";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToProfiles } from "@/lib/push";
+import { readCompanyId } from "@/lib/company-shared";
 
 export async function createDeal(formData: FormData) {
   const { profile } = await ensureCurrentUserProfile();
@@ -17,6 +18,7 @@ export async function createDeal(formData: FormData) {
   const ownerId = String(formData.get("owner_id") ?? "") || profile.id;
   const dealTypeRaw = String(formData.get("deal_type") ?? "");
   const dealType = dealTypeRaw === "rent" ? "rent" : "sale";
+  const companyId = readCompanyId(formData);
 
   if (!contactId) {
     throw new Error("A kontakt kiválasztása kötelező");
@@ -38,6 +40,7 @@ export async function createDeal(formData: FormData) {
     stage_id: firstStage.id,
     owner_id: ownerId,
     deal_type: dealType,
+    ...(companyId !== undefined ? { company_id: companyId } : {}),
   });
 
   if (error) throw error;
@@ -183,6 +186,18 @@ export async function updateDealType(dealId: string, formData: FormData) {
 
   if (error) throw error;
 
+  revalidatePath(`/dashboard/pipeline/${dealId}`);
+  revalidatePath("/dashboard/pipeline");
+}
+
+export async function updateDealCompany(dealId: string, formData: FormData) {
+  await ensureCurrentUserProfile();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("deals")
+    .update({ company_id: readCompanyId(formData) ?? null, updated_at: new Date().toISOString() })
+    .eq("id", dealId);
+  if (error) throw error;
   revalidatePath(`/dashboard/pipeline/${dealId}`);
   revalidatePath("/dashboard/pipeline");
 }

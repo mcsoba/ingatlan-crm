@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { inputClass } from "@/components/ui/styles";
 import { SIMPLE_MODE } from "@/lib/edition";
+import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
 
 export default async function ContactsPage({
   searchParams,
@@ -20,11 +21,15 @@ export default async function ContactsPage({
 }) {
   const { q, status, source, tag } = await searchParams;
   const supabase = await createClient();
+  const [companies, selectedCompanyId] = await Promise.all([listCompanies(), getSelectedCompanyId()]);
 
   let query = supabase
     .from("contacts")
-    .select("id, name, email, phone, source, status, lead_score, owner_id, created_at")
+    .select("id, name, email, phone, source, status, lead_score, owner_id, created_at, company_ids")
     .order("created_at", { ascending: false });
+
+  // Oldalsávban kiválasztott cég
+  if (selectedCompanyId) query = query.contains("company_ids", [selectedCompanyId]);
 
   if (q) query = query.ilike("name", `%${q}%`);
   if (status) query = query.eq("status", status);
@@ -198,6 +203,7 @@ export default async function ContactsPage({
         />
       ) : (
         <ContactsTable
+          companies={companies}
           allTags={allTags}
           owners={ownerOptions}
           contacts={contacts.map((c) => {

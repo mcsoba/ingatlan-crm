@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus, Repeat } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
+import { getSelectedCompanyId } from "@/lib/companies";
 import { toggleSchedule } from "../actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -23,7 +24,7 @@ export default async function FinanceSchedulesPage({
 }: {
   searchParams: Promise<{ company?: string }>;
 }) {
-  const { company } = await searchParams;
+  const company = (await searchParams).company ?? (await getSelectedCompanyId()) ?? undefined;
   const supabase = await createClient();
   await generateDueInvoices(supabase);
   let query = supabase.from("finance_schedules").select(SCHEDULE_SELECT);
