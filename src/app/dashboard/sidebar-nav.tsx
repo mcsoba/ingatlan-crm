@@ -21,12 +21,16 @@ import {
   BookOpen,
   Trash2,
   Sparkles,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { PRIVATE_EDITION, SIMPLE_MODE } from "@/lib/edition";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { label: string | null; items: NavItem[] };
+
+// Pénzügyek: csak irodavezetőknek (owner/admin) jelenik meg, ld. showFinance
+const FINANCE_ITEM: NavItem = { href: "/dashboard/finance", label: "Pénzügyek", icon: Wallet };
 
 // Grouped rather than one flat 17-item list — a new user scanning the
 // sidebar only needs to take in the 7-item "daily work" group at a glance;
@@ -95,7 +99,13 @@ const SIMPLE_PARENT: Record<string, string> = {
   "/dashboard/trash": "/dashboard/settings",
 };
 
-export function SidebarNav({ badges = {} }: { badges?: Record<string, number> }) {
+export function SidebarNav({
+  badges = {},
+  showFinance = false,
+}: {
+  badges?: Record<string, number>;
+  showFinance?: boolean;
+}) {
   const pathname = usePathname();
 
   function isActive(href: string) {
@@ -115,7 +125,9 @@ export function SidebarNav({ badges = {} }: { badges?: Record<string, number> })
               {group.label}
             </div>
           )}
-          {group.items.map(({ href, label, icon: Icon }) => (
+          {group.items
+            .filter((item) => showFinance || item !== FINANCE_ITEM)
+            .map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

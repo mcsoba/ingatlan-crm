@@ -14,6 +14,7 @@ import { planLabel, SIMPLE_MODE } from "@/lib/edition";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Tulajdonos",
+  admin: "Admin",
   agent: "Ügynök",
 };
 
@@ -47,7 +48,10 @@ export default async function DashboardLayout({
               </div>
               <QuickCreate />
               {!SIMPLE_MODE && <SearchTrigger />}
-              <SidebarNav badges={{ [SIMPLE_MODE ? "/dashboard" : "/dashboard/leads"]: newLeadCount ?? 0 }} />
+              <SidebarNav
+                badges={{ [SIMPLE_MODE ? "/dashboard" : "/dashboard/leads"]: newLeadCount ?? 0 }}
+                showFinance={profile.role === "owner" || profile.role === "admin"}
+              />
             </div>
 
             <div>
