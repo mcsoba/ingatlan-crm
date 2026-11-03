@@ -47,6 +47,10 @@ export const CATEGORIES: { value: string; label: string }[] = [
   { value: "other", label: "Egyéb" },
 ];
 
+// Egyéb céges kiadások (a Kiadások fül és a gyors rögzítés ezeket mutatja) — a
+// bérleti díj, rezsi, kaució, bér, adó és tagi kölcsön saját folyamatban fut.
+export const EXPENSE_CATEGORY_VALUES = ["supplies", "service", "bank", "cash", "other"] as const;
+
 export function categoryLabel(value: string): string {
   return CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }

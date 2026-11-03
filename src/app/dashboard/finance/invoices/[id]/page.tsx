@@ -7,6 +7,8 @@ import { loadFormOptions } from "../../data";
 import { InvoiceForm } from "../../invoice-form";
 import { SzamlazzPanel } from "../../szamlazz-panel";
 import { ConfirmDelete } from "../../confirm-delete";
+import { ReceiptsPanel, type Receipt } from "../../receipts-panel";
+import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,9 +38,12 @@ export default async function InvoiceDetailPage({
   const backHref = back?.startsWith("/dashboard/finance") ? back : "/dashboard/finance/invoices";
   const supabase = await createClient();
 
-  const [{ data }, options] = await Promise.all([
+  const [{ data }, options, { data: receiptRows }, { profile }] = await Promise.all([
     supabase.from("finance_invoices").select(INVOICE_SELECT).eq("id", id).maybeSingle(),
     loadFormOptions(supabase),
+    // A 0044-es migráció előtt a tábla nem létezik — ilyenkor üres lista
+    supabase.from("finance_receipts").select("id, filename, content_type").eq("invoice_id", id).order("created_at"),
+    ensureCurrentUserProfile(),
   ]);
   if (!data) notFound();
   const inv = data as InvoiceRow;
@@ -84,6 +89,8 @@ export default async function InvoiceDetailPage({
       {inv.is_planned && inv.direction === "out" && (
         <SzamlazzPanel invoiceId={inv.id} fields={szamlazzFields} today={today} />
       )}
+
+      <ReceiptsPanel agencyId={profile.agency_id} invoiceId={inv.id} receipts={(receiptRows ?? []) as Receipt[]} />
 
       {(inv.paid_date || inv.bank_booked_date) && (
         <Card className="flex flex-wrap items-center gap-3 p-3 text-sm">

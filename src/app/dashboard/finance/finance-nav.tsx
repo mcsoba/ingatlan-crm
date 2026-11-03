@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 // A cég kiválasztása az oldalsáv globális cégválasztójával történik.
 const TABS = [
   { href: "/dashboard/finance", label: "Áttekintés" },
+  { href: "/dashboard/finance/expenses", label: "Kiadások" },
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
   { href: "/dashboard/finance/companies", label: "Cégek" },

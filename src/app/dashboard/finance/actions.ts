@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOwnerOrAdmin } from "@/lib/agency";
 import {
   CATEGORIES,
+  EXPENSE_CATEGORY_VALUES,
   computeGross,
   parseAmount,
   payableAmount,
@@ -227,6 +228,59 @@ export async function markInvoice(formData: FormData) {
     .eq("id", id);
   if (error) throw error;
   revalidateFinance();
+}
+
+// ---------- gyors kiadás ----------
+
+/**
+ * Egyszerű kiadás rögzítése (blokk, kártyás vásárlás, készpénz): csak a
+ * bruttó összeg kell, ÁFA-bontás nélkül — a részletek az adatlapon pótolhatók.
+ * Visszaadja az új tétel azonosítóját (a blokkfotót a böngésző utána tölti fel).
+ */
+export async function createQuickExpense(formData: FormData): Promise<string> {
+  const profile = await requireOwnerOrAdmin();
+  const currency = oneOf<Currency>(text(formData, "currency"), ["HUF", "EUR"], "HUF");
+  const companyId = text(formData, "company_id");
+  const description = text(formData, "description");
+  const issueDate = date(formData, "issue_date") ?? todayIso();
+  const gross = parseAmount(formData.get("gross_amount"));
+  if (!companyId) throw new Error("Válaszd ki a céget");
+  if (!description) throw new Error("Írd be, mire ment a pénz");
+  if (gross === null || gross <= 0) throw new Error("Add meg az összeget");
+  const amount = roundMoney(gross, currency);
+  const paid = formData.get("paid") === "on";
+  const method = oneOf(text(formData, "payment_method"), ["transfer", "card", "cash"] as const, "card");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("finance_invoices")
+    .insert({
+      agency_id: profile.agency_id,
+      company_id: companyId,
+      direction: "in",
+      doc_type: text(formData, "invoice_number") ? "invoice" : "none",
+      category: oneOf(text(formData, "category"), EXPENSE_CATEGORY_VALUES, "supplies"),
+      invoice_number: text(formData, "invoice_number"),
+      counterparty_name: text(formData, "counterparty_name") ?? description,
+      description,
+      issue_date: issueDate,
+      fulfillment_date: issueDate,
+      due_date: issueDate,
+      paid_date: paid ? issueDate : null,
+      paid_amount: paid ? amount : null,
+      payment_method: method,
+      currency,
+      net_amount: amount,
+      vat_rate: null,
+      vat_amount: 0,
+      gross_amount: amount,
+      notes: text(formData, "notes"),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  revalidateFinance();
+  return data.id as string;
 }
 
 // ---------- számla-törzsek (ismétlődő tételek) ----------
