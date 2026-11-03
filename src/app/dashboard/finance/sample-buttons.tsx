@@ -9,7 +9,7 @@ export function LoadSampleButton() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex w-fit flex-col gap-1">
       <Button
         variant="secondary"
         disabled={isPending}

@@ -105,7 +105,8 @@ export async function loadSampleData() {
     expense(workerbase, 40, "matrac (2 db)", "Minta Bútor Kft.", 89_980, "supplies", "transfer", true),
   );
 
-  const { error } = await supabase.from("finance_invoices").insert(invoices);
+  // defaultToNull: false — a sorokban hiányzó oszlopok az adatbázis alapértékét kapják (pl. szja_withheld = false)
+  const { error } = await supabase.from("finance_invoices").insert(invoices, { defaultToNull: false });
   if (error) throw error;
 
   // Két számla-törzs: egy kimenő havi bérleti díj (a mostani hónap a „Számlázni kell” listára kerül)
@@ -123,7 +124,7 @@ export async function loadSampleData() {
       currency: "HUF", net_amount: 800_000, vat_rate: null, szja_withheld: true, payment_method: "transfer", frequency: "monthly",
       start_date: month(-2, 1), issue_day: 1, payment_days: 10, prorate: true, lead_days: 7, next_period_start: thisMonth,
     },
-  ]);
+  ], { defaultToNull: false });
   if (scheduleError) throw scheduleError;
 
   revalidatePath("/dashboard/finance", "layout");
