@@ -10,6 +10,7 @@ import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { BarListChart, TrendBarChart } from "@/components/ui/charts";
 import { STATUS_LABELS, STATUS_VARIANTS } from "@/app/dashboard/contacts/constants";
 import { TodayPanel } from "./today-panel";
+import { FinanceAlert } from "./finance-alert";
 import { PRIVATE_EDITION, planLabel } from "@/lib/edition";
 
 type ChecklistItem = { label: string; done: boolean; href: string };
@@ -135,6 +136,7 @@ export default async function DashboardPage() {
         </Card>
       )}
 
+      {(profile.role === "owner" || profile.role === "admin") && <FinanceAlert />}
       <TodayPanel profileId={profile.id} />
 
       <h2 className="-mb-4 text-base font-semibold text-foreground">Áttekintés</h2>

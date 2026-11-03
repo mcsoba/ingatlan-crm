@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPushToProfiles } from "@/lib/push";
 import { budapestEndOfToday, TZ } from "@/lib/time";
+import { generateDueInvoices } from "@/lib/finance-server";
+import { todayIso } from "@/lib/finance";
 
 // Két feladat egy végponton:
 // - alapból: a következő ~1 órában esedékes, még nem jelzett teendőkről push
@@ -46,8 +48,12 @@ export async function GET(request: Request) {
   const digest = new URL(request.url).searchParams.get("digest") === "1";
 
   if (digest) {
+    // Pénzügyek: a számla-törzsekből esedékes tételek előkészítése, mielőtt összeszámolnánk
+    const today = todayIso();
+    const finance = await generateDueInvoices(admin, today);
+
     const endOfToday = budapestEndOfToday(now);
-    const [{ data: tasks }, { data: newLeads }, { data: tokenRows }] = await Promise.all([
+    const [{ data: tasks }, { data: newLeads }, { data: tokenRows }, { data: financeRows }, { data: managers }] = await Promise.all([
       admin
         .from("activities")
         .select("id, type, content, due_at, assigned_to, contact_id, deal_id, deals(owner_id, deleted_at), contacts(name, owner_id, deleted_at)")
@@ -58,12 +64,19 @@ export async function GET(request: Request) {
         .limit(2000),
       admin.from("contacts").select("owner_id").eq("status", "new").is("deleted_at", null).not("owner_id", "is", null),
       admin.from("push_tokens").select("profile_id"),
+      admin
+        .from("finance_invoices")
+        .select("agency_id, direction, is_planned, issue_date, due_date")
+        .is("paid_date", null)
+        .or(`and(is_planned.eq.true,direction.eq.out,issue_date.lte.${today}),and(is_planned.eq.false,due_date.lt.${today})`)
+        .limit(5000),
+      admin.from("profiles").select("id, agency_id").in("role", ["owner", "admin"]),
     ]);
 
     const withDevice = new Set((tokenRows ?? []).map((r) => r.profile_id as string));
-    const perProfile = new Map<string, { today: number; overdue: number; leads: number }>();
+    const perProfile = new Map<string, { today: number; overdue: number; leads: number; toInvoice: number; overdueInvoices: number }>();
     const bump = (id: string) => {
-      if (!perProfile.has(id)) perProfile.set(id, { today: 0, overdue: 0, leads: 0 });
+      if (!perProfile.has(id)) perProfile.set(id, { today: 0, overdue: 0, leads: 0, toInvoice: 0, overdueInvoices: 0 });
       return perProfile.get(id)!;
     };
 
@@ -80,11 +93,29 @@ export async function GET(request: Request) {
       if (withDevice.has(who)) bump(who).leads++;
     }
 
+    // Irodavezetőknek: ma (vagy korábban) kiállítandó számlák és lejárt fizetési határidők
+    const financeByAgency = new Map<string, { toInvoice: number; overdue: number }>();
+    for (const r of financeRows ?? []) {
+      const entry = financeByAgency.get(r.agency_id) ?? { toInvoice: 0, overdue: 0 };
+      if (r.is_planned) entry.toInvoice++;
+      else entry.overdue++;
+      financeByAgency.set(r.agency_id, entry);
+    }
+    for (const m of managers ?? []) {
+      const f = financeByAgency.get(m.agency_id);
+      if (!f || !withDevice.has(m.id)) continue;
+      const entry = bump(m.id);
+      entry.toInvoice = f.toInvoice;
+      entry.overdueInvoices = f.overdue;
+    }
+
     let sent = 0;
     for (const [profileId, s] of perProfile) {
       const parts: string[] = [];
       if (s.today) parts.push(`${s.today} teendőd van mára${s.overdue ? ` (ebből ${s.overdue} lejárt)` : ""}`);
       if (s.leads) parts.push(`${s.leads} új érdeklődőt még nem kerestél`);
+      if (s.toInvoice) parts.push(`${s.toInvoice} számlát kell kiállítani`);
+      if (s.overdueInvoices) parts.push(`${s.overdueInvoices} számla fizetési határideje lejárt`);
       if (!parts.length) continue;
       sent += await sendPushToProfiles(admin, [profileId], {
         title: "Jó reggelt! Ez vár ma rád",
@@ -92,7 +123,7 @@ export async function GET(request: Request) {
         url: "/",
       });
     }
-    return NextResponse.json({ mode: "digest", profiles: perProfile.size, sent });
+    return NextResponse.json({ mode: "digest", profiles: perProfile.size, sent, financeCreated: finance.created });
   }
 
   const windowStart = new Date(now.getTime() - 15 * 60 * 1000);
