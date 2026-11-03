@@ -8,16 +8,20 @@ import { useColors } from "../../lib/theme";
 import { notifyAssignee } from "../../lib/notify";
 import { Button, Card, ErrorBox } from "../../components/ui";
 import { DealForm, dealPayload, type DealFormValues } from "../../components/DealForm";
+import { useSelectedCompany } from "../../lib/companies";
 
 // Új üzlet nyitása egy kontakthoz (a pipeline első szakaszába kerül, mint a weben)
 export default function NewDeal() {
   const { contactId, contactName } = useLocalSearchParams<{ contactId: string; contactName?: string }>();
   const c = useColors();
   const { profile } = useAuth();
+  // Alapból a listán kiválasztott cég nevében
+  const selectedCompany = useSelectedCompany();
   const [values, setValues] = useState<DealFormValues>({
     dealType: "sale",
     property: null,
     ownerId: profile?.id ?? "",
+    companyId: selectedCompany,
     amount: "",
     rate: "",
     notes: "",

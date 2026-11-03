@@ -9,8 +9,18 @@ import { initials } from "../../lib/format";
 import { CONTACT_STATUS_LABELS } from "../../lib/labels";
 import { callPhone } from "../../lib/contact-actions";
 import { Badge, EmptyState, ErrorBox, Loading, SearchInput } from "../../components/ui";
+import { CompanyBadges, CompanyFilter } from "../../components/Companies";
+import { useSelectedCompany } from "../../lib/companies";
 
-type Contact = { id: string; name: string; phone: string | null; email: string | null; status: string; owner_id: string | null };
+type Contact = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  status: string;
+  owner_id: string | null;
+  company_ids: string[] | null;
+};
 
 const STATUS_TONE: Record<string, "accent" | "warning" | "success" | "neutral"> = {
   new: "accent",
@@ -27,24 +37,26 @@ export default function ContactsScreen() {
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const companyId = useSelectedCompany();
 
   const load = useCallback(async () => {
     let q = supabase
       .from("contacts")
-      .select("id, name, phone, email, status, owner_id")
+      .select("id, name, phone, email, status, owner_id, company_ids")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(300);
     const term = query.trim().replace(/[%,()]/g, "");
     if (term) q = q.or(`name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%`);
     if (mineOnly && profile) q = q.eq("owner_id", profile.id);
+    if (companyId) q = q.contains("company_ids", [companyId]);
     const { data, error: err } = await q;
     if (err) setError("Nem sikerült betölteni a kontaktokat.");
     else {
       setError(null);
       setContacts((data ?? []) as Contact[]);
     }
-  }, [query, mineOnly, profile]);
+  }, [query, mineOnly, profile, companyId]);
 
   // Keresés gépelés közben, kis késleltetéssel
   useEffect(() => {
@@ -66,6 +78,7 @@ export default function ContactsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+      <CompanyFilter />
       <View style={styles.top}>
         <SearchInput placeholder="Név, telefon vagy e-mail" value={query} onChangeText={setQuery} />
         <View style={styles.filters}>
@@ -99,8 +112,14 @@ export default function ContactsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.accent} />}
           ListEmptyComponent={
             <EmptyState
-              title={query ? "Nincs találat" : "Még nincs kontakt"}
-              text={query ? "Próbálj más keresőszót." : "Az új érdeklődőket a + gombbal veheted fel."}
+              title={query ? "Nincs találat" : companyId ? "Ehhez a céghez nincs kontakt" : "Még nincs kontakt"}
+              text={
+                query
+                  ? "Próbálj más keresőszót."
+                  : companyId
+                    ? "A cég nélküli kontaktok az „Összes cég” nézetben látszanak."
+                    : "Az új érdeklődőket a + gombbal veheted fel."
+              }
             />
           }
           ItemSeparatorComponent={() => <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border }} />}
@@ -120,6 +139,7 @@ export default function ContactsScreen() {
                   <Badge label={CONTACT_STATUS_LABELS[item.status] ?? item.status} tone={STATUS_TONE[item.status] ?? "neutral"} />
                   {item.phone ? <Text style={{ color: c.muted, fontSize: 13 }}>{item.phone}</Text> : null}
                 </View>
+                {companyId ? null : <CompanyBadges ids={item.company_ids} />}
               </View>
               {item.phone ? (
                 <Pressable

@@ -12,6 +12,7 @@ import { notifyAssignee } from "../../../lib/notify";
 import { confirmDestructive } from "../../../lib/confirm";
 import { Button, ErrorBox, Loading } from "../../../components/ui";
 import { ChoiceChips } from "../../../components/ChoiceChips";
+import { CompanyChips } from "../../../components/Companies";
 
 // Kontakt adatainak szerkesztése — a webes kontakt-űrlap mezői + felelős.
 export default function EditContact() {
@@ -28,13 +29,14 @@ export default function EditContact() {
   const [owner, setOwner] = useState<string>("");
   const [originalOwner, setOriginalOwner] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+  const [companyIds, setCompanyIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
       .from("contacts")
-      .select("name, phone, email, source, status, owner_id, notes")
+      .select("name, phone, email, source, status, owner_id, notes, company_ids")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -50,6 +52,7 @@ export default function EditContact() {
         setOwner(data.owner_id ?? "");
         setOriginalOwner(data.owner_id ?? null);
         setNotes(data.notes ?? "");
+        setCompanyIds((data.company_ids as string[] | null) ?? []);
         setLoaded(true);
       });
   }, [id]);
@@ -71,6 +74,7 @@ export default function EditContact() {
         status,
         owner_id: owner || null,
         notes: notes.trim() || null,
+        company_ids: companyIds,
       })
       .eq("id", id);
     setBusy(false);
@@ -146,6 +150,8 @@ export default function EditContact() {
             />
           </>
         ) : null}
+
+        <CompanyChips value={companyIds} onChange={setCompanyIds} />
 
         <Text style={[styles.label, { color: c.text }]}>Mit keres? (megjegyzés)</Text>
         <TextInput

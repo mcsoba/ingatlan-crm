@@ -8,6 +8,7 @@ import { useColors } from "../../lib/theme";
 import { formatDue, formatHuf, isOverdue } from "../../lib/format";
 import { callPhone } from "../../lib/contact-actions";
 import { Badge, Button, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
+import { CompanyBadges } from "../../components/Companies";
 import { ActivityComposer } from "../../components/ActivityComposer";
 import { NextStepSheet } from "../../components/NextStepSheet";
 import { stageGuidance } from "../../lib/process";
@@ -23,6 +24,7 @@ type Deal = {
   deal_amount: number | null;
   commission_rate: number | null;
   owner_id: string | null;
+  company_id: string | null;
   notes: string | null;
   lost_reason: string | null;
   status: string;
@@ -52,7 +54,7 @@ export default function DealDetail() {
     const [dRes, sRes, aRes] = await Promise.all([
       supabase
         .from("deals")
-        .select("id, stage_id, deal_type, deal_amount, commission_rate, owner_id, notes, lost_reason, status, contact_id, property_id, contacts(name, phone), properties(address, price)")
+        .select("id, stage_id, deal_type, deal_amount, commission_rate, owner_id, company_id, notes, lost_reason, status, contact_id, property_id, contacts(name, phone), properties(address, price)")
         .eq("id", id)
         .maybeSingle(),
       supabase.from("pipeline_stages").select("id, name, position, guidance").order("position"),
@@ -169,6 +171,7 @@ export default function DealDetail() {
         <Badge label={deal.deal_type === "rent" ? "Bérlés" : "Eladás"} tone="accent" />
         {deal.status === "lost" ? <Badge label="Elvesztett" tone="danger" /> : null}
         {deal.deal_amount ? <Badge label={formatHuf(deal.deal_amount)} tone="success" /> : null}
+        <CompanyBadges ids={[deal.company_id]} />
       </View>
 
       <Card style={{ gap: 0, padding: 0 }}>

@@ -6,6 +6,8 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { useColors } from "../../lib/theme";
 import { Button, Card, ErrorBox } from "../../components/ui";
+import { CompanyChips } from "../../components/Companies";
+import { useSelectedCompany } from "../../lib/companies";
 
 const SOURCES: Record<string, string> = {
   phone: "Telefon",
@@ -25,6 +27,9 @@ export default function NewContact() {
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("phone");
   const [notes, setNotes] = useState("");
+  // Alapból a listán kiválasztott cég
+  const selectedCompany = useSelectedCompany();
+  const [companyIds, setCompanyIds] = useState<string[]>(selectedCompany ? [selectedCompany] : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<Duplicate | null>(null);
@@ -73,6 +78,7 @@ export default function NewContact() {
         source,
         status: "new",
         notes: notes.trim() || null,
+        company_ids: companyIds,
       })
       .select("id")
       .single();
@@ -127,6 +133,8 @@ export default function NewContact() {
             </Pressable>
           ))}
         </View>
+
+        <CompanyChips value={companyIds} onChange={setCompanyIds} />
 
         <Text style={[styles.label, { color: c.text }]}>Mit keres? (megjegyzés)</Text>
         <TextInput

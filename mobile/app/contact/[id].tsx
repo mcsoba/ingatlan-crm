@@ -8,6 +8,7 @@ import { initials } from "../../lib/format";
 import { CONTACT_SOURCE_LABELS, CONTACT_STATUS_LABELS } from "../../lib/labels";
 import { callPhone, sendEmail, smsPhone } from "../../lib/contact-actions";
 import { Badge, Button, Card, ErrorBox, Loading, SectionTitle } from "../../components/ui";
+import { CompanyBadges } from "../../components/Companies";
 import { ActivityComposer } from "../../components/ActivityComposer";
 import { NextStepSheet } from "../../components/NextStepSheet";
 import { CONTACT_STATUS_HELP } from "../../lib/process";
@@ -25,6 +26,7 @@ type Contact = {
   notes: string | null;
   source: string | null;
   owner_id: string | null;
+  company_ids: string[] | null;
 };
 type Activity = HistoryActivity;
 type Deal = {
@@ -49,7 +51,7 @@ export default function ContactDetail() {
 
   const load = useCallback(async () => {
     const [cRes, aRes, dRes] = await Promise.all([
-      supabase.from("contacts").select("id, name, phone, email, status, notes, source, owner_id").eq("id", id).maybeSingle(),
+      supabase.from("contacts").select("id, name, phone, email, status, notes, source, owner_id, company_ids").eq("id", id).maybeSingle(),
       supabase
         .from("activities")
         .select(ACTIVITY_COLUMNS)
@@ -142,6 +144,7 @@ export default function ContactDetail() {
           Felelős: {memberName(team, contact.owner_id, profile?.id)}
           {contact.source ? ` · ${CONTACT_SOURCE_LABELS[contact.source] ?? contact.source}` : ""}
         </Text>
+        <CompanyBadges ids={contact.company_ids} />
       </View>
 
       <View style={styles.actions}>

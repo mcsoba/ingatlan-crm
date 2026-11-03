@@ -23,7 +23,7 @@ export default function EditDeal() {
   useEffect(() => {
     supabase
       .from("deals")
-      .select("deal_type, property_id, owner_id, deal_amount, commission_rate, notes, properties(address)")
+      .select("deal_type, property_id, owner_id, company_id, deal_amount, commission_rate, notes, properties(address)")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -37,6 +37,7 @@ export default function EditDeal() {
           dealType: data.deal_type === "rent" ? "rent" : "sale",
           property: data.property_id ? { id: data.property_id, address: prop?.address ?? "Ingatlan" } : null,
           ownerId: data.owner_id ?? "",
+          companyId: data.company_id ?? null,
           amount: data.deal_amount != null ? String(data.deal_amount) : "",
           rate: data.commission_rate != null ? String(data.commission_rate) : "",
           notes: data.notes ?? "",
