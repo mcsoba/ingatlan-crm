@@ -5,11 +5,14 @@ import { formatHuf } from "../lib/format";
 import { useTeam } from "../lib/team";
 import { ChoiceChips } from "./ChoiceChips";
 import { PropertyPicker, type PickedProperty } from "./PropertyPicker";
+import { CompanyChips } from "./Companies";
 
 export type DealFormValues = {
   dealType: "sale" | "rent";
   property: PickedProperty | null;
   ownerId: string;
+  /** A cég, amelynek a nevében az üzlet fut (null = nincs megadva) */
+  companyId: string | null;
   amount: string;
   rate: string;
   notes: string;
@@ -28,6 +31,7 @@ export function dealPayload(v: DealFormValues) {
     deal_type: v.dealType,
     property_id: v.property?.id ?? null,
     owner_id: v.ownerId || null,
+    company_id: v.companyId,
     deal_amount: parseNumber(v.amount),
     commission_rate: parseNumber(v.rate),
     notes: v.notes.trim() || null,
@@ -56,6 +60,8 @@ export function DealForm({ values, onChange }: { values: DealFormValues; onChang
         value={values.dealType}
         onChange={(v) => set("dealType", v as "sale" | "rent")}
       />
+
+      <CompanyChips single value={values.companyId ? [values.companyId] : []} onChange={(ids) => set("companyId", ids[0] ?? null)} />
 
       <Text style={[styles.label, { color: c.text }]}>Ingatlan</Text>
       <PropertyPicker value={values.property} onChange={(p) => set("property", p)} />

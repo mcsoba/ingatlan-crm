@@ -6,6 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useColors } from "../../lib/theme";
 import { formatHuf } from "../../lib/format";
 import { Badge, Card, EmptyState, ErrorBox, Loading } from "../../components/ui";
+import { CompanyBadges, CompanyFilter } from "../../components/Companies";
+import { useSelectedCompany } from "../../lib/companies";
 
 type Stage = { id: string; name: string; position: number };
 type Deal = {
@@ -14,6 +16,7 @@ type Deal = {
   deal_type: string;
   deal_amount: number | null;
   owner_id: string | null;
+  company_id: string | null;
   contacts: { name: string } | null;
   properties: { address: string } | null;
 };
@@ -27,13 +30,14 @@ export default function PipelineScreen() {
   const [mineOnly, setMineOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const companyId = useSelectedCompany();
 
   const load = useCallback(async () => {
     const [sRes, dRes] = await Promise.all([
       supabase.from("pipeline_stages").select("id, name, position").order("position"),
       supabase
         .from("deals")
-        .select("id, stage_id, deal_type, deal_amount, owner_id, contacts(name), properties(address)")
+        .select("id, stage_id, deal_type, deal_amount, owner_id, company_id, contacts(name), properties(address)")
         .is("deleted_at", null)
         .eq("status", "open")
         .order("updated_at", { ascending: false }),
@@ -58,12 +62,15 @@ export default function PipelineScreen() {
   if (error && !stages) return <ErrorBox message={error} onRetry={load} />;
   if (!stages) return <Loading />;
 
-  const visibleDeals = deals.filter((d) => !mineOnly || d.owner_id === profile?.id);
+  const visibleDeals = deals.filter(
+    (d) => (!mineOnly || d.owner_id === profile?.id) && (!companyId || d.company_id === companyId),
+  );
   const countFor = (stageId: string) => visibleDeals.filter((d) => d.stage_id === stageId).length;
   const inStage = visibleDeals.filter((d) => d.stage_id === activeStage);
 
   return (
     <View style={{ flex: 1 }}>
+      <CompanyFilter />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -132,6 +139,7 @@ export default function PipelineScreen() {
                   <Badge label={d.deal_type === "rent" ? "Bérlés" : "Eladás"} tone="accent" />
                   {d.deal_amount ? <Text style={{ color: c.text, fontWeight: "600" }}>{formatHuf(d.deal_amount)}</Text> : null}
                 </View>
+                {companyId ? null : <CompanyBadges ids={[d.company_id]} />}
               </Card>
             </Pressable>
           ))

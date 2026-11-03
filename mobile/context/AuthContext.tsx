@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { resetCompanies } from "../lib/companies";
 import { supabase } from "../lib/supabase";
 import { registerForPush, unregisterPush } from "../lib/push";
 
@@ -78,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await unregisterPush().catch(() => {});
+    resetCompanies();
     await supabase.auth.signOut();
   }
 
