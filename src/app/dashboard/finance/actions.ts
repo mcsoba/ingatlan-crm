@@ -38,6 +38,13 @@ function vatRate(fd: FormData): number | null {
   return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
 }
 
+async function removeReceiptFiles(supabase: Awaited<ReturnType<typeof createClient>>, invoiceIds: string[]) {
+  if (!invoiceIds.length) return;
+  const { data } = await supabase.from("finance_receipts").select("path").in("invoice_id", invoiceIds);
+  const paths = (data ?? []).map((r) => r.path as string);
+  if (paths.length) await supabase.storage.from("finance-receipts").remove(paths);
+}
+
 function revalidateFinance() {
   revalidatePath("/dashboard/finance", "layout");
   revalidatePath("/dashboard");
@@ -168,6 +175,8 @@ export async function deleteInvoice(formData: FormData) {
   const id = text(formData, "id");
   if (!id) return;
   const supabase = await createClient();
+  // A csatolt blokkok fájljai a tárhelyről is törlődjenek (a sorokat a cascade viszi)
+  await removeReceiptFiles(supabase, [id]);
   const { error } = await supabase.from("finance_invoices").delete().eq("id", id);
   if (error) throw error;
   revalidateFinance();
@@ -363,6 +372,8 @@ export async function deleteSchedule(formData: FormData) {
   if (!id) return;
   const supabase = await createClient();
   // A már létrehozott, még ki nem állított tételei is törlődnek; a kiállítottak megmaradnak
+  const { data: planned } = await supabase.from("finance_invoices").select("id").eq("schedule_id", id).eq("is_planned", true);
+  await removeReceiptFiles(supabase, (planned ?? []).map((p) => p.id as string));
   await supabase.from("finance_invoices").delete().eq("schedule_id", id).eq("is_planned", true);
   const { error } = await supabase.from("finance_schedules").delete().eq("id", id);
   if (error) throw error;
