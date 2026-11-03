@@ -1,6 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
@@ -12,48 +11,40 @@ function pathsToRevalidate(contactId: string | null, dealId: string | null): voi
   if (dealId) revalidatePath(`/dashboard/pipeline/${dealId}`);
 }
 
-export async function uploadAttachment(formData: FormData) {
+/**
+ * A böngésző a fájlt közvetlenül a tárhelyre tölti (upload-form.tsx), ez csak
+ * a bejegyzést rögzíti — a régi szerveres feltöltés ~1 MB fölött elhasalt.
+ */
+export async function recordAttachment(input: {
+  contactId: string | null;
+  dealId: string | null;
+  path: string;
+  filename: string;
+  size: number;
+  contentType: string | null;
+}) {
   const { profile } = await ensureCurrentUserProfile();
+  const entityId = input.contactId ?? input.dealId;
+  if (!entityId) throw new Error("Hiányzó kontakt vagy üzlet azonosító");
+  // Csak a saját iroda / kontakt vagy üzlet mappájába feltöltött fájl rögzíthető
+  if (!input.path.startsWith(`${profile.agency_id}/${entityId}/`)) throw new Error("Érvénytelen fájlútvonal");
+  if (input.size > MAX_SIZE_BYTES) throw new Error("A fájl túl nagy (max 15 MB)");
+
   const supabase = await createClient();
-
-  const file = formData.get("file");
-  const contactIdRaw = formData.get("contactId");
-  const dealIdRaw = formData.get("dealId");
-  const contactId = typeof contactIdRaw === "string" && contactIdRaw ? contactIdRaw : null;
-  const dealId = typeof dealIdRaw === "string" && dealIdRaw ? dealIdRaw : null;
-
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Válassz ki egy fájlt");
-  }
-  if (file.size > MAX_SIZE_BYTES) {
-    throw new Error("A fájl túl nagy (max 15 MB)");
-  }
-  const entityId = contactId ?? dealId;
-  if (!entityId) {
-    throw new Error("Hiányzó kontakt vagy üzlet azonosító");
-  }
-
-  const path = `${profile.agency_id}/${entityId}/${randomUUID()}-${file.name}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("attachments")
-    .upload(path, file, { contentType: file.type || undefined });
-
-  if (uploadError) throw uploadError;
-
-  const { error: insertError } = await supabase.from("attachments").insert({
+  const { error } = await supabase.from("attachments").insert({
     agency_id: profile.agency_id,
-    contact_id: contactId,
-    deal_id: dealId,
-    path,
-    filename: file.name,
-    size_bytes: file.size,
-    content_type: file.type || null,
+    contact_id: input.contactId,
+    deal_id: input.dealId,
+    path: input.path,
+    filename: input.filename.slice(0, 200),
+    size_bytes: input.size,
+    content_type: input.contentType,
   });
-
-  if (insertError) throw insertError;
-
-  pathsToRevalidate(contactId, dealId);
+  if (error) {
+    await supabase.storage.from("attachments").remove([input.path]);
+    throw error;
+  }
+  pathsToRevalidate(input.contactId, input.dealId);
 }
 
 export async function deleteAttachment(formData: FormData) {

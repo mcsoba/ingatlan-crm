@@ -13,6 +13,7 @@ import {
   Sunrise,
   Tags,
   UserCog,
+  Wallet,
   UserPlus,
   type LucideIcon,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const SECTIONS: { id: string; title: string; icon: LucideIcon }[] = [
   { id: "allapotok", title: "Mit jelentenek az állapotok?", icon: Tags },
   { id: "hibak", title: "Ha valamit elrontottál", icon: LifeBuoy },
   { id: "vezetoknek", title: "Irodavezetőknek", icon: UserCog },
+  { id: "penzugyek", title: "Pénzügyek (irodavezetőknek)", icon: Wallet },
 ];
 
 const STAGE_ORDER = ["lead", "megtekintés", "ajánlat", "alku", "zárás"];
@@ -430,6 +432,39 @@ export function GuideContent() {
             megnézhetők.
           </li>
         </ul>
+      </Section>
+
+      <Section id="penzugyek">
+        <p>
+          A <Ref href="/dashboard/finance">Pénzügyek</Ref> menüpont az eddigi pénzügyi Excelt váltja ki. Csak a tulajdonos és
+          az admin látja. Fent az oldalsávban kiválasztható, melyik cég adatait mutassa (vagy az összesét).
+        </p>
+        <Steps
+          items={[
+            <>
+              <b>Ismétlődő számlák egyszer:</b> a havi bérleti díjat, rezsit, bérbeadóknak fizetett díjat{" "}
+              <Ref href="/dashboard/finance/schedules">Számla-törzsként</Ref> vedd fel (kinek, mennyit, a hónap hányadik
+              napján). Utána a rendszer minden hónapban magától előkészíti és reggel szól.
+            </>,
+            <>
+              <b>Számlázás:</b> az Áttekintésen a „Számlát kell kiállítani” listából nyisd meg a tételt, a Számlázz.hu
+              mezőit egy-egy kattintással másold át, végül írd vissza a kapott számlaszámot és nyomd meg a „Kiállítva” gombot.
+            </>,
+            <>
+              <b>Fizetés és bankkivonat:</b> a <Ref href="/dashboard/finance/invoices">Számlák és tételek</Ref> listában a
+              piros „✓ Fizetve” gombbal jelöld, ha a pénz megjött / elment, a „✓ Könyvelve” gombbal pedig, ha megjelent a
+              bankszámlakivonaton — pont mint az Excelben a piros cellák kitöltése.
+            </>,
+            <>
+              <b>Blokkok, apró kiadások:</b> a <Ref href="/dashboard/finance/expenses">Kiadások</Ref> fülön pár mezővel és a
+              blokk lefotózásával (telefonon a fotó gomb a kamerát is felajánlja).
+            </>,
+          ]}
+        />
+        <Tip>
+          Kipróbálnád előbb? Az üres Pénzügyek oldalon a „Mintaadatok betöltése” gomb példatételeket tölt be — a megjelenő sávban
+          lévő „Mintaadatok törlése” gombbal egy kattintással törölhetők, a valódi adatokhoz nem nyúl.
+        </Tip>
       </Section>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { saveInvoice } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { fieldGroupClass, inputClass, labelClass, sectionLabelClass } from "@/components/ui/styles";
 import {
   CATEGORIES,
@@ -22,10 +23,13 @@ import {
 
 type Option = { id: string; name: string };
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Field({ label, children, hint, help }: { label: string; children: React.ReactNode; hint?: string; help?: string }) {
   return (
     <label className={fieldGroupClass}>
-      <span className={labelClass}>{label}</span>
+      <span className={`${labelClass} inline-flex items-center gap-1`}>
+        {label}
+        {help && <HelpTooltip text={help} />}
+      </span>
       {children}
       {hint && <span className="text-xs text-muted">{hint}</span>}
     </label>
@@ -92,7 +96,7 @@ export function InvoiceForm({
               ))}
             </select>
           </Field>
-          <Field label="Irány">
+          <Field label="Irány" help="Kimenő: mi állítottuk ki, nekünk fizetnek (bevétel). Bejövő: nekünk állították ki, mi fizetünk (kiadás).">
             <select
               name="direction"
               value={direction}
@@ -103,7 +107,7 @@ export function InvoiceForm({
               <option value="in">Bejövő — nekünk számláznak (kiadás)</option>
             </select>
           </Field>
-          <Field label="Bizonylat">
+          <Field label="Bizonylat" help="Díjbekérő: fizetési felszólítás, még nem számla — a végleges számla a fizetés után jön. Bizonylat nélkül: pl. bér, adó, bankköltség, készpénzfelvétel.">
             <select name="doc_type" defaultValue={invoice?.doc_type ?? "invoice"} className={inputClass}>
               {Object.entries(DOC_TYPE_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -112,7 +116,7 @@ export function InvoiceForm({
               ))}
             </select>
           </Field>
-          <Field label="Kategória">
+          <Field label="Kategória" help="Ez alapján készül a kiadások / bevételek kimutatása. Ha nem tudod, válaszd az „Egyéb”-et.">
             <select name="category" defaultValue={invoice?.category ?? (direction === "out" ? "rent" : "other")} className={inputClass}>
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -124,7 +128,7 @@ export function InvoiceForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label={direction === "out" ? "Vevő (számla címzettje)" : "Kiállító / partner"}>
+          <Field label={direction === "out" ? "Vevő (számla címzettje) *" : "Kiállító / partner *"}>
             <input
               name="counterparty_name"
               required
@@ -165,7 +169,7 @@ export function InvoiceForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Számla tartalma">
+          <Field label="Számla tartalma *">
             <input
               name="description"
               required
@@ -189,10 +193,10 @@ export function InvoiceForm({
           <Field label="Időszak vége">
             <input type="date" name="period_end" defaultValue={invoice?.period_end ?? ""} className={inputClass} />
           </Field>
-          <Field label="Kelte / dátum">
+          <Field label="Kelte / dátum *" help="A számlán szereplő kiállítási dátum; bizonylat nélküli tételnél a pénzmozgás napja.">
             <input type="date" name="issue_date" required defaultValue={invoice?.issue_date ?? ""} className={inputClass} />
           </Field>
-          <Field label="Teljesítés">
+          <Field label="Teljesítés" help="A számlán szereplő teljesítési dátum (bérleti díjnál általában az időszak eleje vagy a kiállítás napja). Ha nem tudod, hagyd üresen.">
             <input type="date" name="fulfillment_date" defaultValue={invoice?.fulfillment_date ?? ""} className={inputClass} />
           </Field>
           <Field label="Fizetési határidő">
@@ -222,7 +226,7 @@ export function InvoiceForm({
           <Field label="Nettó">
             <input name="net_amount" inputMode="decimal" value={net} onChange={(e) => setNet(e.target.value)} className={inputClass} />
           </Field>
-          <Field label="ÁFA-kulcs">
+          <Field label="ÁFA-kulcs" help="Lakásbérleti díj általában ÁFA-mentes (0% / AAM). Magánszemély bérbeadónál: „Nincs ÁFA”. A legtöbb szolgáltatás és termék 27%.">
             <select name="vat_rate" value={rate} onChange={(e) => setRate(e.target.value)} className={inputClass}>
               {VAT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -271,10 +275,10 @@ export function InvoiceForm({
           <Field label={direction === "out" ? "Kiegyenlítés dátuma" : "Kifizetés dátuma"}>
             <input type="date" name="paid_date" defaultValue={invoice?.paid_date ?? ""} className={inputClass} />
           </Field>
-          <Field label="Ténylegesen fizetett összeg" hint="Üresen hagyva a fizetendő összeg számít">
+          <Field label="Ténylegesen fizetett összeg" hint="Üresen hagyva a fizetendő összeg számít" help="Csak akkor kell kitölteni, ha nem a teljes összeget fizették (pl. részlet, levonás).">
             <input name="paid_amount" inputMode="decimal" defaultValue={amountText(invoice?.paid_amount)} className={inputClass} />
           </Field>
-          <Field label="Bank könyvelés dátuma" hint="A bankszámlakivonat alapján">
+          <Field label="Bank könyvelés dátuma" hint="A bankszámlakivonat alapján" help="Az a nap, amikor az összeg megjelent a bankszámlakivonaton. Ez az Excel „Bank könyvelés dátuma” oszlopa.">
             <input type="date" name="bank_booked_date" defaultValue={invoice?.bank_booked_date ?? ""} className={inputClass} />
           </Field>
         </div>

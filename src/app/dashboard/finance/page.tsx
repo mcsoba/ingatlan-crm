@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, FilePlus2, Landmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
+import { LoadSampleButton, SampleDataBanner } from "./sample-buttons";
 import { getSelectedCompanyId } from "@/lib/companies";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import {
   settledAmount,
   szjaAmount,
   todayIso,
+  SAMPLE_MARKER,
   type InvoiceRow,
 } from "@/lib/finance";
 
@@ -140,9 +142,11 @@ export default async function FinanceOverviewPage({
     .select(INVOICE_SELECT)
     .or(`issue_date.gte.${firstMonth},paid_date.gte.${firstMonth},paid_date.is.null`);
   if (company) query = query.eq("company_id", company);
-  const [{ data }, { count: companyCount }] = await Promise.all([
+  const [{ data }, { count: companyCount }, { count: totalCount }, { count: sampleCount }] = await Promise.all([
     query.limit(5000),
     supabase.from("finance_companies").select("id", { count: "exact", head: true }),
+    supabase.from("finance_invoices").select("id", { count: "exact", head: true }),
+    supabase.from("finance_invoices").select("id", { count: "exact", head: true }).eq("notes", SAMPLE_MARKER),
   ]);
   const all = (data ?? []) as InvoiceRow[];
   const companyQuery = company ? `&company=${company}` : "";
@@ -212,12 +216,58 @@ export default async function FinanceOverviewPage({
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Pénzügyek"
-        description="Mit kell kiszámlázni, mi nincs még kifizetve, és hogyan alakul a bevétel és a kiadás."
+        description="Mit kell ma kiszámlázni, kifizetni vagy a bankkivonat alapján kipipálni — és hogyan alakul a bevétel és a kiadás."
       />
+
+      {!totalCount ? (
+        <Card className="flex flex-col gap-3 p-5">
+          <h2 className="text-base font-semibold text-foreground">Még üres — hogyan kezdjünk hozzá?</h2>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+            <li>
+              <strong className="text-foreground">Ismétlődő számlák</strong> (havi bérleti díj, rezsi, bérbeadóknak fizetett díj):{" "}
+              <Link href="/dashboard/finance/schedules/new" className="text-accent hover:underline">számla-törzsként</Link> egyszer kell felvenni, utána a rendszer minden hónapban magától szól.
+            </li>
+            <li>
+              <strong className="text-foreground">Egyéb kiadás</strong> (tisztítószer, üzemanyag, blokk):{" "}
+              <Link href="/dashboard/finance/expenses" className="text-accent hover:underline">Kiadások</Link> fül — pár mező és egy fotó a blokkról.
+            </li>
+            <li>
+              <strong className="text-foreground">Egyedi számla</strong> (kapott vagy kiállított):{" "}
+              <Link href="/dashboard/finance/invoices/new" className="text-accent hover:underline">Új tétel</Link>.
+            </li>
+          </ol>
+          <p className="text-sm text-muted">Ha előbb csak kipróbálnád, tölts be mintaadatokat — utána egy kattintással törölhetők.</p>
+          <div>
+            <LoadSampleButton />
+          </div>
+        </Card>
+      ) : sampleCount ? (
+        <SampleDataBanner count={sampleCount} />
+      ) : null}
+
+      <details className="rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+        <summary className="cursor-pointer font-medium text-foreground">Hogyan működik? (1 perc)</summary>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-muted">
+          <li>
+            <strong className="text-foreground">Számlát kell kiállítani:</strong> a rendszer a törzsek alapján pár nappal előre szól. Nyisd meg a tételt,
+            másold át az adatokat a Számlázz.hu-ba (minden sor egy kattintással másolható), majd írd vissza a kapott számlaszámot.
+          </li>
+          <li>
+            <strong className="text-foreground">Pénz érkezett vagy kifizettük:</strong> a Számlák és tételek listában a piros „✓ Fizetve” gombbal jelöld.
+          </li>
+          <li>
+            <strong className="text-foreground">Bankkivonat egyeztetése:</strong> ha a tétel megjelent a bankszámlakivonaton, kattints a „✓ Könyvelve”
+            gombra. Ha minden zöld, a tétel rendezett.
+          </li>
+          <li>
+            <strong className="text-foreground">Blokkok, apró kiadások:</strong> a Kiadások fülön, fotóval együtt.
+          </li>
+        </ol>
+      </details>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
-          label="Számlázandó"
+          label="Számlát kell kiállítani"
           value={String(toIssue.length)}
           sub={toIssue.length ? `${formatMoney(sumHuf(toIssue))} · legkorábbi: ${relDays(toIssue[0].issue_date, today)}` : "Nincs teendő"}
           href={`/dashboard/finance/invoices?status=planned&dir=out${companyQuery}`}
@@ -225,7 +275,7 @@ export default async function FinanceOverviewPage({
           tone={toIssue.some((i) => i.issue_date <= today) ? "warning" : "accent"}
         />
         <Stat
-          label="Kintlévőség (kiállított, nincs fizetve)"
+          label="Nekünk tartoznak (még nem fizették ki)"
           value={formatMoney(sumHuf(receivables))}
           sub={overdueReceivables.length ? `ebből lejárt: ${formatMoney(sumHuf(overdueReceivables))} (${overdueReceivables.length} db)` : "Nincs lejárt"}
           href={`/dashboard/finance/invoices?status=todo&dir=out${companyQuery}`}
@@ -233,7 +283,7 @@ export default async function FinanceOverviewPage({
           tone={overdueReceivables.length ? "danger" : "success"}
         />
         <Stat
-          label="Fizetendő"
+          label="Nekünk kell kifizetni"
           value={formatMoney(sumHuf(payables))}
           sub={overduePayables.length ? `ebből lejárt: ${formatMoney(sumHuf(overduePayables))} (${overduePayables.length} db)` : "Nincs lejárt"}
           href={`/dashboard/finance/invoices?status=todo&dir=in${companyQuery}`}
@@ -241,9 +291,9 @@ export default async function FinanceOverviewPage({
           tone={overduePayables.length ? "danger" : "accent"}
         />
         <Stat
-          label="Könyvelésre vár (bankkivonat)"
+          label="Bankkivonattal egyeztetni"
           value={String(toBook.length)}
-          sub="Kifizetve, de a banki könyvelés dátuma hiányzik"
+          sub="Kifizetve, de még nincs kipipálva a bankkivonat alapján"
           href={`/dashboard/finance/invoices?status=paid${companyQuery}`}
           icon={Landmark}
           tone={toBook.length ? "warning" : "success"}
@@ -260,7 +310,7 @@ export default async function FinanceOverviewPage({
           companyQuery={companyQuery}
         />
         <InvoiceList
-          title="Nem fizettek még (kimenő)"
+          title="Még nem fizettek nekünk"
           empty="Minden kiállított számlát kifizettek."
           items={receivables}
           today={today}
