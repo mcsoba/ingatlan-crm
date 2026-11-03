@@ -13,7 +13,9 @@ const MAX_EDGE = 2000;
  * böngésző által nem dekódolható képet (pl. HEIC asztali Chrome-ban) változatlanul töltjük fel.
  */
 async function shrinkImage(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+  // Egyes böngészők / fájlkezelők üres típust adnak — ilyenkor a kiterjesztés dönt
+  const isImage = file.type ? file.type.startsWith("image/") : /\.(jpe?g|png|bmp|webp|heic|heif)$/i.test(file.name);
+  if (!isImage || file.type === "image/gif") return file;
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
