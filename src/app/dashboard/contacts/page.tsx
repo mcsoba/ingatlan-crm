@@ -194,11 +194,19 @@ export default async function ContactsPage({
       {contacts.length === 0 ? (
         <EmptyState
           icon={Users}
-          title={hasFilters ? "Nincs a szűrésnek megfelelő kontakt" : "Még nincs kontakt"}
+          title={
+            hasFilters
+              ? "Nincs a szűrésnek megfelelő kontakt"
+              : selectedCompanyId
+                ? "Ehhez a céghez még nincs kontakt"
+                : "Még nincs kontakt"
+          }
           description={
             hasFilters
               ? "Próbálj más keresőszót vagy szűrőt."
-              : "Vegyél fel egy kontaktot, hogy elkezdhesd az üzleteidet építeni."
+              : selectedCompanyId
+                ? "A cég nélküli kontaktok csak az „Összes cég” nézetben látszanak — az adatlapjukon rendelhetők céghez."
+                : "Vegyél fel egy kontaktot, hogy elkezdhesd az üzleteidet építeni."
           }
         />
       ) : (
