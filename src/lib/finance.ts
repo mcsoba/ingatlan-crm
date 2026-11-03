@@ -63,6 +63,9 @@ export const VAT_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Nincs ÁFA" },
 ];
 
+// A bemutató (minta) tételek jelölője — ez alapján törölhetők egy kattintással
+export const SAMPLE_MARKER = "Mintaadat — a Pénzügyek áttekintésén egy kattintással törölhető";
+
 // Magánszemély bérbeadótól bérelt lakásnál a kifizető vonja le az SZJA-t:
 // a bérleti díj 90%-a (10% költséghányad) után 15%.
 export const SZJA_BASE_RATIO = 0.9;

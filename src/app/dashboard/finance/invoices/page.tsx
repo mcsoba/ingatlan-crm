@@ -97,17 +97,23 @@ export default async function FinanceInvoicesPage({
   }
 
   const year = Number(filters.year);
-  const dirTabs = [
-    { value: "", label: "Mind" },
-    { value: "out", label: "Kimenő (bevétel)" },
-    { value: "in", label: "Bejövő (kiadás)" },
+  // Gyors szűrők a napi teendőkhöz, egyszerű szavakkal (irány + állapot)
+  const quickFilters: { label: string; dir: string; status: string }[] = [
+    { label: "Minden tétel", dir: "", status: "" },
+    { label: "Számlát kell kiállítani", dir: "out", status: "planned" },
+    { label: "Még nem fizettek nekünk", dir: "out", status: "todo" },
+    { label: "Nekünk kell fizetni", dir: "in", status: "todo" },
+    { label: "Lejárt határidő", dir: "", status: "overdue" },
+    { label: "Bankkivonattal egyeztetni", dir: "", status: "paid" },
+    { label: "Csak bevételek", dir: "out", status: "" },
+    { label: "Csak kiadások", dir: "in", status: "" },
   ];
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Számlák és tételek"
-        description="Minden bejövő és kimenő számla, díjbekérő és egyéb pénzmozgás. A piros cellánál még hiányzik a kifizetés vagy a banki könyvelés — egy kattintással pipálható."
+        description="Minden kapott és kiállított számla, díjbekérő és pénzmozgás. Piros cella = még nincs kifizetve vagy nincs kipipálva a bankkivonat alapján — egy kattintással pipálható, mint az Excelben."
         action={
           <>
             <a href={`/dashboard/finance/export${query(filters, {})}`} className={buttonVariants("secondary", "sm")}>
@@ -126,19 +132,20 @@ export default async function FinanceInvoicesPage({
       />
 
       <div className="flex flex-wrap items-center gap-1">
-        {dirTabs.map((t) => (
-          <Link
-            key={t.value}
-            href={`/dashboard/finance/invoices${query(filters, { dir: t.value })}`}
-            className={`rounded-full border px-3 py-1 text-xs ${
-              (filters.dir ?? "") === t.value
-                ? "border-accent bg-accent-soft font-medium text-accent-hover"
-                : "border-border text-muted hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
+        {quickFilters.map((f) => {
+          const active = (filters.dir ?? "") === f.dir && (filters.status ?? "") === f.status;
+          return (
+            <Link
+              key={f.label}
+              href={`/dashboard/finance/invoices${query(filters, { dir: f.dir, status: f.status })}`}
+              className={`rounded-full border px-3 py-1 text-xs ${
+                active ? "border-accent bg-accent-soft font-medium text-accent-hover" : "border-border text-muted hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       <form className="flex flex-wrap items-end gap-2">

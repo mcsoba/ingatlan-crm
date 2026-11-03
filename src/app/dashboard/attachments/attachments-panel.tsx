@@ -1,9 +1,10 @@
 import { Paperclip, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { uploadAttachment, deleteAttachment } from "./actions";
+import { deleteAttachment } from "./actions";
+import { AttachmentUploadForm } from "./upload-form";
+import { ensureCurrentUserProfile } from "@/lib/agency";
 import { DownloadButton } from "./download-button";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 
 function formatSize(bytes: number): string {
@@ -20,6 +21,7 @@ export async function AttachmentsPanel({
   dealId?: string;
 }) {
   const supabase = await createClient();
+  const { profile } = await ensureCurrentUserProfile();
   const query = supabase
     .from("attachments")
     .select("id, filename, size_bytes, path, created_at")
@@ -61,14 +63,7 @@ export async function AttachmentsPanel({
         </div>
       )}
 
-      <form action={uploadAttachment} className="flex items-center gap-2 pt-1">
-        {contactId && <input type="hidden" name="contactId" value={contactId} />}
-        {dealId && <input type="hidden" name="dealId" value={dealId} />}
-        <input type="file" name="file" required className="flex-1 text-xs" />
-        <Button type="submit" size="sm" variant="secondary">
-          Feltöltés
-        </Button>
-      </form>
+      <AttachmentUploadForm agencyId={profile.agency_id} contactId={contactId} dealId={dealId} />
     </div>
   );
 }
