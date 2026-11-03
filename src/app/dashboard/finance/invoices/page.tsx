@@ -221,7 +221,7 @@ export default async function FinanceInvoicesPage({
                       <Link href={href}>
                         <Badge variant={STATUS_VARIANT[status]}>{statusLabel(status, inv.direction)}</Badge>
                       </Link>
-                      <div className="mt-1 text-[11px] text-muted">{inv.direction === "out" ? "↗ kimenő" : "↙ bejövő"}</div>
+                      <div className="mt-1 text-[11px] text-muted">{inv.direction === "out" ? "bevétel (kimenő)" : "kiadás (bejövő)"}</div>
                     </td>
                     <td className="whitespace-nowrap px-2 py-2 tabular-nums">
                       {inv.is_planned && inv.direction === "out" ? (
