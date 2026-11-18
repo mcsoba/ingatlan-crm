@@ -200,18 +200,21 @@ export async function markInvoice(formData: FormData) {
 
   const { data: inv, error: loadError } = await supabase
     .from("finance_invoices")
-    .select("gross_amount, szja_withheld, currency, paid_date, paid_amount")
+    .select("direction, gross_amount, szja_withheld, currency, paid_date, paid_amount")
     .eq("id", id)
     .single();
   if (loadError) throw loadError;
+  // Bejövő „várható” tétel (pl. havi bérleti díj a bérbeadónak) kifizetéssel rendes tétellé válik
+  const settle = inv.direction === "in" ? { is_planned: false } : {};
 
   let update: Record<string, unknown>;
   switch (action) {
     case "paid":
-      update = { paid_date: day, paid_amount: inv.paid_amount ?? payableAmount(inv) };
+      update = { ...settle, paid_date: day, paid_amount: inv.paid_amount ?? payableAmount(inv) };
       break;
     case "booked":
       update = {
+        ...settle,
         bank_booked_date: day,
         ...(inv.paid_date ? {} : { paid_date: day, paid_amount: inv.paid_amount ?? payableAmount(inv) }),
       };
@@ -257,7 +260,9 @@ export async function createQuickExpense(formData: FormData): Promise<string> {
   if (!description) throw new Error("Írd be, mire ment a pénz");
   if (gross === null || gross <= 0) throw new Error("Add meg az összeget");
   const amount = roundMoney(gross, currency);
-  const paid = formData.get("paid") === "on";
+  const paidValue = text(formData, "paid");
+  const paid = paidValue === "yes" || paidValue === "on";
+  const paidDate = date(formData, "paid_date") ?? issueDate;
   const method = oneOf(text(formData, "payment_method"), ["transfer", "card", "cash"] as const, "card");
 
   const supabase = await createClient();
@@ -273,9 +278,9 @@ export async function createQuickExpense(formData: FormData): Promise<string> {
       counterparty_name: text(formData, "counterparty_name") ?? description,
       description,
       issue_date: issueDate,
-      fulfillment_date: issueDate,
-      due_date: issueDate,
-      paid_date: paid ? issueDate : null,
+      fulfillment_date: date(formData, "fulfillment_date") ?? issueDate,
+      due_date: date(formData, "due_date") ?? issueDate,
+      paid_date: paid ? paidDate : null,
       paid_amount: paid ? amount : null,
       payment_method: method,
       currency,

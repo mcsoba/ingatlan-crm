@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Check, Download, Plus, Receipt } from "lucide-react";
+import { Check, Download, Plus, Receipt, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
-import { getSelectedCompanyId } from "@/lib/companies";
+import { getSelectedCompanyId, listCompanies } from "@/lib/companies";
 import { markInvoice } from "../actions";
 import { STATUS_FILTERS, loadInvoices, type InvoiceFilters } from "../data";
 import { PageHeader } from "@/components/ui/page-header";
@@ -51,8 +51,31 @@ function TickCell({
   label: string;
   exempt?: boolean;
 }) {
-  if (value) return <td className="whitespace-nowrap px-2 py-2 tabular-nums">{formatDate(value)}</td>;
-  if (inv.is_planned || exempt) return <td className="px-2 py-2 text-muted-subtle">—</td>;
+  if (value) {
+    return (
+      <td className="whitespace-nowrap bg-success-soft/60 px-2 py-1.5">
+        <div className="flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 text-xs font-medium tabular-nums text-success">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+            {formatDate(value)}
+          </span>
+          <form action={markInvoice}>
+            <input type="hidden" name="id" value={inv.id} />
+            <input type="hidden" name="action" value={action === "paid" ? "undo_paid" : "undo_booked"} />
+            <button
+              type="submit"
+              title={`${label} visszavonása`}
+              aria-label={`${label} visszavonása`}
+              className="rounded p-0.5 text-muted-subtle hover:bg-danger-soft hover:text-danger"
+            >
+              <Undo2 className="h-3 w-3" />
+            </button>
+          </form>
+        </div>
+      </td>
+    );
+  }
+  if ((inv.is_planned && inv.direction === "out") || exempt) return <td className="px-2 py-2 text-muted-subtle">—</td>;
   return (
     <td className="bg-danger-soft/60 px-2 py-1.5">
       <form action={markInvoice}>
@@ -84,7 +107,8 @@ export default async function FinanceInvoicesPage({
   };
   const supabase = await createClient();
   await generateDueInvoices(supabase);
-  const invoices = await loadInvoices(supabase, filters);
+  const [invoices, companies] = await Promise.all([loadInvoices(supabase, filters), listCompanies()]);
+  const companyName = new Map(companies.map((c) => [c.id, c.name]));
   const today = todayIso();
   const listPath = `/dashboard/finance/invoices${query(filters, {})}`;
 
@@ -149,8 +173,17 @@ export default async function FinanceInvoicesPage({
       </div>
 
       <form className="flex flex-wrap items-end gap-2">
-        {filters.company && <input type="hidden" name="company" value={filters.company} />}
         {filters.dir && <input type="hidden" name="dir" value={filters.dir} />}
+        {companies.length > 0 && (
+          <select name="company" defaultValue={filters.company ?? "all"} className={`${inputClass} py-1.5`}>
+            <option value="all">Minden cég</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
         <input name="q" defaultValue={filters.q} placeholder="Keresés (partner, tartalom, számlaszám, cím)" className={`${inputClass} min-w-[220px] flex-1 py-1.5`} />
         <select name="status" defaultValue={filters.status ?? ""} className={`${inputClass} py-1.5`}>
           {STATUS_FILTERS.map((s) => (
@@ -238,6 +271,7 @@ export default async function FinanceInvoicesPage({
                       <Link href={href} className="font-medium text-foreground hover:underline">
                         {inv.counterparty_name}
                       </Link>
+                      {companies.length > 1 && <div className="text-xs text-muted">{companyName.get(inv.company_id)}</div>}
                     </td>
                     <td className="max-w-[260px] px-2 py-2">
                       <div>{inv.description}</div>

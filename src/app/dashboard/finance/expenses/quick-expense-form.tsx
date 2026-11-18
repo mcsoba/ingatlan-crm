@@ -40,6 +40,7 @@ export function QuickExpenseForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const [paid, setPaid] = useState(true);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,7 +60,7 @@ export function QuickExpenseForm({
       }
       setSaved(`Rögzítve: ${fd.get("description")}${receiptError}`);
       // Cég, dátum és fizetési mód marad (sorozatos rögzítéshez), a többi ürül
-      for (const name of ["description", "counterparty_name", "gross_amount", "invoice_number", "notes"]) {
+      for (const name of ["description", "counterparty_name", "gross_amount", "invoice_number", "notes", "fulfillment_date", "due_date", "paid_date"]) {
         const el = formRef.current?.elements.namedItem(name) as HTMLInputElement | null;
         if (el) el.value = "";
       }
@@ -98,7 +99,7 @@ export function QuickExpenseForm({
             </div>
           </Field>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Cég">
             <select name="company_id" required defaultValue={defaultCompanyId ?? companies[0]?.id} className={inputClass}>
               {companies.map((c) => (
@@ -107,9 +108,6 @@ export function QuickExpenseForm({
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label="Dátum">
-            <input type="date" name="issue_date" defaultValue={today} className={inputClass} />
           </Field>
           <Field label="Kategória">
             <select name="category" defaultValue="supplies" className={inputClass}>
@@ -133,6 +131,41 @@ export function QuickExpenseForm({
             <input name="invoice_number" className={inputClass} />
           </Field>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <Field label="Számla kelte / vásárlás napja">
+            <input type="date" name="issue_date" defaultValue={today} className={inputClass} />
+          </Field>
+          <Field label="Teljesítés ideje">
+            <input type="date" name="fulfillment_date" className={inputClass} />
+            <span className="text-[11px] text-muted-subtle">Üresen = a kelte</span>
+          </Field>
+          <Field label="Fizetési határidő">
+            <input type="date" name="due_date" className={inputClass} />
+            <span className="text-[11px] text-muted-subtle">Üresen = a kelte</span>
+          </Field>
+          <Field label="Fizetés állapota">
+            <select
+              name="paid"
+              value={paid ? "yes" : "no"}
+              onChange={(e) => setPaid(e.target.value === "yes")}
+              className={`${inputClass} ${paid ? "text-success" : "text-danger"}`}
+            >
+              <option value="yes">✓ Ki van fizetve</option>
+              <option value="no">✗ Még nincs kifizetve</option>
+            </select>
+          </Field>
+          {paid ? (
+            <Field label="Kifizetés dátuma">
+              <input type="date" name="paid_date" className={inputClass} />
+              <span className="text-[11px] text-muted-subtle">Üresen = a kelte</span>
+            </Field>
+          ) : (
+            <div />
+          )}
+        </div>
+        <Field label="Megjegyzés (opcionális)">
+          <input name="notes" placeholder="pl. kinek vettük, melyik szállásra, ki fizette" className={inputClass} />
+        </Field>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
@@ -150,10 +183,6 @@ export function QuickExpenseForm({
             className="hidden"
             onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
           />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="paid" defaultChecked />
-            Már ki van fizetve
-          </label>
           <div className="ml-auto flex items-center gap-3">
             {saved && (
               <span className="inline-flex items-center gap-1 text-xs text-success">

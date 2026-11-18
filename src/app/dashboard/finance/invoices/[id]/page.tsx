@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Repeat } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { deleteInvoice, markInvoice } from "../../actions";
+import { deleteInvoice } from "../../actions";
+import { PaymentStatus } from "../../payment-status";
 import { loadFormOptions } from "../../data";
 import { InvoiceForm } from "../../invoice-form";
 import { SzamlazzPanel } from "../../szamlazz-panel";
@@ -11,8 +12,6 @@ import { ReceiptsPanel, type Receipt } from "../../receipts-panel";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   INVOICE_SELECT,
   PAYMENT_METHOD_LABELS,
@@ -86,36 +85,14 @@ export default async function InvoiceDetailPage({
         </p>
       )}
 
+      <PaymentStatus inv={inv} today={today} />
+
       {inv.is_planned && inv.direction === "out" && (
         <SzamlazzPanel invoiceId={inv.id} fields={szamlazzFields} today={today} />
       )}
 
       <ReceiptsPanel agencyId={profile.agency_id} invoiceId={inv.id} receipts={(receiptRows ?? []) as Receipt[]} />
 
-      {(inv.paid_date || inv.bank_booked_date) && (
-        <Card className="flex flex-wrap items-center gap-3 p-3 text-sm">
-          {inv.paid_date && <span>Kifizetve: {formatDate(inv.paid_date)}</span>}
-          {inv.bank_booked_date && <span>Bankban könyvelve: {formatDate(inv.bank_booked_date)}</span>}
-          <div className="ml-auto flex gap-2">
-            {inv.bank_booked_date && (
-              <form action={markInvoice}>
-                <input type="hidden" name="id" value={inv.id} />
-                <input type="hidden" name="action" value="undo_booked" />
-                <Button type="submit" size="sm" variant="ghost">
-                  Könyvelés visszavonása
-                </Button>
-              </form>
-            )}
-            <form action={markInvoice}>
-              <input type="hidden" name="id" value={inv.id} />
-              <input type="hidden" name="action" value="undo_paid" />
-              <Button type="submit" size="sm" variant="ghost">
-                Kifizetés visszavonása
-              </Button>
-            </form>
-          </div>
-        </Card>
-      )}
 
       {/* A key miatt pipálás / kiállítás után az űrlap a friss adatokkal épül újra (különben egy
           Mentés visszaírná a régi dátumokat) */}
