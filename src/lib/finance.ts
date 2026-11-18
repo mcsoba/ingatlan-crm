@@ -153,6 +153,61 @@ export type CompanyRow = {
   color: string | null;
 };
 
+/** A cég-adatlap teljes adatai (0046). */
+export type CompanyDetail = CompanyRow & {
+  registration_number: string | null;
+  eu_vat_number: string | null;
+  founded_date: string | null;
+  main_activity: string | null;
+  office_address: string | null;
+  mailing_address: string | null;
+  bank_name: string | null;
+  iban: string | null;
+  swift: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  accountant: string | null;
+  notes: string | null;
+};
+
+export const COMPANY_BASIC_SELECT = "id, name, tax_number, address, bank_account, color";
+export const COMPANY_DETAIL_SELECT = `${COMPANY_BASIC_SELECT}, registration_number, eu_vat_number, founded_date, main_activity, office_address, mailing_address, bank_name, iban, swift, email, phone, website, accountant, notes`;
+
+export type CompanyPersonRole = "director" | "owner" | "employee" | "accountant" | "other";
+export const COMPANY_PERSON_ROLE_LABELS: Record<CompanyPersonRole, string> = {
+  director: "Ügyvezető",
+  owner: "Tulajdonos / tag",
+  employee: "Munkatárs",
+  accountant: "Könyvelő",
+  other: "Egyéb",
+};
+export const COMPANY_PERSON_ROLES = Object.keys(COMPANY_PERSON_ROLE_LABELS) as CompanyPersonRole[];
+
+export type CompanyPersonRow = {
+  id: string;
+  company_id: string;
+  profile_id: string | null;
+  name: string;
+  role: CompanyPersonRole;
+  position: string | null;
+  email: string | null;
+  phone: string | null;
+  birth_name: string | null;
+  birth_place: string | null;
+  birth_date: string | null;
+  mother_name: string | null;
+  address: string | null;
+  tax_id: string | null;
+  ownership_percent: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  notes: string | null;
+};
+
+export const COMPANY_PERSON_SELECT =
+  "id, company_id, profile_id, name, role, position, email, phone, birth_name, birth_place, birth_date, mother_name, address, tax_id, ownership_percent, start_date, end_date, notes";
+
 // ---------- pénz ----------
 
 export function round2(n: number): number {

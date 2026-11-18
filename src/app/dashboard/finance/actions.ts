@@ -64,25 +64,7 @@ function returnTo(fd: FormData, fallback: string): string {
 
 // ---------- cégek ----------
 
-export async function saveCompany(formData: FormData) {
-  const profile = await requireOwnerOrAdmin();
-  const id = text(formData, "id");
-  const name = text(formData, "name");
-  if (!name) throw new Error("Add meg a cég nevét");
-  const payload = {
-    name,
-    tax_number: text(formData, "tax_number"),
-    address: text(formData, "address"),
-    bank_account: text(formData, "bank_account"),
-    color: text(formData, "color"),
-  };
-  const supabase = await createClient();
-  const { error } = id
-    ? await supabase.from("finance_companies").update(payload).eq("id", id)
-    : await supabase.from("finance_companies").insert({ ...payload, agency_id: profile.agency_id });
-  if (error) throw error;
-  revalidateCompanies();
-}
+// A cégadatok mentése: company-actions.ts (saveCompanyDetails)
 
 export async function deleteCompany(formData: FormData) {
   await requireOwnerOrAdmin();
@@ -96,9 +78,14 @@ export async function deleteCompany(formData: FormData) {
   if (count) {
     throw new Error(`A cégnek ${count} rögzített tétele van — előbb azokat kell törölni vagy másik céghez rendelni.`);
   }
+  // A cég dokumentumai / fotói a tárhelyről is törlődnek (a sorokat a cascade viszi)
+  const { data: files } = await supabase.from("finance_company_files").select("path").eq("company_id", id);
+  const paths = (files ?? []).map((f) => f.path as string);
   const { error } = await supabase.from("finance_companies").delete().eq("id", id);
   if (error) throw error;
+  if (paths.length) await supabase.storage.from("finance-receipts").remove(paths);
   revalidateCompanies();
+  redirect("/dashboard/finance/companies");
 }
 
 // ---------- számlák / tételek ----------
