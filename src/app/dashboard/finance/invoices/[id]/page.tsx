@@ -48,11 +48,15 @@ export default async function InvoiceDetailPage({
   const inv = data as InvoiceRow;
   const today = todayIso();
   const status = invoiceStatus(inv, today);
+  const { data: partner } = inv.partner_id
+    ? await supabase.from("finance_partners").select("tax_number, address").eq("id", inv.partner_id).maybeSingle()
+    : { data: null };
 
   const vatText = inv.vat_rate === null ? "Nincs ÁFA" : Number(inv.vat_rate) === 0 ? "0% / mentes" : `${Number(inv.vat_rate)}%`;
   const szamlazzFields = [
     { label: "Vevő", value: inv.counterparty_name },
-    { label: "Vevő adószáma", value: inv.counterparty_tax_number ?? "" },
+    { label: "Vevő adószáma", value: partner?.tax_number ?? inv.counterparty_tax_number ?? "" },
+    ...(partner?.address ? [{ label: "Vevő címe", value: partner.address as string }] : []),
     { label: "Megnevezés", value: [inv.description, inv.location].filter(Boolean).join(" ") },
     { label: "Időszak", value: formatPeriod(inv.period_start, inv.period_end) },
     { label: "Nettó egységár", value: String(Number(inv.net_amount)) },

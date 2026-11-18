@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnerOrAdmin } from "@/lib/agency";
+import { linkPartnerAndLodging } from "@/lib/finance-partners";
 import {
   CATEGORIES,
   EXPENSE_CATEGORY_VALUES,
@@ -159,6 +160,7 @@ export async function saveInvoice(formData: FormData) {
   };
 
   const supabase = await createClient();
+  Object.assign(payload, await linkPartnerAndLodging(supabase, counterparty, text(formData, "lodging_id"), payload));
   if (id) {
     const { error } = await supabase.from("finance_invoices").update(payload).eq("id", id);
     if (error) throw error;
@@ -354,6 +356,7 @@ export async function saveSchedule(formData: FormData) {
   };
 
   const supabase = await createClient();
+  Object.assign(payload, await linkPartnerAndLodging(supabase, counterparty, text(formData, "lodging_id"), payload));
   if (id) {
     // A kurzort csak akkor írjuk át, ha a felhasználó kifejezetten megadta a kezdő időszakot
     const { error } = await supabase

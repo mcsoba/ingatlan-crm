@@ -23,9 +23,9 @@ import {
   type ScheduleRow,
 } from "@/lib/finance";
 
-function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+function Field({ label, children, hint, className = "" }: { label: string; children: React.ReactNode; hint?: string; className?: string }) {
   return (
-    <label className={fieldGroupClass}>
+    <label className={`${fieldGroupClass} ${className}`}>
       <span className={labelClass}>{label}</span>
       {children}
       {hint && <span className="text-xs text-muted">{hint}</span>}
@@ -36,16 +36,17 @@ function Field({ label, children, hint }: { label: string; children: React.React
 export function ScheduleForm({
   schedule,
   companies,
-  properties,
   partners,
+  lodgings = [],
   defaultCompanyId,
   today,
   generatedCount,
 }: {
   schedule?: ScheduleRow;
   companies: { id: string; name: string }[];
-  properties: { id: string; address: string }[];
+  properties?: { id: string; address: string }[];
   partners: string[];
+  lodgings?: { id: string; address: string }[];
   defaultCompanyId?: string;
   today: string;
   generatedCount?: number;
@@ -62,7 +63,6 @@ export function ScheduleForm({
   const [paymentDays, setPaymentDays] = useState(String(schedule?.payment_days ?? 8));
   const [prorate, setProrate] = useState(schedule?.prorate ?? true);
   const [szja, setSzja] = useState(schedule?.szja_withheld ?? false);
-  const [location, setLocation] = useState(schedule?.location ?? "");
   // Új törzsnél régi szerződés esetén ne pótoljon visszamenőleg: alapból az aktuális hónaptól
   const [firstPeriod, setFirstPeriod] = useState("");
 
@@ -141,40 +141,30 @@ export function ScheduleForm({
               ))}
             </datalist>
           </Field>
-          <Field label="Partner adószáma">
-            <input name="counterparty_tax_number" defaultValue={schedule?.counterparty_tax_number ?? ""} className={inputClass} />
-          </Field>
-          <Field label="Ingatlan (opcionális)">
-            <select
-              name="property_id"
-              defaultValue={schedule?.property_id ?? ""}
-              onChange={(e) => {
-                const p = properties.find((x) => x.id === e.target.value);
-                if (p && !location) setLocation(p.address);
-              }}
-              className={inputClass}
-            >
+          {/* Adószám és helyszín a partnertől / szállástól jön; a régi törzsek adata megmarad */}
+          <input type="hidden" name="counterparty_tax_number" value={schedule?.counterparty_tax_number ?? ""} />
+          <input type="hidden" name="property_id" value={schedule?.property_id ?? ""} />
+          <input type="hidden" name="location" value={schedule?.location ?? ""} />
+          <Field label="Szállás (opcionális)">
+            <select name="lodging_id" defaultValue={schedule?.lodging_id ?? ""} className={inputClass}>
               <option value="">—</option>
-              {properties.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.address}
+              {lodgings.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.address}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Helyszín">
-            <input name="location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
+          <Field label="Számla tartalma" className="sm:col-span-2">
+            <input
+              name="description"
+              required
+              defaultValue={schedule?.description ?? ""}
+              placeholder="pl. ingatlan bérleti díj"
+              className={inputClass}
+            />
           </Field>
         </div>
-        <Field label="Számla tartalma">
-          <input
-            name="description"
-            required
-            defaultValue={schedule?.description ?? ""}
-            placeholder="pl. ingatlan bérleti díj"
-            className={inputClass}
-          />
-        </Field>
       </Card>
 
       <Card className="flex flex-col gap-4 p-5">

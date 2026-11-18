@@ -58,16 +58,32 @@ export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters):
 }
 
 export async function loadFormOptions(supabase: SupabaseClient) {
-  const [companies, properties, partners] = await Promise.all([
+  const [companies, properties, partners, registered, lodgings] = await Promise.all([
     supabase.from("finance_companies").select("id, name").order("sort_order").order("name"),
     supabase.from("properties").select("id, address").is("deleted_at", null).order("address"),
     supabase.from("finance_invoices").select("counterparty_name").order("created_at", { ascending: false }).limit(1000),
+    // A 0045-ös migráció előtt ezek a táblák nem léteznek — ilyenkor üres lista
+    supabase.from("finance_partners").select("name"),
+    supabase.from("finance_lodgings").select("id, address").order("address"),
   ]);
+  const names = [
+    ...(registered.data ?? []).map((p) => p.name as string),
+    ...(partners.data ?? []).map((p) => p.counterparty_name as string),
+  ];
   return {
     companies: (companies.data ?? []) as { id: string; name: string }[],
     properties: (properties.data ?? []) as { id: string; address: string }[],
-    partners: [...new Set((partners.data ?? []).map((p) => p.counterparty_name as string))].sort((a, b) =>
-      a.localeCompare(b, "hu"),
-    ),
+    partners: [...new Set(names)].sort((a, b) => a.localeCompare(b, "hu")),
+    lodgings: (lodgings.data ?? []) as { id: string; address: string }[],
+  };
+}
+
+/** Bérbeadók és bérlők nevei a szállás-űrlap névjavaslataihoz. */
+export async function loadPartnerNames(supabase: SupabaseClient) {
+  const { data } = await supabase.from("finance_partners").select("name, is_landlord, is_tenant").order("name");
+  const rows = data ?? [];
+  return {
+    landlords: rows.filter((p) => p.is_landlord).map((p) => p.name as string),
+    tenants: rows.filter((p) => p.is_tenant).map((p) => p.name as string),
   };
 }

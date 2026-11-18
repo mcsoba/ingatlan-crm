@@ -53,6 +53,8 @@ export async function generateDueInvoices(client: SupabaseClient, today = todayI
         contact_id: s.contact_id,
         property_id: s.property_id,
         location: s.location,
+        partner_id: s.partner_id,
+        lodging_id: s.lodging_id,
         description: s.description,
         period_start: occ.periodStart,
         period_end: occ.periodEnd,

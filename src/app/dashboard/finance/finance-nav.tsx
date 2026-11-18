@@ -9,6 +9,8 @@ const TABS = [
   { href: "/dashboard/finance/expenses", label: "Kiadások" },
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
+  { href: "/dashboard/finance/lodgings", label: "Szállások" },
+  { href: "/dashboard/finance/partners", label: "Partnerek" },
   { href: "/dashboard/finance/companies", label: "Cégek" },
 ];
 

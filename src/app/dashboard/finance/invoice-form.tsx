@@ -45,6 +45,7 @@ export function InvoiceForm({
   invoice,
   companies,
   partners,
+  lodgings = [],
   defaultDirection,
   defaultCompanyId,
   returnTo,
@@ -53,6 +54,7 @@ export function InvoiceForm({
   companies: Option[];
   properties?: { id: string; address: string }[];
   partners: string[];
+  lodgings?: { id: string; address: string }[];
   defaultDirection: Direction;
   defaultCompanyId?: string;
   returnTo: string;
@@ -129,8 +131,11 @@ export function InvoiceForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label={direction === "out" ? "Vevő (számla címzettje) *" : "Kiállító / partner *"}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Field
+            label={direction === "out" ? "Vevő (számla címzettje) *" : "Kiállító / partner *"}
+            help="Ha a Partnerek között szerepel, az adószámát onnan veszi"
+          >
             <input
               name="counterparty_name"
               required
@@ -156,6 +161,18 @@ export function InvoiceForm({
           <Field label="Számla sorszáma" hint={invoice?.is_planned ? "Kiállítás után írd be — ezzel kerül ki a „Számlázandó” listából" : undefined}>
             <input name="invoice_number" defaultValue={invoice?.invoice_number ?? ""} className={inputClass} />
           </Field>
+          {lodgings.length > 0 && (
+            <Field label="Szállás (opcionális)" help="Melyik szálláshoz tartozik (bérleti díj, rezsi, kaució) — a szállás adatlapján így minden tétel egy helyen látszik">
+              <select name="lodging_id" defaultValue={invoice?.lodging_id ?? ""} className={inputClass}>
+                <option value="">—</option>
+                {lodgings.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.address}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
       </Card>
 
