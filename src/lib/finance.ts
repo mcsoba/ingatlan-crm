@@ -76,6 +76,8 @@ export type InvoiceRow = {
   id: string;
   company_id: string;
   schedule_id: string | null;
+  partner_id: string | null;
+  lodging_id: string | null;
   direction: Direction;
   doc_type: DocType;
   category: string;
@@ -106,11 +108,13 @@ export type InvoiceRow = {
 };
 
 export const INVOICE_SELECT =
-  "id, company_id, schedule_id, direction, doc_type, category, is_planned, invoice_number, counterparty_name, counterparty_tax_number, contact_id, property_id, location, description, period_start, period_end, issue_date, fulfillment_date, due_date, paid_date, bank_booked_date, payment_method, currency, net_amount, vat_rate, vat_amount, gross_amount, szja_withheld, paid_amount, notes";
+  "id, company_id, schedule_id, partner_id, lodging_id, direction, doc_type, category, is_planned, invoice_number, counterparty_name, counterparty_tax_number, contact_id, property_id, location, description, period_start, period_end, issue_date, fulfillment_date, due_date, paid_date, bank_booked_date, payment_method, currency, net_amount, vat_rate, vat_amount, gross_amount, szja_withheld, paid_amount, notes";
 
 export type ScheduleRow = {
   id: string;
   company_id: string;
+  partner_id: string | null;
+  lodging_id: string | null;
   direction: Direction;
   doc_type: DocType;
   category: string;
@@ -138,7 +142,7 @@ export type ScheduleRow = {
 };
 
 export const SCHEDULE_SELECT =
-  "id, company_id, direction, doc_type, category, counterparty_name, counterparty_tax_number, contact_id, property_id, location, description, currency, net_amount, vat_rate, szja_withheld, payment_method, frequency, start_date, end_date, issue_day, payment_days, prorate, lead_days, active, next_period_start, notes";
+  "id, company_id, partner_id, lodging_id, direction, doc_type, category, counterparty_name, counterparty_tax_number, contact_id, property_id, location, description, currency, net_amount, vat_rate, szja_withheld, payment_method, frequency, start_date, end_date, issue_day, payment_days, prorate, lead_days, active, next_period_start, notes";
 
 export type CompanyRow = {
   id: string;
@@ -373,4 +377,91 @@ export function previewOccurrences(s: ScheduleTiming, from: string, count: numbe
     cursor = nextPeriodStart(occ);
   }
   return out;
+}
+
+// ---------- partnerek és szállások ----------
+
+export type PartnerKind = "company" | "person";
+export type LeaseFrequency = "monthly" | "quarterly" | "yearly";
+
+export const PARTNER_KIND_LABELS: Record<PartnerKind, string> = {
+  company: "Cég",
+  person: "Magánszemély",
+};
+
+export const LEASE_FREQUENCY_LABELS: Record<LeaseFrequency, string> = {
+  monthly: "Havonta",
+  quarterly: "Negyedévente",
+  yearly: "Évente",
+};
+
+const LEASE_MONTHS: Record<LeaseFrequency, number> = { monthly: 1, quarterly: 3, yearly: 12 };
+
+export type PartnerRow = {
+  id: string;
+  name: string;
+  kind: PartnerKind;
+  is_landlord: boolean;
+  is_tenant: boolean;
+  tax_number: string | null;
+  address: string | null;
+  bank_account: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  notes: string | null;
+};
+
+export const PARTNER_SELECT =
+  "id, name, kind, is_landlord, is_tenant, tax_number, address, bank_account, contact_name, contact_email, contact_phone, notes";
+
+export type LodgingRow = {
+  id: string;
+  company_id: string | null;
+  address: string;
+  area_sqm: number | null;
+  capacity: number | null;
+  occupants: number | null;
+  landlord_id: string | null;
+  lease_signed_date: string | null;
+  lease_handover_date: string | null;
+  lease_start: string | null;
+  lease_end: string | null;
+  lease_fee: number | null;
+  lease_frequency: LeaseFrequency;
+  lease_deposit: number | null;
+  lease_includes: string | null;
+  lease_terms: string | null;
+  lease_extension: string | null;
+  tenant_id: string | null;
+  sublease_signed_date: string | null;
+  sublease_start: string | null;
+  sublease_end: string | null;
+  sublease_fee: number | null;
+  sublease_frequency: LeaseFrequency;
+  sublease_deposit: number | null;
+  sublease_includes: string | null;
+  notes: string | null;
+};
+
+export const LODGING_SELECT =
+  "id, company_id, address, area_sqm, capacity, occupants, landlord_id, lease_signed_date, lease_handover_date, lease_start, lease_end, lease_fee, lease_frequency, lease_deposit, lease_includes, lease_terms, lease_extension, tenant_id, sublease_signed_date, sublease_start, sublease_end, sublease_fee, sublease_frequency, sublease_deposit, sublease_includes, notes";
+
+/** Havi összegre átszámítva (negyedéves / éves díjnál), összehasonlításhoz. */
+export function monthlyEquivalent(fee: number | null | undefined, frequency: LeaseFrequency): number | null {
+  if (fee === null || fee === undefined) return null;
+  return Math.round(Number(fee) / LEASE_MONTHS[frequency]);
+}
+
+/** Szerződés vége a kezdetből és az időtartamból (hónap): a kezdet előtti nap N hónappal később. */
+export function leaseEndFrom(start: string, months: number): string {
+  const [y, m, d] = start.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1 + months, d - 1));
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Hátralévő napok a szerződés végéig (negatív: lejárt), vagy null. */
+export function daysUntil(dateIso: string | null, today = todayIso()): number | null {
+  if (!dateIso) return null;
+  return Math.round((Date.parse(dateIso) - Date.parse(today)) / 86400000);
 }

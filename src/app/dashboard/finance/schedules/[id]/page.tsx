@@ -22,8 +22,15 @@ import {
   type ScheduleRow,
 } from "@/lib/finance";
 
-export default async function ScheduleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ScheduleDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from_lodging?: string }>;
+}) {
   const { id } = await params;
+  const { from_lodging: fromLodging } = await searchParams;
   const supabase = await createClient();
   const [{ data }, { data: invoiceData }, options] = await Promise.all([
     supabase.from("finance_schedules").select(SCHEDULE_SELECT).eq("id", id).maybeSingle(),
@@ -42,6 +49,20 @@ export default async function ScheduleDetailPage({ params }: { params: Promise<{
         Vissza a törzsekhez
       </Link>
       <PageHeader title={schedule.counterparty_name} description={schedule.description} />
+      {fromLodging && (
+        <Card className="border-success/40 bg-success-soft p-4 text-sm">
+          <div className="font-semibold text-success">Az ismétlődő tétel elkészült a szállás szerződéséből</div>
+          <div className="mt-1 text-foreground">
+            Nézd át az <strong>ÁFA-kulcsot</strong>, a <strong>kiállítás napját</strong> és a <strong>fizetési határidőt</strong>, majd ha valamit
+            módosítasz, mentsd el. A rendszer a kiállítás előtt pár nappal magától szól.
+          </div>
+          {schedule.lodging_id && (
+            <Link href={`/dashboard/finance/lodgings/${schedule.lodging_id}`} className="mt-2 inline-block text-xs text-accent hover:underline">
+              ← Vissza a szálláshoz
+            </Link>
+          )}
+        </Card>
+      )}
 
       <ScheduleForm key={`${schedule.next_period_start}|${schedule.active}`} schedule={schedule} {...options} today={today} generatedCount={invoices.length} />
 
