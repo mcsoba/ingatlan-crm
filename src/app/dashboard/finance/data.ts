@@ -33,7 +33,8 @@ export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters):
   const month = Number(f.month) || null;
 
   let query = supabase.from("finance_invoices").select(INVOICE_SELECT);
-  if (f.company) query = query.eq("company_id", f.company);
+  // "all" = minden cég (felülírja az oldalsávban kiválasztottat)
+  if (f.company && f.company !== "all") query = query.eq("company_id", f.company);
   if (f.dir === "out" || f.dir === "in") query = query.eq("direction", f.dir);
   if (f.cat) query = query.eq("category", f.cat);
   if (year && month) {

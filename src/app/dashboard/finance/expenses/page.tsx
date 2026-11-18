@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { inputClass } from "@/components/ui/styles";
 import {
   EXPENSE_CATEGORY_VALUES,
   INVOICE_SELECT,
@@ -30,13 +31,25 @@ const MONTH_NAMES = ["január", "február", "március", "április", "május", "j
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; company?: string }>;
+  searchParams: Promise<{ month?: string; company?: string; cat?: string; method?: string; paid?: string; q?: string }>;
 }) {
   const sp = await searchParams;
   const today = todayIso();
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : today.slice(0, 7);
   const [y, m] = month.split("-").map(Number);
-  const company = sp.company ?? (await getSelectedCompanyId()) ?? undefined;
+  // "all" = minden cég (felülírja az oldalsávban kiválasztottat)
+  const companyParam = sp.company ?? (await getSelectedCompanyId()) ?? "all";
+  const company = companyParam === "all" ? undefined : companyParam;
+  const cat = (EXPENSE_CATEGORY_VALUES as readonly string[]).includes(sp.cat ?? "") ? sp.cat! : "";
+  const method = sp.method && sp.method in PAYMENT_METHOD_LABELS ? sp.method : "";
+  const paidFilter = sp.paid === "yes" || sp.paid === "no" ? sp.paid : "";
+  const q = sp.q?.trim().replace(/[%,()]/g, " ") ?? "";
+  // A hónap-lapozás és a szűrő-űrlap ugyanezeket a paramétereket viszi tovább
+  const keep = (patch: Record<string, string>) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries({ month, company: sp.company ?? "", cat, method, paid: paidFilter, q, ...patch })) if (v) params.set(k, v);
+    return `/dashboard/finance/expenses?${params}`;
+  };
 
   const supabase = await createClient();
   let query = supabase
@@ -49,6 +62,11 @@ export default async function ExpensesPage({
     .order("issue_date", { ascending: false })
     .order("created_at", { ascending: false });
   if (company) query = query.eq("company_id", company);
+  if (cat) query = query.eq("category", cat);
+  if (method) query = query.eq("payment_method", method);
+  if (paidFilter === "yes") query = query.not("paid_date", "is", null);
+  if (paidFilter === "no") query = query.is("paid_date", null);
+  if (q) query = query.or(["description", "counterparty_name", "invoice_number", "notes"].map((c) => `${c}.ilike.%${q}%`).join(","));
 
   const [{ data }, options, { profile }] = await Promise.all([query, loadFormOptions(supabase), ensureCurrentUserProfile()]);
   const expenses = (data ?? []) as InvoiceRow[];
@@ -62,12 +80,13 @@ export default async function ExpensesPage({
   }
 
   const totals = new Map<Currency, number>();
-  const byCategory = new Map<string, number>();
+  const byCompany = new Map<string, number>();
   for (const e of expenses) {
     const amount = settledAmount(e);
     totals.set(e.currency, (totals.get(e.currency) ?? 0) + amount);
-    if (e.currency === "HUF") byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + amount);
+    if (e.currency === "HUF") byCompany.set(e.company_id, (byCompany.get(e.company_id) ?? 0) + amount);
   }
+  const unpaidCount = expenses.filter((e) => !e.paid_date).length;
   const missingReceipt = expenses.filter((e) => !receiptCount.get(e.id)).length;
 
   const prev = addMonths(`${month}-01`, -1).slice(0, 7);
@@ -100,13 +119,13 @@ export default async function ExpensesPage({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Link href={`/dashboard/finance/expenses?month=${prev}`} className={buttonVariants("secondary", "sm")} aria-label="Előző hónap">
+          <Link href={keep({ month: prev })} className={buttonVariants("secondary", "sm")} aria-label="Előző hónap">
             <ChevronLeft className="h-3.5 w-3.5" />
           </Link>
           <span className="min-w-36 text-center text-sm font-semibold">
             {y}. {MONTH_NAMES[m - 1]}
           </span>
-          <Link href={`/dashboard/finance/expenses?month=${next}`} className={buttonVariants("secondary", "sm")} aria-label="Következő hónap">
+          <Link href={keep({ month: next })} className={buttonVariants("secondary", "sm")} aria-label="Következő hónap">
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -116,17 +135,62 @@ export default async function ExpensesPage({
               Összesen: {formatMoney(sum, cur)}
             </span>
           ))}
+          {unpaidCount > 0 && <Badge variant="danger">{unpaidCount} nincs kifizetve</Badge>}
           {missingReceipt > 0 && <Badge variant="warning">{missingReceipt} tételhez nincs blokk</Badge>}
         </div>
       </div>
 
-      {byCategory.size > 0 && (
+      <form action="/dashboard/finance/expenses" className="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="month" value={month} />
+        {options.companies.length > 0 && (
+          <select name="company" defaultValue={companyParam} className={`${inputClass} w-auto py-1.5`}>
+            <option value="all">Minden cég</option>
+            {options.companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <input name="q" defaultValue={q} placeholder="Keresés (mire, kitől, számlaszám, megjegyzés)" className={`${inputClass} min-w-[220px] flex-1 py-1.5`} />
+        <select name="cat" defaultValue={cat} className={`${inputClass} w-auto py-1.5`}>
+          <option value="">Minden kategória</option>
+          {EXPENSE_CATEGORY_VALUES.map((v) => (
+            <option key={v} value={v}>
+              {categoryLabel(v)}
+            </option>
+          ))}
+        </select>
+        <select name="method" defaultValue={method} className={`${inputClass} w-auto py-1.5`}>
+          <option value="">Minden fizetési mód</option>
+          {Object.entries(PAYMENT_METHOD_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select name="paid" defaultValue={paidFilter} className={`${inputClass} w-auto py-1.5`}>
+          <option value="">Kifizetve és nem kifizetve</option>
+          <option value="yes">Csak kifizetett</option>
+          <option value="no">Csak ki nem fizetett</option>
+        </select>
+        <button type="submit" className={buttonVariants("secondary", "sm")}>
+          Szűrés
+        </button>
+        {(cat || method || paidFilter || q) && (
+          <Link href={`/dashboard/finance/expenses?month=${month}`} className="text-xs text-muted hover:text-foreground">
+            Szűrők törlése
+          </Link>
+        )}
+      </form>
+
+      {!company && byCompany.size > 0 && (
         <div className="flex flex-wrap gap-2">
-          {[...byCategory.entries()]
+          {[...byCompany.entries()]
             .sort((a, b) => b[1] - a[1])
-            .map(([cat, sum]) => (
-              <span key={cat} className="rounded-full border border-border px-2.5 py-1 text-xs text-muted">
-                {categoryLabel(cat)}: <span className="font-medium text-foreground">{formatMoney(sum)}</span>
+            .map(([id, sum]) => (
+              <span key={id} className="rounded-full border border-border px-2.5 py-1 text-xs text-muted">
+                {companyName.get(id) ?? "?"}: <span className="font-medium text-foreground">{formatMoney(sum)}</span>
               </span>
             ))}
         </div>
@@ -150,7 +214,7 @@ export default async function ExpensesPage({
             </thead>
             <tbody>
               {expenses.map((e) => {
-                const href = `/dashboard/finance/invoices/${e.id}?back=${encodeURIComponent(`/dashboard/finance/expenses?month=${month}`)}`;
+                const href = `/dashboard/finance/invoices/${e.id}?back=${encodeURIComponent(keep({}))}`;
                 const count = receiptCount.get(e.id) ?? 0;
                 return (
                   <tr key={e.id} className="border-b border-border-subtle last:border-0 hover:bg-background/60">
@@ -165,7 +229,11 @@ export default async function ExpensesPage({
                     <td className="px-2 py-2 text-xs">{categoryLabel(e.category)}</td>
                     <td className="px-2 py-2 text-xs">
                       {PAYMENT_METHOD_LABELS[e.payment_method]}
-                      {!e.paid_date && <div className="text-danger">nincs kifizetve</div>}
+                      {e.paid_date ? (
+                        <div className="font-medium text-success">✓ kifizetve {formatDate(e.paid_date)}</div>
+                      ) : (
+                        <div className="font-medium text-danger">✗ nincs kifizetve</div>
+                      )}
                     </td>
                     <td className="px-2 py-2">
                       {count ? (

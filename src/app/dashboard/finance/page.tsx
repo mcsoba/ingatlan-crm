@@ -11,7 +11,6 @@ import {
   INVOICE_SELECT,
   addDays,
   addMonths,
-  categoryLabel,
   formatDate,
   formatMoney,
   invoiceStatus,
@@ -137,18 +136,21 @@ export default async function FinanceOverviewPage({
 
   const today = todayIso();
   const firstMonth = addMonths(today, -11);
-  let query = supabase
+  // Minden cég tételei kellenek a cégenkénti összesítőhöz; a többi blokk a kiválasztott céget mutatja
+  const query = supabase
     .from("finance_invoices")
     .select(INVOICE_SELECT)
     .or(`issue_date.gte.${firstMonth},paid_date.gte.${firstMonth},paid_date.is.null`);
-  if (company) query = query.eq("company_id", company);
-  const [{ data }, { count: companyCount }, { count: totalCount }, { count: sampleCount }] = await Promise.all([
+  const [{ data }, { data: companyRows }, { count: totalCount }, { count: sampleCount }] = await Promise.all([
     query.limit(5000),
-    supabase.from("finance_companies").select("id", { count: "exact", head: true }),
+    supabase.from("finance_companies").select("id, name, color").order("sort_order").order("name"),
     supabase.from("finance_invoices").select("id", { count: "exact", head: true }),
     supabase.from("finance_invoices").select("id", { count: "exact", head: true }).eq("notes", SAMPLE_MARKER),
   ]);
-  const all = (data ?? []) as InvoiceRow[];
+  const everything = (data ?? []) as InvoiceRow[];
+  const all = company ? everything.filter((i) => i.company_id === company) : everything;
+  const companies = (companyRows ?? []) as { id: string; name: string; color: string | null }[];
+  const companyCount = companies.length;
   const companyQuery = company ? `&company=${company}` : "";
 
   if (!companyCount) {
@@ -202,15 +204,17 @@ export default async function FinanceOverviewPage({
   const maxBar = Math.max(1, ...[...monthly.values()].flatMap((m) => [m.income, m.expense]));
   const thisMonth = monthly.get(today.slice(0, 7))!;
 
-  // Kiadások kategóriánként az idei évben
+  // Bevétel és kiadás cégenként az idei évben (kifizetés szerint, forintban)
   const year = today.slice(0, 4);
-  const byCategory = new Map<string, number>();
-  for (const inv of huf) {
-    if (inv.direction !== "in" || !inv.paid_date?.startsWith(year)) continue;
-    byCategory.set(inv.category, (byCategory.get(inv.category) ?? 0) + settledAmount(inv));
+  const byCompany = new Map(companies.map((c) => [c.id, { income: 0, expense: 0 }]));
+  for (const inv of everything) {
+    if (inv.currency !== "HUF" || !inv.paid_date?.startsWith(year)) continue;
+    const row = byCompany.get(inv.company_id);
+    if (!row) continue;
+    if (inv.direction === "out") row.income += settledAmount(inv);
+    else row.expense += settledAmount(inv);
   }
-  const categories = [...byCategory.entries()].sort((a, b) => b[1] - a[1]);
-  const maxCategory = Math.max(1, ...categories.map(([, v]) => v));
+  const maxCompany = Math.max(1, ...[...byCompany.values()].flatMap((v) => [v.income, v.expense]));
 
   return (
     <div className="flex flex-col gap-5">
@@ -405,23 +409,41 @@ export default async function FinanceOverviewPage({
             </div>
           </Card>
 
-          <Card className="flex flex-col gap-3 p-5">
-            <h2 className="text-sm font-semibold text-foreground">Kiadások kategóriánként ({year})</h2>
-            {categories.length === 0 ? (
-              <p className="text-sm text-muted">Idén még nincs kifizetett kiadás.</p>
-            ) : (
-              categories.map(([cat, value]) => (
-                <div key={cat} className="flex flex-col gap-1">
-                  <div className="flex justify-between gap-2 text-xs">
-                    <span className="truncate text-muted">{categoryLabel(cat)}</span>
-                    <span className="font-medium tabular-nums">{formatMoney(value)}</span>
+          <Card className="flex flex-col gap-4 p-5">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Bevétel és kiadás cégenként ({year})</h2>
+              <p className="text-xs text-muted">Kifizetés szerint, az év elejétől. Egy cégre szűrni az oldalsáv cégválasztójával lehet.</p>
+            </div>
+            {companies.map((c) => {
+              const v = byCompany.get(c.id)!;
+              const balance = v.income - v.expense;
+              const dimmed = company && company !== c.id;
+              return (
+                <div key={c.id} className={`flex flex-col gap-1.5 ${dimmed ? "opacity-40" : ""}`}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color ?? "var(--accent)" }} />
+                      {c.name}
+                    </span>
+                    <span className={`text-sm font-semibold tabular-nums ${balance < 0 ? "text-danger" : "text-success"}`}>
+                      {formatMoney(balance)}
+                    </span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded bg-background">
-                    <div className="h-full rounded bg-accent" style={{ width: `${(value / maxCategory) * 100}%` }} />
-                  </div>
+                  {[
+                    { label: "Bevétel", value: v.income, bar: "bg-success" },
+                    { label: "Kiadás", value: v.expense, bar: "bg-danger/70" },
+                  ].map((r) => (
+                    <div key={r.label} className="flex items-center gap-2 text-xs">
+                      <span className="w-14 shrink-0 text-muted">{r.label}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded bg-background">
+                        <div className={`h-full rounded ${r.bar}`} style={{ width: `${(r.value / maxCompany) * 100}%` }} />
+                      </div>
+                      <span className="w-28 shrink-0 text-right font-medium tabular-nums">{formatMoney(r.value)}</span>
+                    </div>
+                  ))}
                 </div>
-              ))
-            )}
+              );
+            })}
           </Card>
 
           {overdueReceivables.length + overduePayables.length > 0 && (

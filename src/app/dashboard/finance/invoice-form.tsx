@@ -44,7 +44,6 @@ function amountText(n: number | null | undefined): string {
 export function InvoiceForm({
   invoice,
   companies,
-  properties,
   partners,
   defaultDirection,
   defaultCompanyId,
@@ -52,7 +51,7 @@ export function InvoiceForm({
 }: {
   invoice?: InvoiceRow;
   companies: Option[];
-  properties: { id: string; address: string }[];
+  properties?: { id: string; address: string }[];
   partners: string[];
   defaultDirection: Direction;
   defaultCompanyId?: string;
@@ -71,7 +70,6 @@ export function InvoiceForm({
       : null,
   );
   const [szja, setSzja] = useState(invoice?.szja_withheld ?? false);
-  const [location, setLocation] = useState(invoice?.location ?? "");
 
   const netNum = parseAmount(net) ?? 0;
   const computed = computeGross(roundMoney(netNum, currency), rate === "" ? null : Number(rate), currency);
@@ -82,6 +80,10 @@ export function InvoiceForm({
     <form action={saveInvoice} className="flex flex-col gap-5">
       {invoice && <input type="hidden" name="id" value={invoice.id} />}
       <input type="hidden" name="return_to" value={returnTo} />
+      {/* Adószám, ingatlan és helyszín a partnernél van nyilvántartva — a régi tételek adata megmarad */}
+      <input type="hidden" name="counterparty_tax_number" value={invoice?.counterparty_tax_number ?? ""} />
+      <input type="hidden" name="property_id" value={invoice?.property_id ?? ""} />
+      <input type="hidden" name="location" value={invoice?.location ?? ""} />
       <input type="hidden" name="is_planned" value={invoice?.is_planned ? "1" : "0"} />
 
       <Card className="flex flex-col gap-4 p-5">
@@ -127,7 +129,7 @@ export function InvoiceForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label={direction === "out" ? "Vevő (számla címzettje) *" : "Kiállító / partner *"}>
             <input
               name="counterparty_name"
@@ -142,33 +144,6 @@ export function InvoiceForm({
               ))}
             </datalist>
           </Field>
-          <Field label="Partner adószáma">
-            <input name="counterparty_tax_number" defaultValue={invoice?.counterparty_tax_number ?? ""} className={inputClass} />
-          </Field>
-          <Field label="Számlaszám" hint={invoice?.is_planned ? "Kiállítás után írd be — ezzel kerül ki a „Számlázandó” listából" : undefined}>
-            <input name="invoice_number" defaultValue={invoice?.invoice_number ?? ""} className={inputClass} />
-          </Field>
-          <Field label="Ingatlan (opcionális)">
-            <select
-              name="property_id"
-              defaultValue={invoice?.property_id ?? ""}
-              onChange={(e) => {
-                const p = properties.find((x) => x.id === e.target.value);
-                if (p && !location) setLocation(p.address);
-              }}
-              className={inputClass}
-            >
-              <option value="">—</option>
-              {properties.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.address}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Számla tartalma *">
             <input
               name="description"
@@ -178,8 +153,8 @@ export function InvoiceForm({
               className={inputClass}
             />
           </Field>
-          <Field label="Helyszín">
-            <input name="location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
+          <Field label="Számla sorszáma" hint={invoice?.is_planned ? "Kiállítás után írd be — ezzel kerül ki a „Számlázandó” listából" : undefined}>
+            <input name="invoice_number" defaultValue={invoice?.invoice_number ?? ""} className={inputClass} />
           </Field>
         </div>
       </Card>
