@@ -12,7 +12,7 @@ const MAX_EDGE = 2000;
  * blokk így is jól olvasható, de 3–5 MB helyett pár száz KB. PDF-et és a
  * böngésző által nem dekódolható képet (pl. HEIC asztali Chrome-ban) változatlanul töltjük fel.
  */
-async function shrinkImage(file: File): Promise<File> {
+export async function shrinkImage(file: File): Promise<File> {
   // Egyes böngészők / fájlkezelők üres vagy általános (octet-stream) típust adnak — ilyenkor a kiterjesztés dönt
   const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|bmp|webp|heic|heif)$/i.test(file.name);
   if (!isImage || file.type === "image/gif") return file;
