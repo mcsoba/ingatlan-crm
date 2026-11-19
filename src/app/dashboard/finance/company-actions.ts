@@ -134,6 +134,7 @@ export async function deleteCompanyPerson(formData: FormData) {
   if (!id) return;
   const supabase = await createClient();
   const { error } = await supabase.from("finance_company_people").delete().eq("id", id);
+  if (error?.code === "23503") throw new Error("Ennek a személynek rögzített bére van — törlés helyett add meg a kilépés (befejezés) dátumát.");
   if (error) throw error;
   revalidateCompany(companyId ?? undefined);
   if (companyId) redirect(`/dashboard/finance/companies/${companyId}#szemelyek`);

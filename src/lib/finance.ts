@@ -520,3 +520,45 @@ export function daysUntil(dateIso: string | null, today = todayIso()): number | 
   if (!dateIso) return null;
   return Math.round((Date.parse(dateIso) - Date.parse(today)) / 86400000);
 }
+
+// ---------- bér, járulék, adók (0047) ----------
+
+export type PayrollKind = "wage" | "efo" | "car_tax" | "szja" | "szocho" | "tb" | "other_tax";
+
+/** A havi bérlista sorai: munkabér munkatársanként, alatta a cég havi adói / járulékai. */
+export const PAYROLL_TAX_KINDS: { kind: Exclude<PayrollKind, "wage">; label: string; hint: string }[] = [
+  { kind: "efo", label: "EFO (egyszerűsített foglalkoztatás)", hint: "alkalmi munkavállalók közterhe" },
+  { kind: "car_tax", label: "Cégautó adó", hint: "negyedévente vagy havonta" },
+  { kind: "szja", label: "SZJA", hint: "bérek + bérleti díjakból levont SZJA" },
+  { kind: "szocho", label: "Szocho", hint: "szociális hozzájárulási adó" },
+  { kind: "tb", label: "TB járulék", hint: "társadalombiztosítási járulék" },
+  { kind: "other_tax", label: "Egyéb adó / járulék", hint: "pl. iparűzési adó, KATA" },
+];
+
+export const PAYROLL_KIND_LABELS: Record<PayrollKind, string> = {
+  wage: "Munkabér",
+  ...Object.fromEntries(PAYROLL_TAX_KINDS.map((k) => [k.kind, k.label])),
+} as Record<PayrollKind, string>;
+
+export const PAYROLL_KINDS = Object.keys(PAYROLL_KIND_LABELS) as PayrollKind[];
+
+/** Bér a tárgyhót követő hó 10-ig, adók / járulékok a tárgyhót követő hó 12-ig (NAV). */
+export function payrollDueDate(kind: PayrollKind, month: string): string {
+  const next = addMonths(`${month}-01`, 1).slice(0, 7);
+  return `${next}-${kind === "wage" ? "10" : "12"}`;
+}
+
+export type PayrollRow = {
+  id: string;
+  company_id: string;
+  payroll_kind: PayrollKind;
+  person_id: string | null;
+  counterparty_name: string;
+  period_start: string | null;
+  due_date: string | null;
+  paid_date: string | null;
+  gross_amount: number;
+  notes: string | null;
+};
+
+export const PAYROLL_SELECT = "id, company_id, payroll_kind, person_id, counterparty_name, period_start, due_date, paid_date, gross_amount, notes";
