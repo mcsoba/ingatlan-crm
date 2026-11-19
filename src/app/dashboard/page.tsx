@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Building2, Kanban, Circle, CheckCircle2, Flame, BookOpen } from "lucide-react";
+import { Users, Building2, Kanban, Circle, CheckCircle2, Flame, BookOpen, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
@@ -107,6 +107,19 @@ export default async function DashboardPage() {
           </Link>
         }
       />
+
+      {/* Név nélkül a teendőknél, szabadságoknál, értesítésekben csak az e-mail-cím / „Egy kollégád” látszik */}
+      {!profile.full_name && (
+        <Link
+          href="/dashboard/settings"
+          className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent-soft/40 px-4 py-2.5 text-sm text-foreground hover:border-accent"
+        >
+          <UserRound className="h-4 w-4 shrink-0 text-accent" />
+          <span>
+            <b>Add meg a neved</b> a Beállításokban — a kollégák a teendőknél, szabadságoknál és értesítésekben így látnak téged.
+          </span>
+        </Link>
+      )}
 
       {/* Átadott (privát) telepítésben az irodát mi állítjuk be, nincs bevezető lista */}
       {!PRIVATE_EDITION && !checklistDone && (

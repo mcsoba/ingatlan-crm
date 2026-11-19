@@ -6,6 +6,7 @@ import { PipelineBoard, type DealCard } from "./board";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { inputClass } from "@/components/ui/styles";
 import { SIMPLE_MODE } from "@/lib/edition";
 import { DeleteDealButton } from "./[id]/delete-deal-button";
 import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
@@ -32,7 +33,11 @@ type DealRow = {
 
 const STALE_AFTER_DAYS = 14;
 
-export default async function PipelinePage() {
+export default async function PipelinePage({ searchParams }: { searchParams: Promise<{ q?: string; who?: string; type?: string }> }) {
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim();
+  const who = sp.who ?? "";
+  const type = sp.type === "sale" || sp.type === "rent" ? sp.type : "";
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
   const [companies, selectedCompanyId] = await Promise.all([listCompanies(), getSelectedCompanyId()]);
@@ -71,7 +76,18 @@ export default async function PipelinePage() {
   const stagePositionById = new Map((stages ?? []).map((s) => [s.id, s.position]));
   const now = new Date().getTime();
 
-  const allDeals = deals as unknown as DealRow[];
+  // Szűrők: keresés (kontakt / ingatlan), felelős, eladás / bérlés
+  const needle = q.toLocaleLowerCase("hu");
+  const allDeals = (deals as unknown as DealRow[]).filter(
+    (d) =>
+      (!needle || `${d.contacts?.name ?? ""} ${d.properties?.address ?? ""}`.toLocaleLowerCase("hu").includes(needle)) &&
+      (!who || (who === "none" ? !d.owner_id : who === "me" ? d.owner_id === profile.id : d.owner_id === who)) &&
+      (!type || (type === "rent" ? d.deal_type === "rent" : d.deal_type !== "rent")),
+  );
+  const filtered = Boolean(q || who || type);
+  const memberOptions = (members ?? [])
+    .map((m) => ({ id: m.id as string, name: (m.full_name as string | null) || "Név nélküli felhasználó" }))
+    .sort((a, b) => a.name.localeCompare(b.name, "hu"));
 
   // Pipedrive-style "next activity" signal per deal: overdue (red), due
   // today (amber), scheduled (green) or nothing planned (grey warning).
@@ -174,6 +190,40 @@ export default async function PipelinePage() {
           </>
         }
       />
+
+      <form action="/dashboard/pipeline" className="flex flex-wrap items-end gap-2">
+        <input name="q" defaultValue={q} placeholder="Keresés (ügyfél neve, ingatlan címe)" className={`${inputClass} min-w-[220px] flex-1 py-1.5`} />
+        {memberOptions.length > 1 && (
+          <select name="who" defaultValue={who} className={`${inputClass} w-auto py-1.5`}>
+            <option value="">Mindenki üzletei</option>
+            <option value="me">Csak az enyéim</option>
+            {memberOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+            <option value="none">Nincs felelőse</option>
+          </select>
+        )}
+        <select name="type" defaultValue={type} className={`${inputClass} w-auto py-1.5`}>
+          <option value="">Eladás és bérlés</option>
+          <option value="sale">Csak eladás</option>
+          <option value="rent">Csak bérlés</option>
+        </select>
+        <button type="submit" className={buttonVariants("secondary", "sm")}>
+          Szűrés
+        </button>
+        {filtered && (
+          <Link href="/dashboard/pipeline" className="text-xs text-muted hover:text-foreground">
+            Szűrők törlése
+          </Link>
+        )}
+      </form>
+      {filtered && (
+        <p className="-mt-3 text-xs text-muted">
+          Szűrt nézet: {allDeals.filter((d) => d.status !== "lost").length} üzlet látszik.
+        </p>
+      )}
 
       <PipelineBoard
         stages={(stages ?? []).map((s) => ({ id: s.id, name: s.name, position: s.position, guidance: stageGuidance(s) }))}

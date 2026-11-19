@@ -438,11 +438,9 @@ export async function deleteStage(formData: FormData) {
     .eq("id", id);
 
   if (error) {
-    if (error.code === "23503") {
-      throw new Error(
-        "Ez a szakasz nem törölhető, mert vannak hozzá tartozó üzletek — mozgasd át őket egy másik szakaszba előbb.",
-      );
-    }
+    // Üzlet hivatkozik rá (akár a Lomtárban lévő is) — élesben a dobott hiba
+    // szövege nem látszik, ezért az oldalon jelezzük
+    if (error.code === "23503") redirect("/dashboard/pipeline/stages?error=has_deals");
     throw error;
   }
 

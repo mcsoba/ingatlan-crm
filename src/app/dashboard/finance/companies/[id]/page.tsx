@@ -11,6 +11,7 @@ import { CompanyFilesPanel, type CompanyFile } from "../../company-files-panel";
 import { ConfirmDelete } from "../../confirm-delete";
 import { SzamlazzSettingsCard } from "../../szamlazz-settings";
 import { loadSzamlazzSettings } from "@/lib/szamlazz-server";
+import { listTeamMembers } from "@/lib/team";
 import { MigrationNotice, isMissingTable } from "../../migration-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -80,7 +81,12 @@ export default async function CompanyDetailPage({
   const szamlazz = szamlazzSettings?.get(id) ?? null;
 
   const people = (peopleRows ?? []) as CompanyPersonRow[];
-  const members = (memberRows ?? []) as (TeamMemberOption & { company_ids: string[] | null })[];
+  // Név nélküli felhasználónál az e-mail-cím jelenik meg („Névtelen felhasználó” helyett)
+  const displayNames = (memberRows ?? []).some((m) => !m.full_name) ? new Map((await listTeamMembers()).map((m) => [m.id, m.name])) : null;
+  const members = ((memberRows ?? []) as (TeamMemberOption & { company_ids: string[] | null })[]).map((m) => ({
+    ...m,
+    full_name: m.full_name || displayNames?.get(m.id) || null,
+  }));
   const memberName = new Map(members.map((m) => [m.id, m.full_name]));
   const directors = people.filter((p) => p.role === "director" && !p.end_date);
   const sortedPeople = [...people].sort(
