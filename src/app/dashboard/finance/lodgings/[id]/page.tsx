@@ -6,7 +6,7 @@ import { listCompanies } from "@/lib/companies";
 import { createLodgingDeposit, createLodgingSchedule, deleteLodging } from "../../partner-actions";
 import { LodgingForm } from "../../lodging-form";
 import { ConfirmDelete } from "../../confirm-delete";
-import { loadPartnerNames } from "../../data";
+import { loadLodgingParties } from "../../data";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,20 +79,20 @@ export default async function LodgingDetailPage({
   const { id } = await params;
   const { saved } = await searchParams;
   const supabase = await createClient();
-  const [{ data }, companies, names, { data: partners }, { data: schedules }, { data: invoiceRows }] = await Promise.all([
+  const [{ data }, companies, parties, { data: schedules }, { data: invoiceRows }] = await Promise.all([
     supabase.from("finance_lodgings").select(LODGING_SELECT).eq("id", id).maybeSingle(),
     listCompanies(),
-    loadPartnerNames(supabase),
-    supabase.from("finance_partners").select("id, name"),
+    loadLodgingParties(supabase),
     supabase.from("finance_schedules").select("id, direction, category").eq("lodging_id", id),
     supabase.from("finance_invoices").select(INVOICE_SELECT).eq("lodging_id", id).order("issue_date", { ascending: false }).limit(40),
   ]);
   if (!data) notFound();
   const lodging = data as LodgingRow;
   const invoices = (invoiceRows ?? []) as InvoiceRow[];
-  const partnerName = new Map((partners ?? []).map((p) => [p.id as string, p.name as string]));
-  const landlord = lodging.landlord_id ? partnerName.get(lodging.landlord_id) : undefined;
-  const tenant = lodging.tenant_id ? partnerName.get(lodging.tenant_id) : undefined;
+  const landlordParty = lodging.landlord_id ? parties.byId.get(lodging.landlord_id) : undefined;
+  const tenantParty = lodging.tenant_id ? parties.byId.get(lodging.tenant_id) : undefined;
+  const landlord = landlordParty?.name;
+  const tenant = tenantParty?.name;
   const today = todayIso();
 
   const scheduleFor = (dir: "in" | "out") => (schedules ?? []).find((s) => s.direction === dir && s.category === "rent");
@@ -181,9 +181,10 @@ export default async function LodgingDetailPage({
         key={JSON.stringify(lodging)}
         lodging={lodging}
         companies={companies}
-        {...names}
-        landlordName={landlord}
-        tenantName={tenant}
+        landlords={parties.landlords}
+        tenants={parties.tenants}
+        landlord={landlordParty}
+        tenant={tenantParty}
       />
 
       <Card className="flex flex-col p-0">

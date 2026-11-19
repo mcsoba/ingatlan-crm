@@ -78,12 +78,32 @@ export async function loadFormOptions(supabase: SupabaseClient) {
   };
 }
 
-/** Bérbeadók és bérlők nevei a szállás-űrlap névjavaslataihoz. */
-export async function loadPartnerNames(supabase: SupabaseClient) {
-  const { data } = await supabase.from("finance_partners").select("name, is_landlord, is_tenant").order("name");
-  const rows = data ?? [];
+export const LODGING_PARTY_SELECT = "id, name, kind, tax_number, bank_account, address, contact_name, contact_email, contact_phone, is_landlord, is_tenant";
+
+export type LodgingPartyRow = {
+  id: string;
+  name: string;
+  kind: "company" | "person";
+  tax_number: string | null;
+  bank_account: string | null;
+  address: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  is_landlord: boolean;
+  is_tenant: boolean;
+};
+
+/**
+ * Bérbeadók és bérlők minden adatukkal — a szállás-űrlapon név szerint
+ * kiválasztva az adataik betöltődnek, és a listában / adatlapon megjelennek.
+ */
+export async function loadLodgingParties(supabase: SupabaseClient) {
+  const { data } = await supabase.from("finance_partners").select(LODGING_PARTY_SELECT).order("name");
+  const rows = (data ?? []) as LodgingPartyRow[];
   return {
-    landlords: rows.filter((p) => p.is_landlord).map((p) => p.name as string),
-    tenants: rows.filter((p) => p.is_tenant).map((p) => p.name as string),
+    byId: new Map(rows.map((p) => [p.id, p])),
+    landlords: rows.filter((p) => p.is_landlord),
+    tenants: rows.filter((p) => p.is_tenant),
   };
 }

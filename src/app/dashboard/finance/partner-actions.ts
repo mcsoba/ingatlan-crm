@@ -99,6 +99,35 @@ export async function deletePartner(formData: FormData) {
 
 // ---------- szállások ----------
 
+const PARTY_FIELDS = ["tax_number", "address", "bank_account", "contact_name", "contact_email", "contact_phone"] as const;
+
+/**
+ * A szállás-űrlapon szerkesztett bérbeadó / bérlő adatainak visszaírása a partnerre.
+ * Ha a név nem változott, az üresre törölt mezők is törlődnek; ha más (meglévő)
+ * partnert választottak, csak a kitöltött mezők írják felül az ő adatait.
+ */
+async function saveLodgingParty(supabase: Supabase, partnerId: string, formData: FormData, prefix: "landlord" | "tenant") {
+  const name = text(formData, `${prefix}_name`) ?? "";
+  const sameParty = (text(formData, `${prefix}_orig_name`) ?? "").toLocaleLowerCase("hu") === name.toLocaleLowerCase("hu");
+  const patch: Record<string, string | null> = {
+    kind: text(formData, `${prefix}_kind`) === "company" ? "company" : "person",
+  };
+  for (const f of PARTY_FIELDS) {
+    const v = text(formData, `${prefix}_${f}`);
+    if (v !== null || sameParty) patch[f] = v;
+  }
+  const { error } = await supabase
+    .from("finance_partners")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", partnerId);
+  if (error) throw error;
+  // A partnerhez kötött, még ki nem állított tételek és a törzsek az új adószámot kapják
+  if ("tax_number" in patch) {
+    await supabase.from("finance_invoices").update({ counterparty_tax_number: patch.tax_number }).eq("partner_id", partnerId).eq("is_planned", true);
+    await supabase.from("finance_schedules").update({ counterparty_tax_number: patch.tax_number }).eq("partner_id", partnerId);
+  }
+}
+
 export async function saveLodging(formData: FormData) {
   const profile = await requireOwnerOrAdmin();
   const id = text(formData, "id");
@@ -108,6 +137,8 @@ export async function saveLodging(formData: FormData) {
 
   const landlord = await resolvePartner(supabase, profile.agency_id, text(formData, "landlord_name"), "landlord");
   const tenant = await resolvePartner(supabase, profile.agency_id, text(formData, "tenant_name"), "tenant");
+  if (landlord) await saveLodgingParty(supabase, landlord.id, formData, "landlord");
+  if (tenant) await saveLodgingParty(supabase, tenant.id, formData, "tenant");
 
   const leaseStart = date(formData, "lease_start");
   const leaseEnd = date(formData, "lease_end");

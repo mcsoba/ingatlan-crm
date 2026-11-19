@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { inputClass } from "@/components/ui/styles";
 import { MigrationNotice, isMissingTable } from "../migration-notice";
+import { loadLodgingParties } from "../data";
 import { LODGING_SELECT, daysUntil, formatDate, formatMoney, monthlyEquivalent, todayIso, type LodgingRow } from "@/lib/finance";
 
 function EndBadge({ end, today }: { end: string | null; today: string }) {
@@ -42,13 +43,10 @@ export default async function LodgingsPage({
   let query = supabase.from("finance_lodgings").select(LODGING_SELECT).order("address");
   if (company) query = query.eq("company_id", company);
   if (q) query = query.or(["address", "notes"].map((c) => `${c}.ilike.%${q}%`).join(","));
-  const [{ data, error }, { data: partners }, companies] = await Promise.all([
-    query,
-    supabase.from("finance_partners").select("id, name"),
-    listCompanies(),
-  ]);
+  const [{ data, error }, parties, companies] = await Promise.all([query, loadLodgingParties(supabase), listCompanies()]);
   if (isMissingTable(error)) return <MigrationNotice file="0045_finance_partners_lodgings.sql" />;
-  const partnerName = new Map((partners ?? []).map((p) => [p.id as string, p.name as string]));
+  const party = (id: string | null) => (id ? parties.byId.get(id) : undefined);
+  const partnerName = new Map([...parties.byId].map(([id, p]) => [id, p.name]));
   const companyName = new Map(companies.map((c) => [c.id, c.name]));
 
   let lodgings = (data ?? []) as LodgingRow[];
@@ -121,16 +119,19 @@ export default async function LodgingsPage({
         <EmptyState
           icon={Home}
           title={q || expiring ? "Nincs a szűrésnek megfelelő szállás" : "Még nincs szállás felvéve"}
-          description="Vedd fel a bérelt ingatlanokat a szerződések adataival — a bérbeadó és a bérlő nevét elég beírni, a partnert a rendszer magától létrehozza."
+          description="Vedd fel a bérelt ingatlanokat: cím, a bérbeadó és a bérlő adatai, díjak, kaució — minden egy helyen, mint az Excelben."
         />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[1000px] text-sm">
+          <table className="w-full min-w-[1200px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted">
                 <th className="px-4 py-2 font-medium">Cím</th>
                 <th className="px-2 py-2 font-medium">Bérbeadó · díj / hó</th>
+                <th className="px-2 py-2 font-medium">Adóaz. · bankszámla</th>
                 <th className="px-2 py-2 font-medium">Bérlő · díj / hó</th>
+                <th className="px-2 py-2 font-medium">Bérlő adószáma</th>
+                <th className="px-2 py-2 text-right font-medium">Kaució (fizettünk / kaptunk)</th>
                 <th className="px-2 py-2 text-right font-medium">Különbözet / hó</th>
                 <th className="px-2 py-2 text-right font-medium">Fő / férőhely</th>
                 <th className="px-4 py-2 font-medium">Bérlés vége</th>
@@ -153,12 +154,21 @@ export default async function LodgingsPage({
                       </div>
                     </td>
                     <td className="px-2 py-2">
-                      <div>{l.landlord_id ? partnerName.get(l.landlord_id) : <span className="text-muted-subtle">—</span>}</div>
+                      <div>{party(l.landlord_id)?.name ?? <span className="text-muted-subtle">—</span>}</div>
                       <div className="text-xs tabular-nums text-muted">{leaseM !== null ? formatMoney(leaseM) : ""}</div>
                     </td>
+                    <td className="px-2 py-2 text-xs tabular-nums text-muted">
+                      <div>{party(l.landlord_id)?.tax_number ?? <span className="text-warning">{l.landlord_id ? "nincs adóaz." : ""}</span>}</div>
+                      <div className="select-all">{party(l.landlord_id)?.bank_account ?? ""}</div>
+                    </td>
                     <td className="px-2 py-2">
-                      <div>{l.tenant_id ? partnerName.get(l.tenant_id) : <span className="text-xs text-warning">nincs kiadva</span>}</div>
+                      <div>{party(l.tenant_id)?.name ?? <span className="text-xs text-warning">nincs kiadva</span>}</div>
                       <div className="text-xs tabular-nums text-muted">{subM !== null ? formatMoney(subM) : ""}</div>
+                    </td>
+                    <td className="px-2 py-2 text-xs tabular-nums text-muted">{party(l.tenant_id)?.tax_number ?? ""}</td>
+                    <td className="px-2 py-2 text-right text-xs tabular-nums">
+                      <div>{l.lease_deposit !== null ? formatMoney(Number(l.lease_deposit)) : "—"}</div>
+                      <div className="text-muted">{l.sublease_deposit !== null ? formatMoney(Number(l.sublease_deposit)) : "—"}</div>
                     </td>
                     <td className={`px-2 py-2 text-right font-medium tabular-nums ${margin === null ? "text-muted-subtle" : margin < 0 ? "text-danger" : "text-success"}`}>
                       {margin === null ? "—" : formatMoney(margin)}
@@ -177,7 +187,10 @@ export default async function LodgingsPage({
               <tr className="border-t border-border text-sm font-semibold tabular-nums">
                 <td className="px-4 py-2 text-muted">{lodgings.length} szállás</td>
                 <td className="px-2 py-2">{formatMoney(totalLease)}</td>
+                <td />
                 <td className="px-2 py-2">{formatMoney(totalSub)}</td>
+                <td />
+                <td />
                 <td className={`px-2 py-2 text-right ${totalSub - totalLease < 0 ? "text-danger" : "text-success"}`}>{formatMoney(totalSub - totalLease)}</td>
                 <td className="px-2 py-2 text-right">
                   {totalOccupants} / {totalCapacity}

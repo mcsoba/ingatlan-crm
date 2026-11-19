@@ -134,7 +134,7 @@ export function InvoiceForm({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field
             label={direction === "out" ? "Vevő (számla címzettje) *" : "Kiállító / partner *"}
-            help="Ha a Partnerek között szerepel, az adószámát onnan veszi"
+            help="Ha egy szállás bérbeadója vagy bérlője, az adószámát onnan veszi"
           >
             <input
               name="counterparty_name"

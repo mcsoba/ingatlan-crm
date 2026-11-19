@@ -7,13 +7,87 @@ import { Card } from "@/components/ui/card";
 import { fieldGroupClass, inputClass, labelClass, sectionLabelClass } from "@/components/ui/styles";
 import {
   LEASE_FREQUENCY_LABELS,
+  PARTNER_KIND_LABELS,
   formatMoney,
   leaseEndFrom,
   monthlyEquivalent,
   parseAmount,
   type LeaseFrequency,
   type LodgingRow,
+  type PartnerKind,
 } from "@/lib/finance";
+
+/** A bérbeadó / bérlő adatai — a szálláson szerkeszthetők (a háttérben partnerként tárolva). */
+export type LodgingParty = {
+  name: string;
+  kind: PartnerKind;
+  tax_number: string | null;
+  bank_account: string | null;
+  address: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+};
+
+/** Bérbeadó / bérlő adatai egy blokkban; a név elé írva a meglévő partnerek közül is választható. */
+function PartyFields({ prefix, party: initial, options, label }: { prefix: "landlord" | "tenant"; party?: LodgingParty; options: LodgingParty[]; label: string }) {
+  // Meglévő partner nevét választva az adatai betöltődnek (a mezők újraépülnek a key miatt)
+  const [party, setParty] = useState<LodgingParty | undefined>(initial);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [kind, setKind] = useState<PartnerKind>(initial?.kind ?? (prefix === "tenant" ? "company" : "person"));
+  const person = kind === "person";
+  const onName = (value: string) => {
+    setName(value);
+    const found = options.find((o) => o.name.toLocaleLowerCase("hu") === value.trim().toLocaleLowerCase("hu"));
+    if (found && found.name !== party?.name) {
+      setParty(found);
+      setKind(found.kind);
+    }
+  };
+  return (
+    <div key={party?.name ?? ""} className="grid gap-4 rounded-lg border border-border-subtle bg-background/40 p-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Az eredeti név: ha nem változott, az üresre törölt mezők is törlődnek a partnernél */}
+      <input type="hidden" name={`${prefix}_orig_name`} value={party?.name ?? ""} />
+      <Field label={label} className="sm:col-span-2">
+        <input name={`${prefix}_name`} list={`lodging-${prefix}s`} value={name} onChange={(e) => onName(e.target.value)} className={inputClass} />
+        <datalist id={`lodging-${prefix}s`}>
+          {options.map((o) => (
+            <option key={o.name} value={o.name} />
+          ))}
+        </datalist>
+      </Field>
+      <Field label="Típus">
+        <select name={`${prefix}_kind`} value={kind} onChange={(e) => setKind(e.target.value as PartnerKind)} className={inputClass}>
+          {Object.entries(PARTNER_KIND_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label={person ? "Adóazonosító jel" : "Adószám"}>
+        <input name={`${prefix}_tax_number`} defaultValue={party?.tax_number ?? ""} placeholder={person ? "8xxxxxxxxx" : "12345678-1-23"} className={inputClass} />
+      </Field>
+      <Field label={person ? "Lakcím" : "Székhely"} className="sm:col-span-2">
+        <input name={`${prefix}_address`} defaultValue={party?.address ?? ""} placeholder="pl. 4025 Debrecen, Piac utca 1." className={inputClass} />
+      </Field>
+      <Field label="Bankszámlaszám" className="sm:col-span-2">
+        <input name={`${prefix}_bank_account`} defaultValue={party?.bank_account ?? ""} className={inputClass} />
+      </Field>
+      {!person && (
+        <Field label="Kapcsolattartó">
+          <input name={`${prefix}_contact_name`} defaultValue={party?.contact_name ?? ""} className={inputClass} />
+        </Field>
+      )}
+      <Field label="Telefon">
+        <input name={`${prefix}_contact_phone`} type="tel" defaultValue={party?.contact_phone ?? ""} className={inputClass} />
+      </Field>
+      <Field label="E-mail" className={person ? "sm:col-span-2" : ""}>
+        <input name={`${prefix}_contact_email`} type="email" defaultValue={party?.contact_email ?? ""} className={inputClass} />
+      </Field>
+    </div>
+  );
+}
 
 function Field({ label, children, hint, className = "" }: { label: string; children: React.ReactNode; hint?: string; className?: string }) {
   return (
@@ -85,16 +159,16 @@ export function LodgingForm({
   landlords,
   tenants,
   defaultCompanyId,
-  landlordName,
-  tenantName,
+  landlord,
+  tenant,
 }: {
   lodging?: LodgingRow;
   companies: { id: string; name: string }[];
-  landlords: string[];
-  tenants: string[];
+  landlords: LodgingParty[];
+  tenants: LodgingParty[];
   defaultCompanyId?: string;
-  landlordName?: string;
-  tenantName?: string;
+  landlord?: LodgingParty;
+  tenant?: LodgingParty;
 }) {
   const [leaseFee, setLeaseFee] = useState(amountText(lodging?.lease_fee));
   const [leaseFreq, setLeaseFreq] = useState<LeaseFrequency>(lodging?.lease_frequency ?? "monthly");
@@ -137,17 +211,13 @@ export function LodgingForm({
       <Card className="flex flex-col gap-4 p-5">
         <div>
           <div className={sectionLabelClass}>Bérlés — tőle béreljük</div>
-          <p className="mt-1 text-xs text-muted">Ha új nevet írsz be, a rendszer magától felveszi a Partnerek közé — az adószámot, bankszámlát ott lehet pótolni.</p>
+          <p className="mt-1 text-xs text-muted">
+            A bérbeadó minden adata itt van. Ha ugyanaz a bérbeadó több szállásnál is szerepel, a nevét kiválasztva az adatai átjönnek, és a
+            változtatás mindenhol érvényes.
+          </p>
         </div>
+        <PartyFields prefix="landlord" party={landlord} options={landlords} label="Bérbeadó neve" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Bérbeadó" className="sm:col-span-2">
-            <input name="landlord_name" list="lodging-landlords" defaultValue={landlordName ?? ""} className={inputClass} />
-            <datalist id="lodging-landlords">
-              {landlords.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-          </Field>
           <Field label="Szerződés aláírása">
             <input type="date" name="lease_signed_date" defaultValue={lodging?.lease_signed_date ?? ""} className={inputClass} />
           </Field>
@@ -184,16 +254,12 @@ export function LodgingForm({
       </Card>
 
       <Card className="flex flex-col gap-4 p-5">
-        <div className={sectionLabelClass}>Továbbadás — neki adjuk ki</div>
+        <div>
+          <div className={sectionLabelClass}>Továbbadás — neki adjuk ki</div>
+          <p className="mt-1 text-xs text-muted">A bérlő adatai a számlákra is innen kerülnek (név, adószám, cím, e-mail).</p>
+        </div>
+        <PartyFields prefix="tenant" party={tenant} options={tenants} label="Bérlő (szerződött fél)" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Bérlő (szerződött fél)" className="sm:col-span-2">
-            <input name="tenant_name" list="lodging-tenants" defaultValue={tenantName ?? ""} className={inputClass} />
-            <datalist id="lodging-tenants">
-              {tenants.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-          </Field>
           <Field label="Szerződés aláírása">
             <input type="date" name="sublease_signed_date" defaultValue={lodging?.sublease_signed_date ?? ""} className={inputClass} />
           </Field>

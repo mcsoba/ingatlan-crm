@@ -11,7 +11,6 @@ const TABS = [
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
   { href: "/dashboard/finance/payroll", label: "Bér és adók" },
   { href: "/dashboard/finance/lodgings", label: "Szállások" },
-  { href: "/dashboard/finance/partners", label: "Partnerek" },
   { href: "/dashboard/finance/companies", label: "Cégek" },
 ];
 
