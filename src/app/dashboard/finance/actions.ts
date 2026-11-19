@@ -8,6 +8,7 @@ import { linkPartnerAndLodging } from "@/lib/finance-partners";
 import {
   CATEGORIES,
   EXPENSE_CATEGORY_VALUES,
+  INCOME_CATEGORY_VALUES,
   computeGross,
   parseAmount,
   payableAmount,
@@ -272,6 +273,61 @@ export async function createQuickExpense(formData: FormData): Promise<string> {
       paid_date: paid ? paidDate : null,
       paid_amount: paid ? amount : null,
       payment_method: method,
+      currency,
+      net_amount: amount,
+      vat_rate: null,
+      vat_amount: 0,
+      gross_amount: amount,
+      notes: text(formData, "notes"),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  revalidateFinance();
+  return data.id as string;
+}
+
+// ---------- gyors bevétel ----------
+
+/**
+ * Befolyt (vagy várt) pénz rögzítése pár mezővel — számla nélkül is (pl. készpénzes
+ * bérleti díj, kaució, jutalék). Már kiállított, rögzített tétel: rendes kimenő tétel.
+ */
+export async function createQuickIncome(formData: FormData): Promise<string> {
+  const profile = await requireOwnerOrAdmin();
+  const currency = oneOf<Currency>(text(formData, "currency"), ["HUF", "EUR"], "HUF");
+  const companyId = text(formData, "company_id");
+  const description = text(formData, "description");
+  const counterparty = text(formData, "counterparty_name");
+  const issueDate = date(formData, "issue_date") ?? todayIso();
+  const gross = parseAmount(formData.get("gross_amount"));
+  if (!companyId) throw new Error("Válaszd ki a céget");
+  if (!description) throw new Error("Írd be, mi után jött a pénz");
+  if (!counterparty) throw new Error("Írd be, kitől jött a pénz");
+  if (gross === null || gross <= 0) throw new Error("Add meg az összeget");
+  const amount = roundMoney(gross, currency);
+  const received = text(formData, "received") !== "no";
+  const invoiceNumber = text(formData, "invoice_number");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("finance_invoices")
+    .insert({
+      agency_id: profile.agency_id,
+      company_id: companyId,
+      direction: "out",
+      doc_type: invoiceNumber ? "invoice" : "none",
+      category: oneOf(text(formData, "category"), INCOME_CATEGORY_VALUES, "other"),
+      is_planned: false,
+      invoice_number: invoiceNumber,
+      counterparty_name: counterparty,
+      description,
+      issue_date: issueDate,
+      fulfillment_date: issueDate,
+      due_date: date(formData, "due_date") ?? issueDate,
+      paid_date: received ? (date(formData, "paid_date") ?? issueDate) : null,
+      paid_amount: received ? amount : null,
+      payment_method: oneOf(text(formData, "payment_method"), ["transfer", "card", "cash"] as const, "transfer"),
       currency,
       net_amount: amount,
       vat_rate: null,

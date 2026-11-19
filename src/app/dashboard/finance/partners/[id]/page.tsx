@@ -80,7 +80,7 @@ export default async function PartnerDetailPage({
                 >
                   <Home className="h-4 w-4 shrink-0 text-muted" />
                   <span className="min-w-0 flex-1 truncate">{l.address}</span>
-                  <Badge variant={l.landlord_id === id ? "accent" : "success"}>{l.landlord_id === id ? "tőle bérelünk" : "neki adjuk"}</Badge>
+                  <Badge variant={l.landlord_id === id ? "accent" : "success"}>{l.landlord_id === id ? "tőle bérlünk" : "neki adjuk"}</Badge>
                 </Link>
               ))
             )}

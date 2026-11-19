@@ -5,7 +5,7 @@ import { getSelectedCompanyId } from "@/lib/companies";
 import { InvoiceForm } from "../../invoice-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { linkClass } from "@/components/ui/styles";
-import { ArrowDownLeft, ArrowUpRight, Repeat } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Repeat, Wallet } from "lucide-react";
 
 // Ha nincs megadva, mit rögzít, egyszerű szavakkal rákérdezünk
 const CHOICES = [
@@ -20,6 +20,12 @@ const CHOICES = [
     icon: ArrowUpRight,
     title: "Mi állítottunk ki számlát",
     text: "Nekünk fizetnek (pl. bérlő, ügyfél) — rögzítsd, hogy lássuk, mikor érkezik meg a pénz.",
+  },
+  {
+    href: "/dashboard/finance/income",
+    icon: Wallet,
+    title: "Pénzt kaptunk (számla nélkül is)",
+    text: "Pl. készpénzben kapott bérleti díj, kaució, jutalék — a Bevételek fülön pár mezővel rögzíthető.",
   },
   {
     href: "/dashboard/finance/schedules/new",
@@ -63,7 +69,7 @@ export default async function NewInvoicePage({
           </Link>{" "}
           fülön lehet a leggyorsabban rögzíteni.
         </p>
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {CHOICES.map(({ href, icon: Icon, title, text }) => (
             <Link
               key={href}

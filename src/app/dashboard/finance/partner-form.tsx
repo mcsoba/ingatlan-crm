@@ -36,7 +36,7 @@ export function PartnerForm({ partner, defaultRole }: { partner?: PartnerRow; de
             <div className="flex flex-wrap gap-4 pt-2 text-sm">
               <label className="flex items-center gap-2">
                 <input type="checkbox" name="is_landlord" defaultChecked={partner ? partner.is_landlord : defaultRole === "landlord"} />
-                Bérbeadó (tőle bérelünk)
+                Bérbeadó (tőle bérlünk)
               </label>
               <label className="flex items-center gap-2">
                 <input type="checkbox" name="is_tenant" defaultChecked={partner ? partner.is_tenant : defaultRole === "tenant"} />

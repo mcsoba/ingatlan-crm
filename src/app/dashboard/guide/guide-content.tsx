@@ -460,6 +460,10 @@ export function GuideContent() {
               <b>Blokkok, apró kiadások:</b> a <Ref href="/dashboard/finance/expenses">Kiadások</Ref> fülön pár mezővel és a
               blokk lefotózásával (telefonon a fotó gomb a kamerát is felajánlja).
             </>,
+            <>
+              <b>Bevételek:</b> a <Ref href="/dashboard/finance/income">Bevételek</Ref> fülön látod havonta, mi folyt be és mit várunk még
+              (a kiállított számlák is itt vannak). Számla nélkül kapott pénzt (pl. készpénzes bérleti díj, kaució, jutalék) is itt rögzíts.
+            </>,
           ]}
         />
         <Tip>

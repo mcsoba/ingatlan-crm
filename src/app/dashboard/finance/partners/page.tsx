@@ -12,7 +12,7 @@ import { PARTNER_KIND_LABELS, PARTNER_SELECT, type PartnerRow } from "@/lib/fina
 
 const ROLE_FILTERS = [
   { value: "", label: "Mindenki" },
-  { value: "landlord", label: "Bérbeadók (tőlük bérelünk)" },
+  { value: "landlord", label: "Bérbeadók (tőlük bérlünk)" },
   { value: "tenant", label: "Bérlők (nekik adjuk tovább)" },
 ];
 
