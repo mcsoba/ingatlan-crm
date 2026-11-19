@@ -24,14 +24,16 @@ export async function createDeal(formData: FormData) {
     throw new Error("A kontakt kiválasztása kötelező");
   }
 
-  const { data: firstStage, error: stageError } = await supabase
+  // A választott szakasz (ha az irodáé), különben az első
+  const requestedStage = String(formData.get("stage_id") ?? "");
+  const { data: stageRows, error: stageError } = await supabase
     .from("pipeline_stages")
     .select("id")
-    .order("position")
-    .limit(1)
-    .single();
+    .order("position");
 
   if (stageError) throw stageError;
+  const firstStage = stageRows?.find((s) => s.id === requestedStage) ?? stageRows?.[0];
+  if (!firstStage) throw new Error("Nincs üzlet-szakasz beállítva");
 
   const { error } = await supabase.from("deals").insert({
     agency_id: profile.agency_id,

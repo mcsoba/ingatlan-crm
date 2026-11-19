@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setLeaveAllowance, deleteLeave } from "./actions";
 import { LeaveForm } from "./leave-form";
+import { countWorkdays } from "./workdays";
 import { TasksViewSwitch } from "../tasks/view-switch";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,8 @@ type Leave = {
   note: string | null;
 };
 
+const MONTHS_SHORT = ["jan", "feb", "márc", "ápr", "máj", "jún", "júl", "aug", "szept", "okt", "nov", "dec"];
+
 function formatDays(n: number): string {
   return n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
 }
@@ -31,6 +34,37 @@ function formatRange(start: string, end: string): string {
   return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
 }
 
+function todayBudapest(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Budapest" });
+}
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Egy szabadság napjai hónapokra bontva (több hónapon átívelőnél a munkanapok arányában). */
+function daysByMonth(l: Leave, year: number): number[] {
+  const out = new Array(12).fill(0) as number[];
+  const total = Number(l.days);
+  const startMonth = l.start_date.slice(0, 7);
+  if (startMonth === l.end_date.slice(0, 7)) {
+    if (Number(l.start_date.slice(0, 4)) === year) out[Number(l.start_date.slice(5, 7)) - 1] += total;
+    return out;
+  }
+  const allWorkdays = countWorkdays(l.start_date, l.end_date) || 1;
+  let cursor = l.start_date;
+  while (cursor <= l.end_date) {
+    const [y, m] = cursor.split("-").map(Number);
+    const monthEnd = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    const segEnd = monthEnd < l.end_date ? monthEnd : l.end_date;
+    if (y === year) out[m - 1] += (total * countWorkdays(cursor, segEnd)) / allWorkdays;
+    cursor = addDaysIso(monthEnd, 1);
+  }
+  return out;
+}
+
 export default async function LeavePage({
   searchParams,
 }: {
@@ -38,6 +72,7 @@ export default async function LeavePage({
 }) {
   const { year: yearParam } = await searchParams;
   const year = Number(yearParam) || new Date().getFullYear();
+  const today = todayBudapest();
   const { profile } = await ensureCurrentUserProfile();
   const isManager = profile.role === "owner" || profile.role === "admin";
   const supabase = await createClient();
@@ -48,9 +83,9 @@ export default async function LeavePage({
     supabase
       .from("leaves")
       .select("id, profile_id, start_date, end_date, days, note")
-      .gte("start_date", `${year}-01-01`)
+      .gte("end_date", `${year}-01-01`)
       .lte("start_date", `${year}-12-31`)
-      .order("start_date", { ascending: false }),
+      .order("start_date", { ascending: true }),
     getSelectedCompanyId(),
   ]);
   if (membersRes.error) throw membersRes.error;
@@ -76,14 +111,35 @@ export default async function LeavePage({
   for (const a of allowancesRes.data ?? []) allowanceById.set(a.profile_id, Number(a.days));
   const memberIds = new Set(members.map((m) => m.id));
   const leaves = ((leavesRes.data ?? []) as Leave[]).filter((l) => memberIds.has(l.profile_id));
-  const usedById = new Map<string, number>();
-  for (const l of leaves) usedById.set(l.profile_id, (usedById.get(l.profile_id) ?? 0) + Number(l.days));
+
+  // Személyenként: havi bontás, kivett (már elmúlt) és tervezett (jövőbeli) napok
+  const perPerson = members.map((m) => {
+    const own = leaves.filter((l) => l.profile_id === m.id);
+    const months = new Array(12).fill(0) as number[];
+    let taken = 0;
+    let planned = 0;
+    for (const l of own) {
+      const split = daysByMonth(l, year);
+      const inYear = split.reduce((s, d) => s + d, 0);
+      split.forEach((d, i) => (months[i] += d));
+      if (l.start_date > today) planned += inYear;
+      else taken += inYear;
+    }
+    const allowance = allowanceById.get(m.id);
+    const used = taken + planned;
+    return { ...m, own, months, taken, planned, used, allowance, remaining: allowance !== undefined ? allowance - used : null };
+  });
+
+  // Most és a következő 30 napban szabadságon
+  const horizon = addDaysIso(today, 30);
+  const current = leaves.filter((l) => l.start_date <= today && l.end_date >= today);
+  const upcoming = leaves.filter((l) => l.start_date > today && l.start_date <= horizon);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Szabadságok"
-        description="Éves szabadságkeret munkatársanként — a kivett napok automatikusan csökkentik a maradékot, és a naptárban is megjelennek."
+        description="Éves szabadságkeret munkatársanként — a rögzített napok automatikusan csökkentik a maradékot, és a naptárban is megjelennek."
         action={
           <div className="flex items-center gap-2">
             <Link href={`/dashboard/leave?year=${year - 1}`}>
@@ -109,98 +165,153 @@ export default async function LeavePage({
         </Card>
       ) : (
         <>
+          {(current.length > 0 || upcoming.length > 0) && (
+            <Card className="flex flex-col gap-2 border-success/30 p-4 text-sm">
+              {current.length > 0 && (
+                <div>
+                  <span className="font-semibold text-success">Ma szabadságon: </span>
+                  {current.map((l) => `${nameById.get(l.profile_id)} (${formatRange(l.start_date, l.end_date)})`).join(", ")}
+                </div>
+              )}
+              {upcoming.length > 0 && (
+                <div>
+                  <span className="font-semibold text-foreground">A következő 30 napban: </span>
+                  {upcoming.map((l) => `${nameById.get(l.profile_id)} (${formatRange(l.start_date, l.end_date)})`).join(", ")}
+                </div>
+              )}
+            </Card>
+          )}
+
           <LeaveForm members={members} currentProfileId={profile.id} canPickMember={isManager} />
 
+          {/* ---------- munkatársanként ---------- */}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {perPerson.map((p) => {
+              const pct = p.allowance ? Math.min(100, (p.used / p.allowance) * 100) : 0;
+              const takenPct = p.allowance ? Math.min(100, (p.taken / p.allowance) * 100) : 0;
+              return (
+                <Card key={p.id} className="flex flex-col gap-3 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-semibold text-foreground">
+                      {p.name}
+                      {p.id === profile.id && <span className="ml-1 text-xs font-normal text-muted">(te)</span>}
+                    </div>
+                    <div
+                      className={`text-right text-lg font-semibold tabular-nums ${
+                        p.remaining === null ? "text-muted" : p.remaining < 0 ? "text-danger" : "text-success"
+                      }`}
+                    >
+                      {p.remaining === null ? "—" : `${formatDays(p.remaining)} nap`}
+                      <div className="text-xs font-normal text-muted">maradék</div>
+                    </div>
+                  </div>
+
+                  {p.allowance ? (
+                    <div className="h-2 overflow-hidden rounded-full bg-background" title="Sötét: már kivett · világos: tervezett">
+                      <div className="flex h-full">
+                        <div className="h-full bg-accent" style={{ width: `${takenPct}%` }} />
+                        <div className="h-full bg-accent/40" style={{ width: `${pct - takenPct}%` }} />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg bg-background px-2 py-1.5">
+                      <div className="text-muted">Keret</div>
+                      {isManager ? (
+                        <form action={setLeaveAllowance} className="mt-0.5 flex items-center justify-center gap-1">
+                          <input type="hidden" name="profile_id" value={p.id} />
+                          <input type="hidden" name="year" value={year} />
+                          <input
+                            name="days"
+                            inputMode="decimal"
+                            defaultValue={p.allowance !== undefined ? formatDays(p.allowance) : ""}
+                            placeholder="pl. 20"
+                            className={`${inputClass} w-14 px-1 py-0.5 text-center text-sm`}
+                          />
+                          <button type="submit" className="text-accent hover:underline">
+                            ✓
+                          </button>
+                        </form>
+                      ) : (
+                        <div className="text-sm font-semibold text-foreground">{p.allowance !== undefined ? formatDays(p.allowance) : "—"}</div>
+                      )}
+                    </div>
+                    <div className="rounded-lg bg-background px-2 py-1.5">
+                      <div className="text-muted">Kivett</div>
+                      <div className="text-sm font-semibold text-foreground">{formatDays(p.taken)}</div>
+                    </div>
+                    <div className="rounded-lg bg-background px-2 py-1.5">
+                      <div className="text-muted">Tervezett</div>
+                      <div className="text-sm font-semibold text-foreground">{formatDays(p.planned)}</div>
+                    </div>
+                  </div>
+
+                  {p.own.length === 0 ? (
+                    <p className="text-xs text-muted">Ebben az évben még nincs rögzített szabadsága.</p>
+                  ) : (
+                    <ul className="flex flex-col divide-y divide-border-subtle text-sm">
+                      {p.own.map((l) => (
+                        <li key={l.id} className="flex items-center gap-2 py-1.5">
+                          <Palmtree className={`h-3.5 w-3.5 shrink-0 ${l.start_date > today ? "text-muted" : "text-success"}`} strokeWidth={1.75} />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate">
+                              {formatRange(l.start_date, l.end_date)} · <b>{formatDays(Number(l.days))} nap</b>
+                            </div>
+                            {l.note && <div className="truncate text-xs text-muted">{l.note}</div>}
+                          </div>
+                          {l.start_date > today && <span className="text-[11px] text-muted">tervezett</span>}
+                          {(isManager || l.profile_id === profile.id) && (
+                            <form action={deleteLeave}>
+                              <input type="hidden" name="id" value={l.id} />
+                              <button type="submit" title="Törlés" className="text-muted hover:text-danger">
+                                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              </button>
+                            </form>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* ---------- éves áttekintő ---------- */}
           <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[520px] text-sm">
+            <div className="border-b border-border px-4 py-3 text-sm font-semibold">{year}. évi áttekintő — szabadságnapok havonta</div>
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-xs text-muted">
-                  <th className="px-4 py-2 font-medium">Munkatárs</th>
-                  <th className="px-4 py-2 font-medium">Éves keret ({year})</th>
-                  <th className="px-4 py-2 text-right font-medium">Kivett</th>
-                  <th className="px-4 py-2 text-right font-medium">Maradék</th>
+                <tr className="border-b border-border text-xs text-muted">
+                  <th className="px-4 py-2 text-left font-medium">Munkatárs</th>
+                  {MONTHS_SHORT.map((mn) => (
+                    <th key={mn} className="px-1 py-2 text-center font-medium">
+                      {mn}
+                    </th>
+                  ))}
+                  <th className="px-4 py-2 text-right font-medium">Össz.</th>
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => {
-                  const allowance = allowanceById.get(m.id);
-                  const used = usedById.get(m.id) ?? 0;
-                  const remaining = allowance !== undefined ? allowance - used : null;
-                  return (
-                    <tr key={m.id} className="border-b border-border-subtle last:border-0">
-                      <td className="px-4 py-2 font-medium text-foreground">
-                        {m.name}
-                        {m.id === profile.id && <span className="ml-1 text-xs text-muted">(te)</span>}
-                      </td>
-                      <td className="px-4 py-2">
-                        {isManager ? (
-                          <form action={setLeaveAllowance} className="flex items-center gap-1.5">
-                            <input type="hidden" name="profile_id" value={m.id} />
-                            <input type="hidden" name="year" value={year} />
-                            <input
-                              name="days"
-                              inputMode="decimal"
-                              defaultValue={allowance !== undefined ? formatDays(allowance) : ""}
-                              placeholder="pl. 20"
-                              className={`${inputClass} w-20 py-1`}
-                            />
-                            <span className="text-xs text-muted">nap</span>
-                            <button type="submit" className="text-xs text-muted hover:text-accent">
-                              Mentés
-                            </button>
-                          </form>
-                        ) : allowance !== undefined ? (
-                          `${formatDays(allowance)} nap`
+                {perPerson.map((p) => (
+                  <tr key={p.id} className="border-b border-border-subtle last:border-0">
+                    <td className="px-4 py-1.5 font-medium">{p.name}</td>
+                    {p.months.map((d, i) => (
+                      <td key={i} className="px-1 py-1.5 text-center tabular-nums">
+                        {d > 0 ? (
+                          <span className="inline-block min-w-7 rounded bg-success-soft px-1 text-success">{formatDays(Math.round(d * 2) / 2)}</span>
                         ) : (
-                          <span className="text-muted">nincs megadva</span>
+                          <span className="text-muted-subtle">·</span>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">{formatDays(used)} nap</td>
-                      <td
-                        className={`px-4 py-2 text-right font-semibold tabular-nums ${
-                          remaining === null ? "text-muted" : remaining < 0 ? "text-danger" : "text-success"
-                        }`}
-                      >
-                        {remaining === null ? "—" : `${formatDays(remaining)} nap`}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    ))}
+                    <td className="px-4 py-1.5 text-right font-semibold tabular-nums">{formatDays(p.used)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </Card>
-
-          <div className="flex flex-col gap-2">
-            <h2 className="text-sm font-semibold text-foreground">Rögzített szabadságok ({year})</h2>
-            {leaves.length === 0 ? (
-              <p className="text-sm text-muted">Ebben az évben még nincs rögzített szabadság.</p>
-            ) : (
-              leaves.map((l) => (
-                <Card key={l.id} className="flex items-center gap-3 p-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
-                    <Palmtree className="h-4 w-4" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {nameById.get(l.profile_id) ?? "Munkatárs"} · {formatDays(Number(l.days))} nap
-                    </div>
-                    <div className="truncate text-xs text-muted">
-                      {formatRange(l.start_date, l.end_date)}
-                      {l.note && ` · ${l.note}`}
-                    </div>
-                  </div>
-                  {(isManager || l.profile_id === profile.id) && (
-                    <form action={deleteLeave}>
-                      <input type="hidden" name="id" value={l.id} />
-                      <button type="submit" title="Törlés" className="text-muted hover:text-danger">
-                        <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                      </button>
-                    </form>
-                  )}
-                </Card>
-              ))
-            )}
-          </div>
         </>
       )}
     </div>

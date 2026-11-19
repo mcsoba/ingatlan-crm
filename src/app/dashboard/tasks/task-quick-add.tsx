@@ -5,8 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { inputClass } from "@/components/ui/styles";
 import { SIMPLE_MODE } from "@/lib/edition";
+import type { TeamMember } from "@/lib/team";
 
-export function TaskQuickAdd() {
+export function TaskQuickAdd({
+  members,
+  currentUserId,
+  defaultAssignee,
+}: {
+  members: TeamMember[];
+  currentUserId: string;
+  defaultAssignee: string;
+}) {
   return (
     <Card className="p-3">
       <form action={createActivity} className="flex flex-wrap items-center gap-2">
@@ -17,15 +26,22 @@ export function TaskQuickAdd() {
           <option value="viewing">Megtekintés</option>
           <option value="reminder">Emlékeztető</option>
         </select>
-        <input type="date" name="due_at" className={`${inputClass} py-1.5`} />
+        <input type="date" name="due_at" title="Határidő" className={`${inputClass} py-1.5`} />
         <input type="time" name="due_time" title="Időpont (ha üres: reggel 9)" className={`${inputClass} py-1.5`} />
+        {members.length > 1 && (
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            Kinek?
+            <select key={defaultAssignee} name="assigned_to" defaultValue={defaultAssignee} className={`${inputClass} py-1.5`}>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id === currentUserId ? `${m.name} (én)` : m.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {!SIMPLE_MODE && (
-          <select
-            name="recurrence"
-            defaultValue="none"
-            title="Ismétlődés"
-            className={`${inputClass} py-1.5`}
-          >
+          <select name="recurrence" defaultValue="none" title="Ismétlődés" className={`${inputClass} py-1.5`}>
             <option value="none">Nem ismétlődik</option>
             <option value="daily">Naponta</option>
             <option value="weekly">Hetente</option>
@@ -35,7 +51,7 @@ export function TaskQuickAdd() {
         <input
           name="content"
           required
-          placeholder="Új önálló teendő (nem kötött kontakthoz/üzlethez)…"
+          placeholder="Új teendő (pl. „Hívd vissza Kovácsot az ajánlat miatt”)…"
           className={`${inputClass} min-w-[240px] flex-1 py-1.5`}
         />
         <Button type="submit" size="sm">
