@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Building2, Clock, MessageSquarePlus } from "lucide-react";
+import { ArrowUpRight, Building2, Clock, MessageSquarePlus, Plus } from "lucide-react";
 import { logDealActivity, moveDeal, scheduleDealFollowUp } from "./actions";
 import { Card } from "@/components/ui/card";
 import { DeleteDealButton } from "./[id]/delete-deal-button";
@@ -115,6 +115,8 @@ export type Stage = {
   id: string;
   name: string;
   position: number;
+  /** Rövid útmutató: mit kell tenni ebben a szakaszban */
+  guidance?: string | null;
 };
 
 export function PipelineBoard({
@@ -293,7 +295,7 @@ export function PipelineBoard({
         )}
       </div>
     <div className="flex snap-x gap-4 overflow-x-auto pb-4">
-      {stages.map((stage) => (
+      {stages.map((stage, stageIndex) => (
         <div
           key={stage.id}
           ref={(el) => {
@@ -304,24 +306,45 @@ export function PipelineBoard({
             hoverStageId === stage.id ? "border border-accent/40 bg-accent-soft" : "border border-border-subtle bg-surface/40"
           }`}
         >
-          <div className="mb-3 flex items-center gap-2 px-1 text-sm font-medium text-foreground">
-            {stage.name}
-            <span className="rounded-full bg-surface px-1.5 py-0.5 text-xs text-muted">
-              {visibleCards.filter((c) => c.stageId === stage.id).length}
-            </span>
-            {(() => {
-              const total = visibleCards
-                .filter((c) => c.stageId === stage.id)
-                .reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
-              return total > 0 ? (
-                <span className="ml-auto text-xs font-normal text-muted-subtle">
-                  {formatCompactHuf(total)}
-                </span>
-              ) : null;
-            })()}
+          <div className="mb-3 px-1">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[11px] font-semibold text-accent">
+                {stageIndex + 1}
+              </span>
+              {stage.name}
+              <span className="rounded-full bg-surface px-1.5 py-0.5 text-xs font-normal text-muted">
+                {visibleCards.filter((c) => c.stageId === stage.id).length}
+              </span>
+              {(() => {
+                const total = visibleCards
+                  .filter((c) => c.stageId === stage.id)
+                  .reduce((sum, c) => sum + (c.dealAmount ?? 0), 0);
+                return total > 0 ? (
+                  <span className="text-xs font-normal text-muted-subtle">{formatCompactHuf(total)}</span>
+                ) : null;
+              })()}
+              <Link
+                href={`/dashboard/pipeline/new?stage=${stage.id}`}
+                title={`Új üzlet ebben a szakaszban: ${stage.name}`}
+                aria-label={`Új üzlet: ${stage.name}`}
+                className="ml-auto rounded-md p-0.5 text-muted-subtle hover:bg-surface hover:text-accent"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            {stage.guidance && (
+              <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted" title={stage.guidance}>
+                {stage.guidance}
+              </p>
+            )}
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex min-h-40 flex-col gap-2">
+            {!visibleCards.some((c) => c.stageId === stage.id) && (
+              <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border-subtle px-3 py-6 text-center text-xs text-muted-subtle">
+                {draggingId ? "Engedd el itt" : "Nincs itt üzlet — húzz ide egy kártyát"}
+              </div>
+            )}
             {visibleCards
               .filter((card) => card.stageId === stage.id)
               .map((card) => (

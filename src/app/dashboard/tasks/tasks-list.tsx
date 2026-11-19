@@ -3,7 +3,8 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { StickyNote, Phone, Eye, Bell, Trash2, Repeat, type LucideIcon } from "lucide-react";
-import { toggleActivityDone, deleteActivity } from "../activities/actions";
+import { toggleActivityDone, deleteActivity, reassignActivity } from "../activities/actions";
+import type { TeamMember } from "@/lib/team";
 import { formatDue } from "@/lib/time";
 import { Card } from "@/components/ui/card";
 
@@ -34,6 +35,7 @@ export type TaskRow = {
   due_at: string | null;
   done: boolean;
   recurrence: string;
+  assigned_to: string | null;
   contacts: { id: string; name: string } | null;
   deals: { id: string } | null;
 };
@@ -61,12 +63,26 @@ function groupLabel(task: TaskRow): string {
 
 const GROUP_ORDER = ["Lejárt", "Ma esedékes", "Következő", "Nincs határidő", "Kész"];
 
-export function TasksList({ activities }: { activities: TaskRow[] }) {
+export function TasksList({
+  activities,
+  members,
+  currentUserId,
+}: {
+  activities: TaskRow[];
+  members: TeamMember[];
+  currentUserId: string;
+}) {
   const [isPending, startTransition] = useTransition();
 
   function handleToggle(id: string, done: boolean) {
     startTransition(() => {
       toggleActivityDone(id, done, "/dashboard/tasks");
+    });
+  }
+
+  function handleReassign(id: string, assignedTo: string) {
+    startTransition(() => {
+      reassignActivity(id, assignedTo);
     });
   }
 
@@ -135,6 +151,27 @@ export function TasksList({ activities }: { activities: TaskRow[] }) {
                           <span className="text-xs text-muted">{task.contacts.name}</span>
                         )}
                       </div>
+                    )}
+                    {members.length > 1 && (
+                      <label className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
+                        <span>Felelős:</span>
+                        <select
+                          value={task.assigned_to ?? ""}
+                          disabled={isPending || task.done}
+                          onChange={(e) => handleReassign(task.id, e.target.value)}
+                          title="Átadás egy kollégának (értesítést kap)"
+                          className={`rounded-md border bg-surface px-1.5 py-0.5 text-xs ${
+                            task.assigned_to === currentUserId ? "border-border text-foreground" : "border-accent/40 text-accent"
+                          }`}
+                        >
+                          {!task.assigned_to && <option value="">— nincs —</option>}
+                          {members.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.id === currentUserId ? `${m.name} (én)` : m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     )}
                   </div>
                   <form action={deleteActivity}>

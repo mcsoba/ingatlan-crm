@@ -19,7 +19,7 @@ const ALL_FAQ_SECTIONS: FaqSection[] = [
       {
         question: "Mi az a pipeline?",
         answer:
-          "A pipeline egy kanban-tábla, ami az üzleteidet szakaszonként mutatja (pl. Lead, Megtekintés, Ajánlat, Alku, Zárás). Húzd a kártyát a következő szakaszba, ahogy az üzlet halad. A szakaszok nevét és sorrendjét az Üzletek oldal 'Szakaszok' gombjával szerkesztheted.",
+          "A pipeline egy kanban-tábla, ami az üzleteidet szakaszonként mutatja (pl. Lead, Megtekintés, Ajánlat, Zárás). Húzd a kártyát a következő szakaszba, ahogy az üzlet halad. A szakaszok nevét és sorrendjét az Üzletek oldal 'Szakaszok' gombjával szerkesztheted.",
       },
       {
         question: "Hogyan jelölök egy üzletet elveszettnek?",

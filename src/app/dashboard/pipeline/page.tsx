@@ -10,6 +10,7 @@ import { SIMPLE_MODE } from "@/lib/edition";
 import { DeleteDealButton } from "./[id]/delete-deal-button";
 import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
 import { companyColor } from "@/lib/company-shared";
+import { stageGuidance } from "@/lib/stage-guidance";
 
 // The Supabase client infers embedded-resource joins as arrays without
 // generated Database types; contact_id/property_id are single foreign
@@ -52,7 +53,7 @@ export default async function PipelinePage() {
   ] = await Promise.all([
     supabase
       .from("pipeline_stages")
-      .select("id, name, position")
+      .select("id, name, position, guidance")
       .order("position"),
     dealsQuery,
     supabase
@@ -127,10 +128,11 @@ export default async function PipelinePage() {
       };
     });
 
+  const lostCount = allDeals.filter((deal) => deal.status === "lost").length;
   const lostDeals = allDeals
     .filter((deal) => deal.status === "lost")
     .sort((a, b) => (b.lost_at ?? "").localeCompare(a.lost_at ?? ""))
-    .slice(0, 10);
+    .slice(0, 30);
 
   return (
     <div className="flex flex-col gap-6">
@@ -173,14 +175,19 @@ export default async function PipelinePage() {
         }
       />
 
-      <PipelineBoard stages={stages} deals={dealCards} currentUserId={profile.id} />
+      <PipelineBoard
+        stages={(stages ?? []).map((s) => ({ id: s.id, name: s.name, position: s.position, guidance: stageGuidance(s) }))}
+        deals={dealCards}
+        currentUserId={profile.id}
+      />
 
       {lostDeals.length > 0 && (
-        <div>
-          <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+        <details className="group">
+          <summary className="mb-3 flex w-fit cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-foreground">
             <XCircle className="h-4 w-4 text-danger" strokeWidth={1.75} />
-            Elveszett üzletek
-          </div>
+            Elveszett üzletek ({lostCount})
+            <span className="text-xs font-normal text-muted group-open:hidden">— megnyitás</span>
+          </summary>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -231,7 +238,7 @@ export default async function PipelinePage() {
               </table>
             </div>
           </Card>
-        </div>
+        </details>
       )}
     </div>
   );

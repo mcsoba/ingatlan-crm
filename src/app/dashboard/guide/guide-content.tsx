@@ -46,12 +46,11 @@ const SECTIONS: { id: string; title: string; icon: LucideIcon }[] = [
   { id: "penzugyek", title: "Pénzügyek (irodavezetőknek)", icon: Wallet },
 ];
 
-const STAGE_ORDER = ["lead", "megtekintés", "ajánlat", "alku", "zárás"];
+const STAGE_ORDER = ["lead", "megtekintés", "ajánlat", "zárás"];
 const STAGE_TITLES: Record<string, string> = {
   lead: "Lead (új érdeklődő)",
   megtekintés: "Megtekintés",
-  ajánlat: "Ajánlat",
-  alku: "Alku",
+  ajánlat: "Ajánlat és alku",
   zárás: "Zárás",
 };
 

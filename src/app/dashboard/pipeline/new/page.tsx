@@ -13,20 +13,22 @@ import { listCompanies, getSelectedCompanyId } from "@/lib/companies";
 export default async function NewDealPage({
   searchParams,
 }: {
-  searchParams: Promise<{ contact?: string }>;
+  searchParams: Promise<{ contact?: string; stage?: string }>;
 }) {
   // ?contact=<id>: a kontakt oldaláról indítva előre kiválasztva
-  const { contact: preselectedContact } = await searchParams;
+  // ?stage=<id>: az Üzletek tábla oszlopának „+” gombjáról indítva abba a szakaszba kerül
+  const { contact: preselectedContact, stage: preselectedStage } = await searchParams;
   const { profile } = await ensureCurrentUserProfile();
   const supabase = await createClient();
 
-  const [{ data: contacts }, { data: properties }, { data: members }, companies, selectedCompanyId] =
+  const [{ data: contacts }, { data: properties }, { data: members }, companies, selectedCompanyId, { data: stages }] =
     await Promise.all([
       supabase.from("contacts").select("id, name").order("name"),
       supabase.from("properties").select("id, address").order("address"),
       supabase.from("profiles").select("id, full_name").order("created_at"),
       listCompanies(),
       getSelectedCompanyId(),
+      supabase.from("pipeline_stages").select("id, name").order("position"),
     ]);
 
   const emailById = new Map<string, string>();
@@ -99,6 +101,19 @@ export default async function NewDealPage({
               ))}
             </select>
           </div>
+
+          {stages && stages.length > 1 && (
+            <div className={fieldGroupClass}>
+              <span className={labelClass}>Szakasz</span>
+              <select name="stage_id" defaultValue={stages.some((s) => s.id === preselectedStage) ? preselectedStage : stages[0].id} className={inputClass}>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className={fieldGroupClass}>
             <span className={labelClass}>Típus</span>

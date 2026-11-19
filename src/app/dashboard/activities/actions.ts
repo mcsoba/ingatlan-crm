@@ -158,3 +158,31 @@ export async function deleteActivity(formData: FormData) {
   if (redirectTo) revalidatePath(redirectTo);
   revalidatePath("/dashboard");
 }
+
+/** Teendő átadása egy másik munkatársnak (a Teendők listáról). Az új felelős push-értesítést kap. */
+export async function reassignActivity(id: string, assignedTo: string) {
+  const { profile } = await ensureCurrentUserProfile();
+  const supabase = await createClient();
+  // Csak az iroda tagja lehet felelős (a profiles RLS csak a saját irodát látja)
+  const { data: member } = await supabase.from("profiles").select("id").eq("id", assignedTo).maybeSingle();
+  if (!member) throw new Error("Ez a munkatárs nem található az irodában");
+
+  const { data: activity, error } = await supabase
+    .from("activities")
+    .update({ assigned_to: member.id })
+    .eq("id", id)
+    .select("content, due_at, deal_id, contact_id")
+    .maybeSingle();
+  if (error) throw error;
+
+  if (activity && member.id !== profile.id) {
+    await sendPushToProfiles(createAdminClient(), [member.id], {
+      title: "Új feladatot kaptál",
+      body: `${profile.full_name || "Egy kollégád"}: ${activity.content}${activity.due_at ? ` (határidő: ${formatDue(activity.due_at)})` : ""}`,
+      url: activity.deal_id ? `/deal/${activity.deal_id}` : activity.contact_id ? `/contact/${activity.contact_id}` : "/",
+    });
+  }
+
+  revalidatePath("/dashboard/tasks");
+  revalidatePath("/dashboard");
+}
