@@ -1,5 +1,5 @@
 -- Számlázz.hu Számla Agent: kimenő számla / díjbekérő kiállítása közvetlenül a CRM-ből.
--- Cégenként egy Agent-kulcs (Számlázz.hu → Beállítások → Számla Agent kulcsok).
+-- Cégenként egy Agent-kulcs (Számlázz.hu → Vezérlőpult → az oldal alján: Számla Agent kulcsok).
 -- A kulcs titok: a tábla RLS-sel le van zárva és NINCS rá policy, így a böngésző
 -- (anon / bejelentkezett kliens) se olvasni, se írni nem tudja — csak a szerver
 -- éri el a service-role klienssel, irodavezetői jogosultság-ellenőrzés után.

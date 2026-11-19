@@ -70,7 +70,7 @@ export function SzamlazzSettingsCard({ companyId, settings, migrationMissing }: 
         <>
           {!settings && (
             <ol className="ml-5 list-decimal text-xs text-muted">
-              <li>Lépj be a cég Számlázz.hu-fiókjába → Beállítások → <strong>Számla Agent kulcsok</strong> → Új kulcs.</li>
+              <li>Lépj be a cég Számlázz.hu-fiókjába (fiókgazdaként vagy adminisztrátorként) → bal felső számla ikon: <strong>Vezérlőpult</strong> → az oldal alján a <strong>Számla Agent kulcsok</strong> blokkban a kulcs ikon.</li>
               <li>Másold ki a kulcsot, és illeszd be ide. (Ne küldd el e-mailben vagy chatben.)</li>
               <li>Mentés után nyomd meg a „Kapcsolat ellenőrzése” gombot.</li>
             </ol>

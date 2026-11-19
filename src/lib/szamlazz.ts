@@ -228,7 +228,7 @@ export function parseInvoiceResponse(headers: { get(name: string): string | null
 export function explainSzamlazzError(message: string): string | null {
   const m = message.toLowerCase();
   if (m.includes("kulcs") || m.includes("bejelentkez") || m.includes("login") || m.includes("jelszó")) {
-    return "Az Agent-kulcs hibás vagy visszavonták — a cég adatlapján add meg újra (Számlázz.hu → Beállítások → Számla Agent kulcsok).";
+    return "Az Agent-kulcs hibás vagy visszavonták — a cég adatlapján add meg újra (Számlázz.hu → Vezérlőpult → az oldal alján: Számla Agent kulcsok).";
   }
   if (m.includes("irányítószám") || m.includes("irsz") || m.includes("település") || m.includes("cím")) {
     return "A vevő címe hiányos — írd be az irányítószámot, a települést és az utcát.";
