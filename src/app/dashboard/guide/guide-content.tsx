@@ -446,8 +446,10 @@ export function GuideContent() {
               napján). Utána a rendszer minden hónapban magától előkészíti és reggel szól.
             </>,
             <>
-              <b>Számlázás:</b> az Áttekintésen a „Számlát kell kiállítani” listából nyisd meg a tételt, a Számlázz.hu
-              mezőit egy-egy kattintással másold át, végül írd vissza a kapott számlaszámot és nyomd meg a „Kiállítva” gombot.
+              <b>Számlázás:</b> az Áttekintésen a „Számlát kell kiállítani” listából nyisd meg a tételt. Ha a cég adatlapján
+              (<Ref href="/dashboard/finance/companies">Cégek</Ref> → „Számlázz.hu összekötés”) meg van adva az Agent-kulcs, ellenőrizd
+              a vevő címét és nyomd meg a „Számla kiállítása” gombot — a számlaszám és a PDF magától visszakerül. Kulcs nélkül a
+              Számlázz.hu mezőit egy-egy kattintással másold át, végül írd vissza a kapott számlaszámot és nyomd meg a „Kiállítva” gombot.
             </>,
             <>
               <b>Fizetés és bankkivonat:</b> a <Ref href="/dashboard/finance/invoices">Számlák és tételek</Ref> listában a

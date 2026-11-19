@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Repeat } from "lucide-react";
+import { ArrowLeft, Check, Repeat } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteInvoice } from "../../actions";
 import { PaymentStatus } from "../../payment-status";
 import { loadFormOptions } from "../../data";
 import { InvoiceForm } from "../../invoice-form";
-import { SzamlazzPanel } from "../../szamlazz-panel";
+import { SzamlazzPanel, type SzamlazzAuto } from "../../szamlazz-panel";
+import { loadSzamlazzSettings } from "@/lib/szamlazz-server";
+import { defaultVatCode, parseHungarianAddress } from "@/lib/szamlazz";
 import { ConfirmDelete } from "../../confirm-delete";
 import { ReceiptsPanel, type Receipt } from "../../receipts-panel";
 import { ensureCurrentUserProfile } from "@/lib/agency";
@@ -30,10 +32,10 @@ export default async function InvoiceDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ back?: string }>;
+  searchParams: Promise<{ back?: string; issued?: string }>;
 }) {
   const { id } = await params;
-  const { back } = await searchParams;
+  const { back, issued } = await searchParams;
   const backHref = back?.startsWith("/dashboard/finance") ? back : "/dashboard/finance/invoices";
   const supabase = await createClient();
 
@@ -49,8 +51,44 @@ export default async function InvoiceDetailPage({
   const today = todayIso();
   const status = invoiceStatus(inv, today);
   const { data: partner } = inv.partner_id
-    ? await supabase.from("finance_partners").select("tax_number, address").eq("id", inv.partner_id).maybeSingle()
+    ? await supabase.from("finance_partners").select("kind, tax_number, address, contact_email").eq("id", inv.partner_id).maybeSingle()
     : { data: null };
+
+  // Számlázz.hu Agent: csak kiállítandó kimenő számlánál / díjbekérőnél
+  const canIssue = inv.is_planned && inv.direction === "out" && (inv.doc_type === "invoice" || inv.doc_type === "proforma");
+  let szamlazzAuto: SzamlazzAuto | null = null;
+  let showSetupHint = false;
+  if (canIssue) {
+    const settings = await loadSzamlazzSettings(profile.agency_id);
+    const companySettings = settings?.get(inv.company_id);
+    showSetupHint = Boolean(settings) && !companySettings;
+    if (companySettings) {
+      const [{ data: company }, { data: lock }] = await Promise.all([
+        supabase.from("finance_companies").select("name").eq("id", inv.company_id).maybeSingle(),
+        supabase.from("finance_invoices").select("szamlazz_requested_at").eq("id", inv.id).maybeSingle(),
+      ]);
+      const partnerAddress = (partner?.address as string | null) ?? null;
+      const addr = parseHungarianAddress(partnerAddress);
+      szamlazzAuto = {
+        companyName: company?.name ?? "",
+        eInvoice: companySettings.e_invoice,
+        locked: Boolean(lock?.szamlazz_requested_at),
+        docLabel: inv.doc_type === "proforma" ? "díjbekérő" : "számla",
+        grossText: formatMoney(Number(inv.gross_amount), inv.currency),
+        defaults: {
+          buyerName: inv.counterparty_name,
+          zip: addr?.zip ?? "",
+          city: addr?.city ?? "",
+          // Fel nem ismert címnél a teljes szöveg az utca mezőbe kerül, kézzel szétbontható
+          street: addr?.street ?? partnerAddress ?? "",
+          taxNumber: (partner?.tax_number as string | null) ?? inv.counterparty_tax_number ?? "",
+          email: (partner?.contact_email as string | null) ?? "",
+          isPerson: partner?.kind === "person",
+          vatCode: defaultVatCode(inv.vat_rate === null ? null : Number(inv.vat_rate)),
+        },
+      };
+    }
+  }
 
   const vatText = inv.vat_rate === null ? "Nincs ÁFA" : Number(inv.vat_rate) === 0 ? "0% / mentes" : `${Number(inv.vat_rate)}%`;
   const szamlazzFields = [
@@ -91,8 +129,23 @@ export default async function InvoiceDetailPage({
 
       <PaymentStatus inv={inv} today={today} />
 
+      {issued && !inv.is_planned && (
+        <p className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-success-soft px-3 py-1.5 text-sm text-success">
+          <Check className="h-4 w-4" />
+          Kiállítva a Számlázz.hu-n: {issued} — a PDF lent, a csatolmányok között
+        </p>
+      )}
+
       {inv.is_planned && inv.direction === "out" && (
-        <SzamlazzPanel invoiceId={inv.id} fields={szamlazzFields} today={today} />
+        <SzamlazzPanel
+          invoiceId={inv.id}
+          fields={szamlazzFields}
+          today={today}
+          back={backHref}
+          auto={szamlazzAuto}
+          showSetupHint={showSetupHint}
+          companyId={inv.company_id}
+        />
       )}
 
       <ReceiptsPanel agencyId={profile.agency_id} invoiceId={inv.id} receipts={(receiptRows ?? []) as Receipt[]} />

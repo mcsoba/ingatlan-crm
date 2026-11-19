@@ -9,6 +9,8 @@ import { CompanyForm } from "../../company-form";
 import { CompanyPersonForm, type TeamMemberOption } from "../../company-person-form";
 import { CompanyFilesPanel, type CompanyFile } from "../../company-files-panel";
 import { ConfirmDelete } from "../../confirm-delete";
+import { SzamlazzSettingsCard } from "../../szamlazz-settings";
+import { loadSzamlazzSettings } from "@/lib/szamlazz-server";
 import { MigrationNotice, isMissingTable } from "../../migration-notice";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -67,13 +69,15 @@ export default async function CompanyDetailPage({
   if (!data) notFound();
   const company = data as unknown as CompanyDetail;
 
-  const [{ data: peopleRows }, { data: fileRows }, { data: memberRows }, { data: lodgingRows }, { count: invoiceCount }] = await Promise.all([
+  const [{ data: peopleRows }, { data: fileRows }, { data: memberRows }, { data: lodgingRows }, { count: invoiceCount }, szamlazzSettings] = await Promise.all([
     supabase.from("finance_company_people").select(COMPANY_PERSON_SELECT).eq("company_id", id).order("name"),
     supabase.from("finance_company_files").select("id, filename, content_type, path, created_at").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name, company_ids").order("full_name"),
     supabase.from("finance_lodgings").select("id, address").eq("company_id", id).order("address"),
     supabase.from("finance_invoices").select("id", { count: "exact", head: true }).eq("company_id", id),
+    profile.role === "owner" || profile.role === "admin" ? loadSzamlazzSettings(profile.agency_id) : Promise.resolve(null),
   ]);
+  const szamlazz = szamlazzSettings?.get(id) ?? null;
 
   const people = (peopleRows ?? []) as CompanyPersonRow[];
   const members = (memberRows ?? []) as (TeamMemberOption & { company_ids: string[] | null })[];
@@ -192,6 +196,15 @@ export default async function CompanyDetailPage({
           </div>
         </details>
       </Card>
+
+      {/* ---------- Számlázz.hu ---------- */}
+      {(profile.role === "owner" || profile.role === "admin") && (
+        <SzamlazzSettingsCard
+          companyId={company.id}
+          settings={szamlazz && { key_hint: szamlazz.key_hint, invoice_prefix: szamlazz.invoice_prefix, e_invoice: szamlazz.e_invoice }}
+          migrationMissing={szamlazzSettings === null}
+        />
+      )}
 
       {/* ---------- CRM-felhasználók ---------- */}
       <Card id="munkatarsak" className="flex scroll-mt-4 flex-col gap-3 p-5">
