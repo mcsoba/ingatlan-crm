@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, FilePlus2, Landmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import { generateDueInvoices } from "@/lib/finance-server";
 import { LoadSampleButton, SampleDataBanner } from "./sample-buttons";
 import { getSelectedCompanyId } from "@/lib/companies";
@@ -137,12 +138,13 @@ export default async function FinanceOverviewPage({
   const today = todayIso();
   const firstMonth = addMonths(today, -11);
   // Minden cég tételei kellenek a cégenkénti összesítőhöz; a többi blokk a kiválasztott céget mutatja
-  const query = supabase
-    .from("finance_invoices")
-    .select(INVOICE_SELECT)
-    .or(`issue_date.gte.${firstMonth},paid_date.gte.${firstMonth},paid_date.is.null`);
+  const query = () =>
+    supabase
+      .from("finance_invoices")
+      .select(INVOICE_SELECT)
+      .or(`issue_date.gte.${firstMonth},paid_date.gte.${firstMonth},paid_date.is.null`);
   const [{ data }, { data: companyRows }, { count: totalCount }, { count: sampleCount }] = await Promise.all([
-    query.limit(5000),
+    fetchAll<InvoiceRow>(query),
     supabase.from("finance_companies").select("id, name, color").order("sort_order").order("name"),
     supabase.from("finance_invoices").select("id", { count: "exact", head: true }),
     supabase.from("finance_invoices").select("id", { count: "exact", head: true }).eq("notes", SAMPLE_MARKER),

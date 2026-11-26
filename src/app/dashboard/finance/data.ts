@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { INVOICE_SELECT, invoiceStatus, todayIso, type InvoiceRow, type InvoiceStatus } from "@/lib/finance";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export type InvoiceFilters = {
   company?: string;
@@ -31,27 +32,30 @@ function matchesStatus(status: InvoiceStatus, filter: string): boolean {
 export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters): Promise<InvoiceRow[]> {
   const year = Number(f.year) || null;
   const month = Number(f.month) || null;
-
-  let query = supabase.from("finance_invoices").select(INVOICE_SELECT);
-  // "all" = minden cég (felülírja az oldalsávban kiválasztottat)
-  if (f.company && f.company !== "all") query = query.eq("company_id", f.company);
-  if (f.dir === "out" || f.dir === "in") query = query.eq("direction", f.dir);
-  if (f.cat) query = query.eq("category", f.cat);
-  if (year && month) {
-    const mm = String(month).padStart(2, "0");
-    const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
-    query = query.gte("issue_date", `${year}-${mm}-01`).lte("issue_date", `${year}-${mm}-${last}`);
-  } else if (year) {
-    query = query.gte("issue_date", `${year}-01-01`).lte("issue_date", `${year}-12-31`);
-  }
   const q = f.q?.trim().replace(/[%,()]/g, " ");
-  if (q) {
-    query = query.or(
-      ["counterparty_name", "description", "invoice_number", "location", "notes"].map((c) => `${c}.ilike.%${q}%`).join(","),
-    );
-  }
 
-  const { data, error } = await query.order("issue_date", { ascending: false }).limit(3000);
+  const build = () => {
+    let query = supabase.from("finance_invoices").select(INVOICE_SELECT);
+    // "all" = minden cég (felülírja az oldalsávban kiválasztottat)
+    if (f.company && f.company !== "all") query = query.eq("company_id", f.company);
+    if (f.dir === "out" || f.dir === "in") query = query.eq("direction", f.dir);
+    if (f.cat) query = query.eq("category", f.cat);
+    if (year && month) {
+      const mm = String(month).padStart(2, "0");
+      const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+      query = query.gte("issue_date", `${year}-${mm}-01`).lte("issue_date", `${year}-${mm}-${last}`);
+    } else if (year) {
+      query = query.gte("issue_date", `${year}-01-01`).lte("issue_date", `${year}-12-31`);
+    }
+    if (q) {
+      query = query.or(
+        ["counterparty_name", "description", "invoice_number", "location", "notes"].map((c) => `${c}.ilike.%${q}%`).join(","),
+      );
+    }
+    return query.order("issue_date", { ascending: false });
+  };
+
+  const { data, error } = await fetchAll<InvoiceRow>(build);
   if (error) throw error;
   const today = todayIso();
   return ((data ?? []) as InvoiceRow[]).filter((inv) => matchesStatus(invoiceStatus(inv, today), f.status ?? ""));
