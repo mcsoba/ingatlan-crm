@@ -3,6 +3,7 @@ import { ensureCurrentUserProfile } from "@/lib/agency";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { FinanceNav } from "./finance-nav";
+import { TaxAlert } from "./taxes/tax-alert";
 
 // A pénzügyek csak az irodavezetőknek (owner/admin) látszanak — az RLS is ezt érvényesíti.
 export default async function FinanceLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
   return (
     <div className="flex flex-col gap-5">
       <FinanceNav />
+      <TaxAlert />
       {children}
     </div>
   );

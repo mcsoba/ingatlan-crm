@@ -14,6 +14,7 @@ const TABS = [
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
   { href: "/dashboard/finance/payroll", label: "Bér és adók" },
+  { href: "/dashboard/finance/taxes", label: "Adónaptár" },
   { href: "/dashboard/finance/lodgings", label: "Szállások" },
   { href: "/dashboard/finance/companies", label: "Cégek" },
   { href: "/dashboard/finance/import", label: "Fájl feltöltés" },
