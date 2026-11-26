@@ -26,12 +26,15 @@ export function QuickExpenseForm({
   defaultCompanyId,
   partners,
   today,
+  people = [],
 }: {
   agencyId: string;
   companies: { id: string; name: string }[];
   defaultCompanyId?: string | null;
   partners: string[];
   today: string;
+  /** A cégek személyei — készpénzes fizetésnél: ki fizette (Pénztár) */
+  people?: { id: string; name: string; company_id: string }[];
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -41,6 +44,9 @@ export function QuickExpenseForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [paid, setPaid] = useState(true);
+  const [method, setMethod] = useState("card");
+  const [companyId, setCompanyId] = useState(defaultCompanyId ?? companies[0]?.id ?? "");
+  const companyPeople = people.filter((p) => p.company_id === companyId);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -101,7 +107,7 @@ export function QuickExpenseForm({
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Cég">
-            <select name="company_id" required defaultValue={defaultCompanyId ?? companies[0]?.id} className={inputClass}>
+            <select name="company_id" required value={companyId} onChange={(e) => setCompanyId(e.target.value)} className={inputClass}>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -119,7 +125,7 @@ export function QuickExpenseForm({
             </select>
           </Field>
           <Field label="Fizetés módja">
-            <select name="payment_method" defaultValue="card" className={inputClass}>
+            <select name="payment_method" value={method} onChange={(e) => setMethod(e.target.value)} className={inputClass}>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -127,6 +133,18 @@ export function QuickExpenseForm({
               ))}
             </select>
           </Field>
+          {method === "cash" && companyPeople.length > 0 ? (
+            <Field label="Ki fizette? (Pénztár)">
+              <select name="cash_person_id" defaultValue="" className={inputClass}>
+                <option value="">— később adom meg —</option>
+                {companyPeople.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
           <Field label="Számlaszám (ha van)">
             <input name="invoice_number" className={inputClass} />
           </Field>

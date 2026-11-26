@@ -8,6 +8,7 @@ const TABS = [
   { href: "/dashboard/finance", label: "Áttekintés" },
   { href: "/dashboard/finance/income", label: "Bevételek" },
   { href: "/dashboard/finance/expenses", label: "Kiadások" },
+  { href: "/dashboard/finance/cash", label: "Pénztár" },
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
   { href: "/dashboard/finance/payroll", label: "Bér és adók" },

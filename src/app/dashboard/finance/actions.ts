@@ -279,6 +279,8 @@ export async function createQuickExpense(formData: FormData): Promise<string> {
       vat_amount: 0,
       gross_amount: amount,
       notes: text(formData, "notes"),
+      // Pénztár: készpénzes fizetésnél ki fizette (csak ha megadták — a 0049 migráció előtt a mező nem létezik)
+      ...(method === "cash" && text(formData, "cash_person_id") ? { cash_person_id: text(formData, "cash_person_id") } : {}),
     })
     .select("id")
     .single();

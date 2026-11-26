@@ -70,7 +70,12 @@ export default async function ExpensesPage({
   if (paidFilter === "no") query = query.is("paid_date", null);
   if (q) query = query.or(["description", "counterparty_name", "invoice_number", "notes"].map((c) => `${c}.ilike.%${q}%`).join(","));
 
-  const [{ data }, options, { profile }] = await Promise.all([query, loadFormOptions(supabase), ensureCurrentUserProfile()]);
+  const [{ data }, options, { profile }, { data: peopleRows }] = await Promise.all([
+    query,
+    loadFormOptions(supabase),
+    ensureCurrentUserProfile(),
+    supabase.from("finance_company_people").select("id, name, company_id").is("end_date", null).order("name"),
+  ]);
   const expenses = (data ?? []) as InvoiceRow[];
   const companyName = new Map(options.companies.map((c) => [c.id, c.name]));
 
@@ -116,6 +121,7 @@ export default async function ExpensesPage({
           defaultCompanyId={company}
           partners={options.partners}
           today={today}
+          people={(peopleRows ?? []) as { id: string; name: string; company_id: string }[]}
         />
       )}
 
