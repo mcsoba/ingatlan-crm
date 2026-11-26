@@ -44,8 +44,10 @@ export function PaymentStatus({ inv, today }: { inv: InvoiceRow; today: string }
   // Kimenő tervezett tételnél előbb ki kell állítani a számlát (Számlázz.hu panel)
   if (inv.is_planned && inv.direction === "out") return null;
   const isOut = inv.direction === "out";
-  const paidWord = isOut ? "Kiegyenlítve (megérkezett a pénz)" : "Kifizetve";
-  const unpaidWord = isOut ? "Még nem fizették ki nekünk" : "Még nincs kifizetve";
+  // Negatív tétel (sztornó / jóváírás): a pénz visszafelé mozog
+  const refund = Number(inv.gross_amount) < 0;
+  const paidWord = refund ? (isOut ? "Visszafizettük" : "Visszakaptuk") : isOut ? "Kiegyenlítve (megérkezett a pénz)" : "Kifizetve";
+  const unpaidWord = refund ? (isOut ? "Vissza kell fizetnünk" : "Visszajár nekünk") : isOut ? "Még nem fizették ki nekünk" : "Még nincs kifizetve";
   const overdue = !inv.paid_date && inv.due_date && inv.due_date < today;
   const needsBooking = inv.payment_method !== "cash";
 
@@ -59,7 +61,7 @@ export function PaymentStatus({ inv, today }: { inv: InvoiceRow; today: string }
           <div className="min-w-0 flex-1">
             <div className="text-base font-semibold text-success">{paidWord}</div>
             <div className="text-sm text-foreground">
-              {formatDate(inv.paid_date)} · {formatMoney(settledAmount(inv), inv.currency)}
+              {formatDate(inv.paid_date)} · {formatMoney(Math.abs(settledAmount(inv)), inv.currency)}
             </div>
           </div>
           <UndoButton id={inv.id} action="undo_paid" label="Visszavonás" />
@@ -72,7 +74,7 @@ export function PaymentStatus({ inv, today }: { inv: InvoiceRow; today: string }
           <div className="min-w-0 flex-1">
             <div className="text-base font-semibold text-danger">{unpaidWord}</div>
             <div className="text-sm text-foreground">
-              {formatMoney(payableAmount(inv), inv.currency)}
+              {formatMoney(Math.abs(payableAmount(inv)), inv.currency)}
               {inv.due_date && (
                 <span className={overdue ? "font-semibold text-danger" : "text-muted"}>
                   {" "}
@@ -82,7 +84,7 @@ export function PaymentStatus({ inv, today }: { inv: InvoiceRow; today: string }
               )}
             </div>
           </div>
-          <MarkForm id={inv.id} action="paid" label={isOut ? "Megérkezett" : "Kifizettük"} today={today} />
+          <MarkForm id={inv.id} action="paid" label={refund ? (isOut ? "Visszafizettük" : "Visszakaptuk") : isOut ? "Megérkezett" : "Kifizettük"} today={today} />
         </div>
       )}
 

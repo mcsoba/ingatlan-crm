@@ -150,7 +150,8 @@ export default async function InvoiceDetailPage({
         </p>
       )}
 
-      {cancelled ? (
+      {/* Sztornó (negatív) tételnél a visszafizetés látszik és visszavonható; az eredetinél csak a tény */}
+      {cancelled && gross >= 0 ? (
         <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
           <strong className="text-foreground">Sztornózva</strong> — ehhez a tételhez nem tartozik fizetés vagy banki könyvelés (az eredeti és a sztornó kiegyenlíti egymást).
         </p>
