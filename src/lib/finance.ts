@@ -56,6 +56,16 @@ export const EXPENSE_CATEGORY_VALUES = ["supplies", "service", "machine", "bank"
 // Bevételek (a Bevételek fül gyors rögzítése) — számlával vagy anélkül befolyó pénz
 export const INCOME_CATEGORY_VALUES = ["rent", "utility", "deposit", "commission", "service", "machine", "loan", "other"] as const;
 
+/**
+ * Nem bevétel / költség, csak pénzmozgás: a kp felvétel / befizetés belső átvezetés (bank ↔ pénztár,
+ * a belőle fizetett blokkok már költségek), a tagi kölcsön pedig követelés a taggal szemben.
+ * Az összesítők (Áttekintés, Kiadások) ezeket nem számolják bele a bevételbe / kiadásba.
+ */
+export const NON_PL_CATEGORIES = ["cash", "loan"] as const;
+export function isProfitAndLoss(inv: { category: string }): boolean {
+  return !(NON_PL_CATEGORIES as readonly string[]).includes(inv.category);
+}
+
 export function categoryLabel(value: string): string {
   return CATEGORIES.find((c) => c.value === value)?.label ?? value;
 }

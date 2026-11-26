@@ -23,6 +23,7 @@ import {
   formatDate,
   formatMoney,
   settledAmount,
+  isProfitAndLoss,
   todayIso,
   type Currency,
   type InvoiceRow,
@@ -88,8 +89,14 @@ export default async function ExpensesPage({
 
   const totals = new Map<Currency, number>();
   const byCompany = new Map<string, number>();
+  // A kp felvétel és a tagi kölcsön a listában marad, de nem költség — külön összegezzük
+  const nonCost = new Map<string, number>();
   for (const e of expenses) {
     const amount = settledAmount(e);
+    if (!isProfitAndLoss(e)) {
+      if (e.currency === "HUF") nonCost.set(e.category, (nonCost.get(e.category) ?? 0) + amount);
+      continue;
+    }
     totals.set(e.currency, (totals.get(e.currency) ?? 0) + amount);
     if (e.currency === "HUF") byCompany.set(e.company_id, (byCompany.get(e.company_id) ?? 0) + amount);
   }
@@ -140,7 +147,12 @@ export default async function ExpensesPage({
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {[...totals.entries()].map(([cur, sum]) => (
             <span key={cur} className="font-semibold tabular-nums">
-              Összesen: {formatMoney(sum, cur)}
+              Költség összesen: {formatMoney(sum, cur)}
+            </span>
+          ))}
+          {[...nonCost.entries()].map(([cat, sum]) => (
+            <span key={cat} className="tabular-nums text-muted" title="Nem költség: belső átvezetés vagy követelés">
+              + {cat === "cash" ? "kp felvétel" : "tagi kölcsön"}: {formatMoney(sum)}
             </span>
           ))}
           {unpaidCount > 0 && <Badge variant="danger">{unpaidCount} nincs kifizetve</Badge>}

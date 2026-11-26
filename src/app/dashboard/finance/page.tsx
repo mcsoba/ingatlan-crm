@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { loadInvoiceExtras } from "@/lib/finance-extras";
+import { CASH_INVOICE_SELECT, cashBalances, cashEffect, type CashInvoice, type CashTransfer } from "@/lib/finance-cash";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, FilePlus2, Landmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/supabase/fetch-all";
@@ -19,6 +20,7 @@ import {
   payableAmount,
   settledAmount,
   szjaAmount,
+  isProfitAndLoss,
   todayIso,
   SAMPLE_MARKER,
   type InvoiceRow,
@@ -196,8 +198,9 @@ export default async function FinanceOverviewPage({
   // Havi pénzmozgás a kifizetés dátuma szerint (forintban)
   const months = Array.from({ length: 12 }, (_, k) => addMonths(firstMonth, k).slice(0, 7));
   const monthly = new Map(months.map((m) => [m, { income: 0, expense: 0, szja: 0 }]));
+  // A kp felvétel / befizetés (belső átvezetés) és a tagi kölcsön (követelés) nem bevétel / kiadás; a sztornó-párok sem
   for (const inv of huf) {
-    if (!inv.paid_date) continue;
+    if (!inv.paid_date || !isProfitAndLoss(inv) || extras.cancelled.has(inv.id)) continue;
     const m = monthly.get(inv.paid_date.slice(0, 7));
     if (!m) continue;
     if (inv.direction === "out") m.income += settledAmount(inv);
@@ -213,13 +216,27 @@ export default async function FinanceOverviewPage({
   const year = today.slice(0, 4);
   const byCompany = new Map(companies.map((c) => [c.id, { income: 0, expense: 0 }]));
   for (const inv of everything) {
-    if (inv.currency !== "HUF" || !inv.paid_date?.startsWith(year)) continue;
+    if (inv.currency !== "HUF" || !inv.paid_date?.startsWith(year) || !isProfitAndLoss(inv) || extras.cancelled.has(inv.id)) continue;
     const row = byCompany.get(inv.company_id);
     if (!row) continue;
     if (inv.direction === "out") row.income += settledAmount(inv);
     else row.expense += settledAmount(inv);
   }
   const maxCompany = Math.max(1, ...[...byCompany.values()].flatMap((v) => [v.income, v.expense]));
+
+  // Elszámolatlan készpénz (Pénztár): a felvett, de blokkal / befizetéssel el nem számolt pénz — ha
+  // ebből fizettek valamit, az még nem szerepel a kiadások között. A 0049 előtt üres.
+  const cashQuery = () => {
+    const q = supabase.from("finance_invoices").select(CASH_INVOICE_SELECT).or("category.eq.cash,payment_method.eq.cash");
+    return company ? q.eq("company_id", company) : q;
+  };
+  const trQuery = supabase.from("finance_cash_transfers").select("id, company_id, transfer_date, amount, currency, from_person_id, to_person_id, note");
+  const [cashRes, trRes] = await Promise.all([fetchAll<CashInvoice>(cashQuery), company ? trQuery.eq("company_id", company) : trQuery]);
+  const cashOut =
+    cashRes.error || trRes.error
+      ? 0
+      : [...cashBalances(cashRes.data.filter((i) => cashEffect(i)), (trRes.data ?? []) as CashTransfer[]).values()].reduce((s, b) => s + b.balance, 0) +
+        cashRes.data.filter((i) => !i.cash_person_id && i.currency === "HUF").reduce((s, i) => s + (cashEffect(i)?.amount ?? 0), 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -393,6 +410,12 @@ export default async function FinanceOverviewPage({
               </tbody>
             </table>
           </div>
+          <p className="text-xs text-muted">A kp felvétel / befizetés (bank ↔ pénztár) és a tagi kölcsön nem számít bevételnek vagy kiadásnak — a bankszámla teljes mozgása a Havi pénzmozgás fülön.</p>
+          {cashOut > 100_000 && (
+            <Link href={`/dashboard/finance/cash${company ? `?company=${company}` : ""}`} className="rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs text-warning">
+              <strong>Elszámolatlan készpénz: {formatMoney(cashOut)}</strong> — felvett pénz, amiről nincs blokk vagy befizetés. Ha ebből fizettetek (bér, bérleti díj, beszerzés), az még nem szerepel a kiadások között, így a fenti egyenleg ennyivel jobbnak látszik. → Pénztár
+            </Link>
+          )}
           {hasEur && <p className="text-xs text-muted">Az euróban rögzített tételek nem szerepelnek a forintos összesítőkben.</p>}
         </Card>
 
