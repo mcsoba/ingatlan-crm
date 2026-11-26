@@ -6,6 +6,7 @@ import { getSelectedCompanyId, listCompanies } from "@/lib/companies";
 import { deleteInvoiceRow, markInvoice } from "../actions";
 import { RowDelete } from "../row-delete";
 import { STATUS_FILTERS, loadInvoices, type InvoiceFilters } from "../data";
+import { loadInvoiceExtras } from "@/lib/finance-extras";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +109,8 @@ export default async function FinanceInvoicesPage({
   };
   const supabase = await createClient();
   await generateDueInvoices(supabase);
-  const [invoices, companies] = await Promise.all([loadInvoices(supabase, filters), listCompanies()]);
+  const extras = await loadInvoiceExtras(supabase);
+  const [invoices, companies] = await Promise.all([loadInvoices(supabase, filters, extras), listCompanies()]);
   const companyName = new Map(companies.map((c) => [c.id, c.name]));
   const today = todayIso();
   const listPath = `/dashboard/finance/invoices${query(filters, {})}`;
@@ -117,7 +119,7 @@ export default async function FinanceInvoicesPage({
   for (const inv of invoices) {
     const t = totals.get(inv.currency) ?? { gross: 0, open: 0 };
     t.gross += Number(inv.gross_amount);
-    if (!inv.paid_date) t.open += payableAmount(inv);
+    if (!inv.paid_date && !extras.cancelled.has(inv.id)) t.open += payableAmount(inv) - (extras.paidSoFar.get(inv.id) ?? 0);
     totals.set(inv.currency, t);
   }
 
@@ -248,7 +250,7 @@ export default async function FinanceInvoicesPage({
             </thead>
             <tbody>
               {invoices.map((inv) => {
-                const status = invoiceStatus(inv, today);
+                const status = invoiceStatus(inv, today, extras);
                 const href = `/dashboard/finance/invoices/${inv.id}?back=${encodeURIComponent(listPath)}`;
                 return (
                   <tr key={inv.id} className="border-b border-border-subtle align-top last:border-0 hover:bg-background/60">

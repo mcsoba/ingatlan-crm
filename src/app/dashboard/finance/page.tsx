@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { loadInvoiceExtras } from "@/lib/finance-extras";
 import { AlertTriangle, ArrowDownLeft, ArrowUpRight, FilePlus2, Landmark } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/supabase/fetch-all";
@@ -133,6 +134,7 @@ export default async function FinanceOverviewPage({
 }) {
   const company = (await searchParams).company ?? (await getSelectedCompanyId()) ?? undefined;
   const supabase = await createClient();
+  const extras = await loadInvoiceExtras(supabase);
   await generateDueInvoices(supabase);
 
   const today = todayIso();
@@ -183,9 +185,10 @@ export default async function FinanceOverviewPage({
   const payables = all
     .filter((i) => i.direction === "in" && !i.paid_date)
     .sort((a, b) => (a.due_date ?? a.issue_date).localeCompare(b.due_date ?? b.issue_date));
-  const toBook = all.filter((i) => invoiceStatus(i, today) === "paid");
+  const toBook = all.filter((i) => invoiceStatus(i, today, extras) === "paid");
 
-  const sumHuf = (items: InvoiceRow[]) => items.filter((i) => i.currency === "HUF").reduce((s, i) => s + payableAmount(i), 0);
+  // Részletfizetésnél csak a hátralék számít
+  const sumHuf = (items: InvoiceRow[]) => items.filter((i) => i.currency === "HUF").reduce((s, i) => s + payableAmount(i) - (extras.paidSoFar.get(i.id) ?? 0), 0);
   const overdueReceivables = receivables.filter((i) => i.due_date && i.due_date < today);
   const overduePayables = payables.filter((i) => i.due_date && i.due_date < today);
   const payablesSoon = payables.filter((i) => (i.due_date ?? i.issue_date) <= addDays(today, 7));

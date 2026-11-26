@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnerOrAdmin } from "@/lib/agency";
 import { loadInvoices, type InvoiceFilters } from "../data";
+import { loadInvoiceExtras } from "@/lib/finance-extras";
 import { getSelectedCompanyId } from "@/lib/companies";
 import {
   DOC_TYPE_LABELS,
@@ -33,8 +34,9 @@ export async function GET(request: Request) {
     company: params.company ?? (await getSelectedCompanyId()) ?? undefined,
     year: params.year ?? String(new Date().getFullYear()),
   };
+  const extras = await loadInvoiceExtras(supabase);
   const [invoices, { data: companies }] = await Promise.all([
-    loadInvoices(supabase, filters),
+    loadInvoices(supabase, filters, extras),
     supabase.from("finance_companies").select("id, name"),
   ]);
   const companyName = new Map((companies ?? []).map((c) => [c.id as string, c.name as string]));
@@ -72,7 +74,7 @@ export async function GET(request: Request) {
     inv.szja_withheld ? "igen" : "",
     num(payableAmount(inv)),
     num(inv.paid_amount),
-    statusLabel(invoiceStatus(inv, today), inv.direction),
+    statusLabel(invoiceStatus(inv, today, extras), inv.direction),
     inv.notes,
   ]);
 

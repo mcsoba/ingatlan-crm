@@ -10,6 +10,7 @@ import { SzamlazzPanel, type SzamlazzAuto } from "../../szamlazz-panel";
 import { loadSzamlazzSettings } from "@/lib/szamlazz-server";
 import { defaultVatCode, parseHungarianAddress } from "@/lib/szamlazz";
 import { ConfirmDelete } from "../../confirm-delete";
+import { CorrectionPanel, PaymentsPanel, type LinkedInvoice, type PaymentRow } from "../../storno-panels";
 import { ReceiptsPanel, type Receipt } from "../../receipts-panel";
 import { ensureCurrentUserProfile } from "@/lib/agency";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,6 +23,7 @@ import {
   formatMoney,
   formatPeriod,
   invoiceStatus,
+  payableAmount,
   statusLabel,
   todayIso,
   type InvoiceRow,
@@ -49,7 +51,27 @@ export default async function InvoiceDetailPage({
   if (!data) notFound();
   const inv = data as InvoiceRow;
   const today = todayIso();
-  const status = invoiceStatus(inv, today);
+  // Sztornó-kapcsolat és részletfizetés (0050) — a migráció előtt ezek a lekérdezések hibát adnak, ilyenkor nincs panel
+  const LINKED = "id, invoice_number, issue_date, gross_amount, description";
+  const [payRes, selfRes, byRes] = await Promise.all([
+    supabase.from("finance_payments").select("id, paid_date, amount, payment_method, note").eq("invoice_id", id).order("paid_date"),
+    supabase.from("finance_invoices").select("corrects_invoice_id").eq("id", id).maybeSingle(),
+    supabase.from("finance_invoices").select(LINKED).eq("corrects_invoice_id", id).order("issue_date"),
+  ]);
+  const extrasReady = !payRes.error && !selfRes.error;
+  const payments = (payRes.data ?? []) as PaymentRow[];
+  const correctedBy = (byRes.data ?? []) as LinkedInvoice[];
+  const correctsId = (selfRes.data?.corrects_invoice_id as string | null | undefined) ?? null;
+  const [{ data: correctsRow }, { data: candidateRows }] = await Promise.all([
+    correctsId ? supabase.from("finance_invoices").select(LINKED).eq("id", correctsId).maybeSingle() : Promise.resolve({ data: null }),
+    extrasReady && !correctsId && Number(inv.gross_amount) <= 0
+      ? supabase.from("finance_invoices").select(LINKED).eq("direction", inv.direction).eq("counterparty_name", inv.counterparty_name).gt("gross_amount", 0).neq("id", id).order("issue_date", { ascending: false }).limit(30)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const gross = Number(inv.gross_amount);
+  const cancelled = correctedBy.some((c) => Number(c.gross_amount) < 0) || (Boolean(correctsId) && gross <= 0);
+  const paidSoFar = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const status = invoiceStatus(inv, today, { cancelled: new Set(cancelled ? [inv.id] : []), paidSoFar: new Map([[inv.id, paidSoFar]]) });
   const { data: partner } = inv.partner_id
     ? await supabase.from("finance_partners").select("kind, tax_number, address, contact_email").eq("id", inv.partner_id).maybeSingle()
     : { data: null };
@@ -128,6 +150,32 @@ export default async function InvoiceDetailPage({
       )}
 
       <PaymentStatus inv={inv} today={today} />
+
+      {extrasReady && !(inv.is_planned && inv.direction === "out") && !cancelled && gross > 0 && (
+        <PaymentsPanel
+          invoiceId={inv.id}
+          payable={payableAmount(inv)}
+          currency={inv.currency}
+          payments={payments}
+          defaultMethod={inv.payment_method}
+          today={today}
+          settledWithoutParts={Boolean(inv.paid_date) && payments.length === 0}
+        />
+      )}
+
+      {extrasReady && (
+        <CorrectionPanel
+          invoiceId={inv.id}
+          gross={gross}
+          currency={inv.currency}
+          isPlanned={inv.is_planned}
+          correctedBy={correctedBy}
+          corrects={(correctsRow as LinkedInvoice | null) ?? null}
+          candidates={(candidateRows ?? []) as LinkedInvoice[]}
+          today={today}
+          back={backHref}
+        />
+      )}
 
       {issued && !inv.is_planned && (
         <p className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-success-soft px-3 py-1.5 text-sm text-success">

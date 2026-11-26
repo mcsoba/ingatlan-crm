@@ -7,7 +7,7 @@ export type DocType = "invoice" | "proforma" | "none";
 export type PaymentMethod = "transfer" | "card" | "cash";
 export type Currency = "HUF" | "EUR";
 export type Frequency = "monthly" | "quarterly" | "yearly" | "once";
-export type InvoiceStatus = "planned" | "open" | "overdue" | "paid" | "done";
+export type InvoiceStatus = "planned" | "open" | "partial" | "overdue" | "paid" | "done" | "cancelled";
 
 export const DIRECTION_LABELS: Record<Direction, string> = {
   out: "Kimenő (bevétel)",
@@ -311,12 +311,21 @@ export function formatPeriod(start: string | null, end: string | null): string {
 
 // ---------- státusz ----------
 
-export function invoiceStatus(inv: Pick<InvoiceRow, "is_planned" | "paid_date" | "bank_booked_date" | "payment_method" | "due_date">, today = todayIso()): InvoiceStatus {
+/** A sztornó-kapcsolatok / részletfizetések (lib/finance-extras) — opcionális, nélküle a régi működés. */
+export type StatusExtras = { cancelled: Set<string>; paidSoFar: Map<string, number> };
+
+export function invoiceStatus(
+  inv: Pick<InvoiceRow, "is_planned" | "paid_date" | "bank_booked_date" | "payment_method" | "due_date"> & { id?: string },
+  today = todayIso(),
+  extras?: StatusExtras,
+): InvoiceStatus {
+  if (inv.id && extras?.cancelled.has(inv.id)) return "cancelled";
   if (inv.is_planned) return "planned";
   if (inv.paid_date) {
     // Készpénznél nincs banki könyvelés, a kifizetés a végállapot
     return inv.bank_booked_date || inv.payment_method === "cash" ? "done" : "paid";
   }
+  if (inv.id && (extras?.paidSoFar.get(inv.id) ?? 0) > 0) return "partial";
   if (inv.due_date && inv.due_date < today) return "overdue";
   return "open";
 }
@@ -333,6 +342,10 @@ export function statusLabel(status: InvoiceStatus, direction: Direction): string
       return "Fizetve, könyvelésre vár";
     case "done":
       return "Rendezve";
+    case "partial":
+      return "Részben fizetve";
+    case "cancelled":
+      return "Sztornózva";
   }
 }
 
@@ -342,6 +355,8 @@ export const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "accent" | "succe
   overdue: "danger",
   paid: "neutral",
   done: "success",
+  partial: "warning",
+  cancelled: "neutral",
 };
 
 // ---------- számla-törzs időszakai ----------

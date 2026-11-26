@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { INVOICE_SELECT, invoiceStatus, todayIso, type InvoiceRow, type InvoiceStatus } from "@/lib/finance";
+import { INVOICE_SELECT, invoiceStatus, todayIso, type InvoiceRow, type InvoiceStatus, type StatusExtras } from "@/lib/finance";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export type InvoiceFilters = {
@@ -20,16 +20,19 @@ export const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: "overdue", label: "Lejárt" },
   { value: "paid", label: "Fizetve, könyvelésre vár" },
   { value: "done", label: "Rendezve" },
+  { value: "partial", label: "Részben fizetve" },
+  { value: "cancelled", label: "Sztornózva" },
 ];
 
 function matchesStatus(status: InvoiceStatus, filter: string): boolean {
   if (!filter) return true;
-  if (filter === "todo") return status !== "done";
+  if (filter === "todo") return status !== "done" && status !== "cancelled";
+  if (filter === "open") return status === "open" || status === "partial";
   return status === filter;
 }
 
 /** Szűrt tétellista (a Számlák oldal és a CSV-export közös forrása). */
-export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters): Promise<InvoiceRow[]> {
+export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters, extras?: StatusExtras): Promise<InvoiceRow[]> {
   const year = Number(f.year) || null;
   const month = Number(f.month) || null;
   const q = f.q?.trim().replace(/[%,()]/g, " ");
@@ -58,7 +61,7 @@ export async function loadInvoices(supabase: SupabaseClient, f: InvoiceFilters):
   const { data, error } = await fetchAll<InvoiceRow>(build);
   if (error) throw error;
   const today = todayIso();
-  return ((data ?? []) as InvoiceRow[]).filter((inv) => matchesStatus(invoiceStatus(inv, today), f.status ?? ""));
+  return ((data ?? []) as InvoiceRow[]).filter((inv) => matchesStatus(invoiceStatus(inv, today, extras), f.status ?? ""));
 }
 
 export async function loadFormOptions(supabase: SupabaseClient) {

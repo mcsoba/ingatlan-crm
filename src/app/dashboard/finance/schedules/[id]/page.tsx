@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { loadInvoiceExtras } from "@/lib/finance-extras";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,7 @@ export default async function ScheduleDetailPage({
   const { id } = await params;
   const { from_lodging: fromLodging } = await searchParams;
   const supabase = await createClient();
+  const extras = await loadInvoiceExtras(supabase);
   const [{ data }, { data: invoiceData }, options] = await Promise.all([
     supabase.from("finance_schedules").select(SCHEDULE_SELECT).eq("id", id).maybeSingle(),
     supabase.from("finance_invoices").select(INVOICE_SELECT).eq("schedule_id", id).order("period_start", { ascending: false }).limit(24),
@@ -71,7 +73,7 @@ export default async function ScheduleDetailPage({
           <h2 className="text-sm font-semibold text-foreground">Ebből a törzsből készült tételek</h2>
           <Card className="divide-y divide-border-subtle p-0">
             {invoices.map((inv) => {
-              const status = invoiceStatus(inv, today);
+              const status = invoiceStatus(inv, today, extras);
               return (
                 <Link
                   key={inv.id}

@@ -217,6 +217,8 @@ export async function markInvoice(formData: FormData) {
     }
     case "undo_paid":
       update = { paid_date: null, paid_amount: null, bank_booked_date: null };
+      // a részletek is mennek (különben a tétel „részben fizetve” maradna); a 0050 előtt a tábla nincs — hiba nem számít
+      await supabase.from("finance_payments").delete().eq("invoice_id", id);
       break;
     case "undo_booked":
       update = { bank_booked_date: null };

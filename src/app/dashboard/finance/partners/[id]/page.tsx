@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { loadInvoiceExtras } from "@/lib/finance-extras";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Home } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -31,6 +32,7 @@ export default async function PartnerDetailPage({
   const { id } = await params;
   const { saved } = await searchParams;
   const supabase = await createClient();
+  const extras = await loadInvoiceExtras(supabase);
   const [{ data }, { data: lodgings }, { data: invoiceRows }] = await Promise.all([
     supabase.from("finance_partners").select(PARTNER_SELECT).eq("id", id).maybeSingle(),
     supabase
@@ -92,7 +94,7 @@ export default async function PartnerDetailPage({
               <p className="px-4 py-4 text-sm text-muted">Még nincs hozzá kapcsolt tétel.</p>
             ) : (
               invoices.map((inv) => {
-                const status = invoiceStatus(inv, today);
+                const status = invoiceStatus(inv, today, extras);
                 return (
                   <Link
                     key={inv.id}
