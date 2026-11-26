@@ -22,8 +22,8 @@ export const NO_EXTRAS: InvoiceExtras = { cancelled: new Set(), correctedBy: new
 
 export async function loadInvoiceExtras(supabase: SupabaseClient): Promise<InvoiceExtras> {
   const [links, payments] = await Promise.all([
-    fetchAll<{ id: string; corrects_invoice_id: string; gross_amount: number }>(() =>
-      supabase.from("finance_invoices").select("id, corrects_invoice_id, gross_amount").not("corrects_invoice_id", "is", null),
+    fetchAll<{ id: string; corrects_invoice_id: string; gross_amount: number; paid_date: string | null }>(() =>
+      supabase.from("finance_invoices").select("id, corrects_invoice_id, gross_amount, paid_date").not("corrects_invoice_id", "is", null),
     ),
     fetchAll<{ invoice_id: string; amount: number }>(() => supabase.from("finance_payments").select("id, invoice_id, amount")),
   ]);
@@ -32,9 +32,10 @@ export async function loadInvoiceExtras(supabase: SupabaseClient): Promise<Invoi
   for (const l of links.data) {
     extras.corrects.set(l.id, l.corrects_invoice_id);
     extras.correctedBy.set(l.corrects_invoice_id, [...(extras.correctedBy.get(l.corrects_invoice_id) ?? []), l.id]);
-    // Negatív (sztornó) számla: az eredeti és a sztornó is érvénytelen; 0 Ft-os helyesbítő: csak önmaga
+    // Negatív (sztornó) számla: az eredeti érvénytelen. Maga a sztornó csak akkor lezárt, ha rendezett —
+    // ha az eredetit már kifizették, a sztornó nyitott marad (a pénz visszajár). 0 Ft-os helyesbítő: csak önmaga.
     if (Number(l.gross_amount) < 0) extras.cancelled.add(l.corrects_invoice_id);
-    if (Number(l.gross_amount) <= 0) extras.cancelled.add(l.id);
+    if (Number(l.gross_amount) === 0 || (Number(l.gross_amount) < 0 && l.paid_date)) extras.cancelled.add(l.id);
   }
   if (!payments.error) for (const p of payments.data) extras.paidSoFar.set(p.invoice_id, (extras.paidSoFar.get(p.invoice_id) ?? 0) + Number(p.amount));
   return extras;

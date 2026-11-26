@@ -69,7 +69,8 @@ export default async function InvoiceDetailPage({
       : Promise.resolve({ data: [] }),
   ]);
   const gross = Number(inv.gross_amount);
-  const cancelled = correctedBy.some((c) => Number(c.gross_amount) < 0) || (Boolean(correctsId) && gross <= 0);
+  // Sztornózott eredeti; a sztornó maga csak rendezve lezárt (kifizetett eredetinél nyitott: visszajár a pénz)
+  const cancelled = correctedBy.some((c) => Number(c.gross_amount) < 0) || (Boolean(correctsId) && (gross === 0 || (gross < 0 && Boolean(inv.paid_date))));
   const paidSoFar = payments.reduce((s, p) => s + Number(p.amount), 0);
   const status = invoiceStatus(inv, today, { cancelled: new Set(cancelled ? [inv.id] : []), paidSoFar: new Map([[inv.id, paidSoFar]]) });
   const { data: partner } = inv.partner_id
