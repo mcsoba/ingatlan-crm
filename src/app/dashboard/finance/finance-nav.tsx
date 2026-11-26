@@ -10,6 +10,7 @@ const TABS = [
   { href: "/dashboard/finance/expenses", label: "Kiadások" },
   { href: "/dashboard/finance/cash", label: "Pénztár" },
   { href: "/dashboard/finance/cashflow", label: "Havi pénzmozgás" },
+  { href: "/dashboard/finance/plan", label: "Havi terv" },
   { href: "/dashboard/finance/loans", label: "Tagi kölcsön" },
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
