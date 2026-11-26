@@ -74,6 +74,7 @@ export function DoneButton({ obligationId, nominal, done, defaultAmount }: { obl
 export function ObligationForm({ companyId, obligation }: { companyId: string; obligation?: TaxObligation }) {
   const { isPending, error, run } = useRun();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isMonthly = obligation ? obligation.schedule.startsWith("monthly") : false;
   const [mode, setMode] = useState<"monthly" | "fixed">(isMonthly ? "monthly" : "fixed");
   const rest = obligation?.schedule.split(":")[1] ?? "";
@@ -84,9 +85,21 @@ export function ObligationForm({ companyId, obligation }: { companyId: string; o
         <button type="button" title="Szerkesztés" onClick={() => setOpen(true)} className="rounded p-1 text-muted hover:text-foreground">
           <Pencil className="h-3.5 w-3.5" />
         </button>
-        <button type="button" title="Törlés" disabled={isPending} onClick={() => run(() => deleteTaxObligation(obligation.id))} className="rounded p-1 text-muted hover:bg-danger/10 hover:text-danger">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        {confirmDelete ? (
+          <span className="flex items-center gap-1.5 text-xs">
+            <span className="text-muted">Törlöd a teljesítésekkel együtt?</span>
+            <button type="button" disabled={isPending} onClick={() => run(() => deleteTaxObligation(obligation.id))} className="rounded bg-danger px-1.5 py-0.5 font-medium text-white">
+              Igen
+            </button>
+            <button type="button" onClick={() => setConfirmDelete(false)} className="text-muted">
+              Nem
+            </button>
+          </span>
+        ) : (
+          <button type="button" title="Törlés" onClick={() => setConfirmDelete(true)} className="rounded p-1 text-muted hover:bg-danger/10 hover:text-danger">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </span>
     ) : (
       <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
