@@ -3,7 +3,7 @@ import { markInvoice } from "./actions";
 import { inputClass } from "@/components/ui/styles";
 import { formatDate, formatMoney, payableAmount, settledAmount, type InvoiceRow } from "@/lib/finance";
 
-function UndoButton({ id, action, label }: { id: string; action: "undo_paid" | "undo_booked"; label: string }) {
+export function UndoButton({ id, action, label }: { id: string; action: "undo_paid" | "undo_booked"; label: string }) {
   return (
     <form action={markInvoice}>
       <input type="hidden" name="id" value={id} />

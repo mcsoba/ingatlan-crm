@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Repeat } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { deleteInvoice } from "../../actions";
-import { PaymentStatus } from "../../payment-status";
+import { PaymentStatus, UndoButton } from "../../payment-status";
 import { loadFormOptions } from "../../data";
 import { InvoiceForm } from "../../invoice-form";
 import { SzamlazzPanel, type SzamlazzAuto } from "../../szamlazz-panel";
@@ -150,11 +150,14 @@ export default async function InvoiceDetailPage({
         </p>
       )}
 
-      {/* Sztornó (negatív) tételnél a visszafizetés látszik és visszavonható; az eredetinél csak a tény */}
-      {cancelled && gross >= 0 ? (
-        <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
-          <strong className="text-foreground">Sztornózva</strong> — ehhez a tételhez nem tartozik fizetés vagy banki könyvelés (az eredeti és a sztornó kiegyenlíti egymást).
-        </p>
+      {/* Lezárt sztornó-pár: csak a tény (a nyitott sztornónál a fizetési kártya „Visszajár…” szöveggel látszik) */}
+      {cancelled ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
+          <span className="flex-1">
+            <strong className="text-foreground">Sztornózva</strong> — az eredeti és a sztornó kiegyenlíti egymást, nyitott fizetés nincs.
+          </span>
+          {gross < 0 && inv.paid_date && <UndoButton id={inv.id} action="undo_paid" label="Rendezés visszavonása" />}
+        </div>
       ) : (
         <PaymentStatus inv={inv} today={today} />
       )}
