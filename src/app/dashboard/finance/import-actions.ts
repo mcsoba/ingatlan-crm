@@ -10,7 +10,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * A tárolóhoz csak a szerver fér hozzá (service role) — a jogosultságot itt ellenőrizzük.
  */
 const BUCKET = "finance-imports";
-const ALLOWED = /.(xlsx|xlsm|xls|csv|txt|pdf|sta|mt940|xml)$/i;
+const ALLOWED = /\.(xlsx|xlsm|xls|csv|txt|pdf|sta|mt940|xml)$/i;
 
 export async function createImportUpload(filename: string) {
   const profile = await requireOwnerOrAdmin();
