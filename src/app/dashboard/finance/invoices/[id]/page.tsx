@@ -149,7 +149,13 @@ export default async function InvoiceDetailPage({
         </p>
       )}
 
-      <PaymentStatus inv={inv} today={today} />
+      {cancelled ? (
+        <p className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
+          <strong className="text-foreground">Sztornózva</strong> — ehhez a tételhez nem tartozik fizetés vagy banki könyvelés (az eredeti és a sztornó kiegyenlíti egymást).
+        </p>
+      ) : (
+        <PaymentStatus inv={inv} today={today} />
+      )}
 
       {extrasReady && !(inv.is_planned && inv.direction === "out") && !cancelled && gross > 0 && (
         <PaymentsPanel

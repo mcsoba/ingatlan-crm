@@ -200,7 +200,7 @@ export default async function MachinesPage({ searchParams }: { searchParams: Pro
                       <td className="px-2 py-1.5 text-right tabular-nums">{d.paid ? formatMoney(d.paid) : "—"}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums">{d.received ? formatMoney(d.received) : "—"}</td>
                       <td className="px-4 py-1.5 text-right font-medium tabular-nums">
-                        {d.paid - d.received > 0 ? `nálunk jár vissza ${formatMoney(d.paid - d.received)}` : d.received - d.paid > 0 ? `mi tartjuk ${formatMoney(d.received - d.paid)}` : "rendezve"}
+                        {d.paid - d.received > 0 ? `nekünk jár vissza ${formatMoney(d.paid - d.received)}` : d.received - d.paid > 0 ? `mi tartjuk ${formatMoney(d.received - d.paid)}` : "rendezve"}
                       </td>
                     </tr>
                   ))}

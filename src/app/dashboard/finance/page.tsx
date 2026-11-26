@@ -180,11 +180,13 @@ export default async function FinanceOverviewPage({
   const huf = all.filter((i) => i.currency === "HUF");
   const hasEur = all.some((i) => i.currency === "EUR");
 
-  const toIssue = all.filter((i) => i.direction === "out" && i.is_planned).sort((a, b) => a.issue_date.localeCompare(b.issue_date));
-  const receivables = all
+  // A sztornózott tételek (és sztornóik) nem teendők
+  const live = all.filter((i) => !extras.cancelled.has(i.id));
+  const toIssue = live.filter((i) => i.direction === "out" && i.is_planned).sort((a, b) => a.issue_date.localeCompare(b.issue_date));
+  const receivables = live
     .filter((i) => i.direction === "out" && !i.is_planned && !i.paid_date)
     .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""));
-  const payables = all
+  const payables = live
     .filter((i) => i.direction === "in" && !i.paid_date)
     .sort((a, b) => (a.due_date ?? a.issue_date).localeCompare(b.due_date ?? b.issue_date));
   const toBook = all.filter((i) => invoiceStatus(i, today, extras) === "paid");
