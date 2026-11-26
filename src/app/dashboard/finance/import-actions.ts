@@ -15,7 +15,13 @@ const ALLOWED = /\.(xlsx|xlsm|xls|csv)$/i;
 export async function createImportUpload(filename: string) {
   const profile = await requireOwnerOrAdmin();
   if (!ALLOWED.test(filename)) throw new Error("Csak Excel (.xlsx, .xls) vagy CSV fájl tölthető fel");
-  const safe = filename.replace(/[^\w.\-áéíóöőúüűÁÉÍÓÖŐÚÜŰ]+/g, "_").slice(-100);
+  // A tároló csak ASCII kulcsot fogad el („Invalid key”): ékezetek levéve, minden más „_”
+  const safe =
+    filename
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^A-Za-z0-9.\-]+/g, "_")
+      .slice(-100) || "import.xlsx";
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const path = `${profile.agency_id}/${stamp}_${safe}`;
   const { data, error } = await createAdminClient().storage.from(BUCKET).createSignedUploadUrl(path);
