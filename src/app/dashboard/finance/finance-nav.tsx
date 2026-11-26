@@ -9,6 +9,7 @@ const TABS = [
   { href: "/dashboard/finance/income", label: "Bevételek" },
   { href: "/dashboard/finance/expenses", label: "Kiadások" },
   { href: "/dashboard/finance/cash", label: "Pénztár" },
+  { href: "/dashboard/finance/cashflow", label: "Havi pénzmozgás" },
   { href: "/dashboard/finance/loans", label: "Tagi kölcsön" },
   { href: "/dashboard/finance/invoices", label: "Számlák és tételek" },
   { href: "/dashboard/finance/schedules", label: "Számla-törzsek" },
@@ -21,7 +22,7 @@ const TABS = [
 export function FinanceNav() {
   const pathname = usePathname();
   const isActive = (href: string) =>
-    href === "/dashboard/finance" ? pathname === href : pathname.startsWith(href);
+    href === "/dashboard/finance" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
