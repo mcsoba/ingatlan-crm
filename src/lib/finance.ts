@@ -38,6 +38,7 @@ export const CATEGORIES: { value: string; label: string }[] = [
   { value: "utility", label: "Rezsi / továbbszámlázott rezsi" },
   { value: "deposit", label: "Kaució" },
   { value: "service", label: "Szolgáltatás, díj" },
+  { value: "machine", label: "Gépbérlés" },
   { value: "supplies", label: "Beszerzés, eszköz, anyag" },
   { value: "salary", label: "Bér és járulék" },
   { value: "tax", label: "Adó (NAV, SZJA, TB, szocho)" },
@@ -50,10 +51,10 @@ export const CATEGORIES: { value: string; label: string }[] = [
 
 // Egyéb céges kiadások (a Kiadások fül és a gyors rögzítés ezeket mutatja) — a
 // bérleti díj, rezsi, kaució, bér és adó saját folyamatban fut.
-export const EXPENSE_CATEGORY_VALUES = ["supplies", "service", "bank", "cash", "loan", "commission", "other"] as const;
+export const EXPENSE_CATEGORY_VALUES = ["supplies", "service", "machine", "bank", "cash", "loan", "commission", "other"] as const;
 
 // Bevételek (a Bevételek fül gyors rögzítése) — számlával vagy anélkül befolyó pénz
-export const INCOME_CATEGORY_VALUES = ["rent", "utility", "deposit", "commission", "service", "loan", "other"] as const;
+export const INCOME_CATEGORY_VALUES = ["rent", "utility", "deposit", "commission", "service", "machine", "loan", "other"] as const;
 
 export function categoryLabel(value: string): string {
   return CATEGORIES.find((c) => c.value === value)?.label ?? value;
