@@ -353,3 +353,13 @@ export async function createLodgingDeposit(formData: FormData) {
   revalidate();
   redirect(`/dashboard/finance/invoices/${data.id}`);
 }
+
+/** Szállás törlése közvetlenül a listából (nem navigál el). */
+export async function deleteLodgingRow(id: string) {
+  await requireOwnerOrAdmin();
+  if (!id) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("finance_lodgings").delete().eq("id", id);
+  if (error) throw error;
+  revalidate();
+}

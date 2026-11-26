@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { inputClass } from "@/components/ui/styles";
 import { MigrationNotice, isMissingTable } from "../migration-notice";
 import { loadLodgingParties } from "../data";
+import { deleteLodgingRow } from "../partner-actions";
+import { RowDelete } from "../row-delete";
 import { LODGING_SELECT, daysUntil, formatDate, formatMoney, monthlyEquivalent, todayIso, type LodgingRow } from "@/lib/finance";
 
 function EndBadge({ end, today }: { end: string | null; today: string }) {
@@ -135,6 +137,7 @@ export default async function LodgingsPage({
                 <th className="px-2 py-2 text-right font-medium">Különbözet / hó</th>
                 <th className="px-2 py-2 text-right font-medium">Fő / férőhely</th>
                 <th className="px-4 py-2 font-medium">Bérlés vége</th>
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -179,6 +182,9 @@ export default async function LodgingsPage({
                     <td className="px-4 py-2">
                       <EndBadge end={l.lease_end} today={today} />
                     </td>
+                    <td className="w-8 px-2 py-2 text-right">
+                      <RowDelete id={l.id} action={deleteLodgingRow} title="Szállás törlése" />
+                    </td>
                   </tr>
                 );
               })}
@@ -195,6 +201,7 @@ export default async function LodgingsPage({
                 <td className="px-2 py-2 text-right">
                   {totalOccupants} / {totalCapacity}
                 </td>
+                <td />
                 <td />
               </tr>
             </tfoot>

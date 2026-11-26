@@ -444,3 +444,14 @@ export async function toggleSchedule(formData: FormData) {
   if (error) throw error;
   revalidateFinance();
 }
+
+/** Törlés közvetlenül a listából (a soron lévő kuka ikon): nem navigál el, csak frissíti a listát. */
+export async function deleteInvoiceRow(id: string) {
+  await requireOwnerOrAdmin();
+  if (!id) return;
+  const supabase = await createClient();
+  await removeReceiptFiles(supabase, [id]);
+  const { error } = await supabase.from("finance_invoices").delete().eq("id", id);
+  if (error) throw error;
+  revalidateFinance();
+}

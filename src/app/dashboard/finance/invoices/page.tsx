@@ -3,7 +3,8 @@ import { Check, Download, Plus, Receipt, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { generateDueInvoices } from "@/lib/finance-server";
 import { getSelectedCompanyId, listCompanies } from "@/lib/companies";
-import { markInvoice } from "../actions";
+import { deleteInvoiceRow, markInvoice } from "../actions";
+import { RowDelete } from "../row-delete";
 import { STATUS_FILTERS, loadInvoices, type InvoiceFilters } from "../data";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -242,6 +243,7 @@ export default async function FinanceInvoicesPage({
                 <th className="px-2 py-2 font-medium">Bank könyv.</th>
                 <th className="px-2 py-2 font-medium">Mód</th>
                 <th className="px-3 py-2 text-right font-medium">Bruttó</th>
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -294,6 +296,9 @@ export default async function FinanceInvoicesPage({
                         <div className="text-[11px] font-normal text-muted">fizetendő: {formatMoney(payableAmount(inv), inv.currency)}</div>
                       )}
                     </td>
+                    <td className="w-8 px-2 py-2 text-right">
+                      <RowDelete id={inv.id} action={deleteInvoiceRow} />
+                    </td>
                   </tr>
                 );
               })}
@@ -305,6 +310,7 @@ export default async function FinanceInvoicesPage({
                     Összesen ({invoices.length} tétel{totals.size > 1 ? `, ${cur}` : ""}) · ebből rendezetlen: {formatMoney(t.open, cur)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums">{formatMoney(t.gross, cur)}</td>
+                  <td />
                 </tr>
               ))}
             </tfoot>

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getSelectedCompanyId } from "@/lib/companies";
 import { loadFormOptions } from "../data";
 import { QuickIncomeForm } from "./quick-income-form";
+import { deleteInvoiceRow } from "../actions";
+import { RowDelete } from "../row-delete";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -197,6 +199,7 @@ export default async function IncomePage({
                 <th className="px-2 py-2 font-medium">Kategória</th>
                 <th className="px-2 py-2 font-medium">Állapot</th>
                 <th className="px-4 py-2 text-right font-medium">Összeg</th>
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -232,6 +235,9 @@ export default async function IncomePage({
                     </td>
                     <td className="whitespace-nowrap px-4 py-2 text-right font-medium tabular-nums text-success">
                       +{formatMoney(settledAmount(i), i.currency)}
+                    </td>
+                    <td className="w-8 px-2 py-2 text-right">
+                      <RowDelete id={i.id} action={deleteInvoiceRow} />
                     </td>
                   </tr>
                 );
