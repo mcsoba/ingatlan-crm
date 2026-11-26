@@ -10,11 +10,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * A tárolóhoz csak a szerver fér hozzá (service role) — a jogosultságot itt ellenőrizzük.
  */
 const BUCKET = "finance-imports";
-const ALLOWED = /\.(xlsx|xlsm|xls|csv)$/i;
+const ALLOWED = /.(xlsx|xlsm|xls|csv|txt|pdf|sta|mt940|xml)$/i;
 
 export async function createImportUpload(filename: string) {
   const profile = await requireOwnerOrAdmin();
-  if (!ALLOWED.test(filename)) throw new Error("Csak Excel (.xlsx, .xls) vagy CSV fájl tölthető fel");
+  if (!ALLOWED.test(filename)) throw new Error("Csak Excel, CSV, PDF vagy banki export (TXT, MT940, XML) tölthető fel");
   // A tároló csak ASCII kulcsot fogad el („Invalid key”): ékezetek levéve, minden más „_”
   const safe =
     filename

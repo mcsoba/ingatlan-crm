@@ -12,8 +12,8 @@ export default async function ImportPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Excel feltöltése"
-        description="Töltsd fel a mostani Excel-nyilvántartásodat — az adatokat (szállások, bérlők, bérbeadók, bevételek, kiadások) bedolgozzuk a CRM-be."
+        title="Fájl feltöltése"
+        description="Excel-nyilvántartás vagy bankkivonat (MBH NetBank export: CSV / Excel / PDF) — az adatokat bedolgozzuk a CRM-be."
       />
       <Card className="flex items-start gap-2 p-3 text-xs text-muted">
         <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />

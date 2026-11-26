@@ -13,7 +13,7 @@ const TABS = [
   { href: "/dashboard/finance/payroll", label: "Bér és adók" },
   { href: "/dashboard/finance/lodgings", label: "Szállások" },
   { href: "/dashboard/finance/companies", label: "Cégek" },
-  { href: "/dashboard/finance/import", label: "Excel feltöltés" },
+  { href: "/dashboard/finance/import", label: "Fájl feltöltés" },
 ];
 
 export function FinanceNav() {

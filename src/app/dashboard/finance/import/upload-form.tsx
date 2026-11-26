@@ -46,18 +46,18 @@ export function ImportUploader({ files }: { files: ImportFile[] }) {
         className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border px-6 py-10 text-center"
       >
         <FileSpreadsheet className="h-8 w-8 text-muted" />
-        <p className="text-sm text-muted">Húzd ide az Excel-fájlt, vagy válaszd ki a gépedről (.xlsx, .xls, .csv — max 30 MB).</p>
+        <p className="text-sm text-muted">Húzd ide a fájlt, vagy válaszd ki a gépedről — Excel, CSV, PDF vagy banki export (TXT, MT940, XML), max 30 MB.</p>
         <input
           ref={input}
           type="file"
           multiple
-          accept=".xlsx,.xlsm,.xls,.csv"
+          accept=".xlsx,.xlsm,.xls,.csv,.txt,.pdf,.sta,.mt940,.xml"
           className="hidden"
           onChange={(e) => upload(e.target.files)}
         />
         <Button disabled={isPending} onClick={() => input.current?.click()}>
           <Upload className="h-4 w-4" />
-          {isPending ? "Feltöltés…" : "Excel feltöltése"}
+          {isPending ? "Feltöltés…" : "Fájl feltöltése"}
         </Button>
         {message && <span className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</span>}
       </div>
